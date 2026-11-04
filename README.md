@@ -1,7 +1,12 @@
 # KernCRM
 
-CRM voor kozijnbedrijven: klantbestand, offertes met automatische kozijntekeningen, inmeting, bestellen,
-montageplanning, facturatie (Twinfield) en service. Eerste klant: KernKozijnen.
+CRM voor kozijnbedrijven. Zie `CLAUDE.md` en `docs/ontwerp.md`.
 
-- Functioneel ontwerp: [`docs/ontwerp.md`](docs/ontwerp.md)
-- Context voor Claude Code: [`CLAUDE.md`](CLAUDE.md)
+## Lokaal draaien
+```bash
+npm install
+npm run dev
+```
+
+## Database
+Migraties staan in `supabase/migrations` (RLS op elke tabel). De RLS-controle staat in `supabase/tests/rls_basis.sql`.
