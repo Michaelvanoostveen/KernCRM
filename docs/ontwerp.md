@@ -1,6 +1,6 @@
 # KernCRM — Functioneel ontwerp
 
-Nov 4, 2026 · @Michael van Oostveen
+Bijgewerkt 5 nov 2026 · @Michael van Oostveen
 
 ## Samenvatting en doel
 
@@ -62,7 +62,7 @@ Elke klant krijgt één dossier waarin alle contactmomenten, offertes, projecten
 - Offertetracking: verstuurd, geopend (hoe vaak, wanneer), welke pagina's bekeken, akkoord of afgewezen, met melding aan de verkoper
 - Websiteactiviteit: een configuratie op kernkozijnen.nl komt als lead binnen, met de gekozen kozijnen al ingevuld
 - Taken en herinneringen (bijv. "nabellen 3 dagen na versturen offerte"), automatisch aan te maken per fase
-- Verkooppijplijn per verkoper: Lead → Contact → Inmeting/adviesgesprek → Offerte → Akkoord / Verloren, met reden van verlies
+- Verkooppijplijn per verkoper: Lead → Offerte → Akkoord / Verloren (de inmeting volgt ná het akkoord, zie Module 3), met reden van verlies
 
 **Communicatie**
 
@@ -137,13 +137,13 @@ Na akkoord plant KernCRM de inmeting, legt de definitieve maten vast op de offer
 
 - Na het akkoord plant een medewerker de inmeting op de projectpagina: datum en tijd (Nederlandse tijd), inmeter en een notitie. Het project gaat dan naar de fase Inmeting. Per project is er één geplande inmeting tegelijk; annuleren zet het project terug naar Akkoord
 - De inmeter ziet alleen zijn eigen inmetingen en krijgt via een beveiligde functie alleen wat hij nodig heeft: adres, telefoon, bereikbaarheid, woninggegevens, de tekening en de offertemaat per positie. **Nooit prijzen.** Hij heeft geen toegang tot de tabellen zelf. In het menu ziet hij alleen Inmeting, en na het inloggen komt hij op zijn overzicht
-- Per positie vult hij de **bestelmaat** in (breedte en hoogte, verplicht: dit is de maat waarop het kozijn wordt besteld), plus de binnenmaat en de buitenmaat (dagmaten) en bijzonderheden, zodat alles is vastgelegd. Direct op het scherm staat een melding bij een afwijking van meer dan 5 mm met de offertemaat. Afronden kan pas als alle posities zijn ingemeten; daarna is de inmeetstaat vergrendeld
+- Per positie vult hij de **bestelmaat** in (breedte en hoogte, verplicht: dit is de maat waarop het kozijn wordt besteld), plus de binnenmaat en de buitenmaat (dagmaten) en bijzonderheden, zodat alles is vastgelegd. Direct op het scherm staat een melding bij een afwijking van meer dan 5 mm met de offertemaat. Binnen- en buitenmaat zijn niet verplicht. De bestelmaat wordt vergeleken met de offertemaat (de buitenmaat van het kozijn). Afronden kan pas als alle posities een bestelmaat hebben; daarna is de inmeetstaat vergrendeld, ook in de database. Het project blijft na afronden in de fase Inmeting tot kantoor de afwijkingen heeft afgehandeld
 - Voor medewerkers toont de projectpagina na afronding per positie de afwijking en een indicatie van het meer- of minderwerk (met de prijsmodule, zonder handmatige aanpassingen). Het vastleggen daarvan als meer- of minderwerk dat de klant opnieuw goedkeurt volgt
-- Nog niet gebouwd: foto's, handtekening van de klant op de inmeetstaat, werken zonder bereik, de agenda met reistijd en de koppeling met Outlook
+- Per project is er één geplande inmeting tegelijk (afgedwongen in de database). De gekozen inmeter moet lid zijn van het eigen bedrijf; verliest hij dat lidmaatschap, dan verliest hij ook de toegang tot de inmeting. De indicatie voor meer- of minderwerk rekent met de huidige prijsregels, niet met de versie van de offerte. Nog niet gebouwd: stelruimte, sponning en borstwering, foto's, handtekening van de klant op de inmeetstaat, werken zonder bereik, de agenda met reistijd en de koppeling met Outlook
 
 - Inmeetafspraak plannen in een agenda per inmeter, met route en reistijd vanaf Hengelo
-- Mobiele inmeetstaat (tablet of telefoon): per positie de tekening uit de offerte, met velden voor de gemeten maten, stelruimte, dagmaat, sponning, borstwering, bijzonderheden en foto's
-- Afwijkingen tegenover de offerte worden gemarkeerd; bij een prijsverschil ontstaat automatisch een meer- of minderwerkregel die de klant akkoord geeft
+- Mobiele inmeetstaat (tablet of telefoon): per positie de tekening uit de offerte, met velden voor bestelmaat, binnenmaat, buitenmaat, bijzonderheden en foto's (later ook stelruimte, sponning en borstwering)
+- Afwijkingen tegenover de offerte worden gemarkeerd; bij een prijsverschil volgt later een meer- of minderwerkregel die de klant opnieuw akkoord geeft (nog niet gebouwd)
 - Digitale handtekening van de klant op de inmeetstaat
 
 **Montageplanning**
@@ -212,7 +212,8 @@ Het project is de spil: een klant heeft een of meer projecten, en elk project dr
 | Project | projectadres, fase, verkoper, verwachte omzet | Klant |
 | Offerte | nummer, versie, status, geldig tot, totaal, akkoorddatum | Project |
 | Positie (kozijn) | positienummer, ruimte, profielsysteem, product, maten, vakverdeling, glas, kleur, opties, tekening (SVG), prijs | Offerte |
-| Inmeting | datum, inmeter, gemeten maten per positie, foto's, handtekening | Project |
+| Inmeting | gepland op, inmeter, status (gepland, uitgevoerd, geannuleerd), notitie; hoort bij de akkoord-offerte | Project |
+| Inmetingsregel | bestelmaat, binnenmaat, buitenmaat, bijzonderheden per positie (later foto's, handtekening) | Inmeting + Positie |
 | Bestelling | leverancier, status, leverdatum, regels per positie | Project |
 | Montage | datum, ploeg, posities, checklist, uren | Project |
 | Factuur | nummer, termijn, bedrag, status, betaling | Project |
@@ -232,8 +233,8 @@ Vijf rollen dekken het team; marges en inkoopprijzen zijn alleen zichtbaar voor 
 | --- | --- | --- |
 | Directie / beheer | alles, incl. marges en rapportages | instellingen, prijzen, gebruikers, kortingen zonder grens (de admin is het account info@kernkozijnen.nl) |
 | Verkoop | eigen klanten en projecten, marges | leads, offertes, configurator, kortingen tot maximaal 10% van het totaal van de offerte |
-| Kantoor / planning | alle klanten en projecten, geen marges | inmeting en montage plannen, bestellen, factureren, service |
-| Inmeter | toegewezen inmetingen | inmeetstaat invullen, foto's, handtekening klant |
+| Kantoor / planning | alle klanten en projecten, geen marges | inmeting en montage plannen (verkoop mag een inmeting ook plannen), bestellen, factureren, service |
+| Inmeter | alleen toegewezen inmetingen: adres, contact, tekening en offertemaat; nooit prijzen of het klantenbestand | inmeetstaat invullen, foto's, handtekening klant |
 | Monteur | eigen werkbonnen en montages | checklists, foto's, uren, opleverpunten, handtekening |
 
 Daarnaast is er een **klantportaal** voor de klant zelf: offerte bekijken en akkoord geven, afspraken zien, documenten downloaden en een servicemelding doen.
