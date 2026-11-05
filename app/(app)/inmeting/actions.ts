@@ -1,8 +1,16 @@
 "use server";
 
+import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { maakServerClient } from "@/lib/supabase/server";
 import { amsterdamNaarIso } from "@/lib/inmeting/afwijking";
+import { leesDetail } from "@/lib/inmeting/types";
+import { beschrijfWijziging, heeftWijziging, meerprijsConfiguratie, pasVoorstelToe } from "@/lib/inmeting/wijzigingen";
+import { eersteIp, isGeldigeHandtekening } from "@/lib/offerte/handtekening";
+import { PrijsFout } from "@/lib/prijs/berekenen";
+import { haalPrijsregels } from "@/lib/prijs";
+import { leesConfiguratie } from "@/lib/projecten/positie";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -93,4 +101,130 @@ export async function rondInmetingAf(formData: FormData) {
   const { data } = await supabase.rpc("inmeting_afronden", { p_inmeting: inmetingId });
   const uitkomst = data as { ok?: boolean; fout?: string } | null;
   redirect(`/inmeting/${inmetingId}?${uitkomst?.ok ? "afgerond=1" : `fout=${uitkomst?.fout ?? "onbekend"}`}`);
+}
+
+export type WijzigingStatus = { fout?: string; opgeslagen?: boolean };
+
+const WIJZIGING_FOUTEN: Record<string, string> = {
+  afgerond: "Deze inmeting is al afgerond.",
+  geen_toegang: "Je hebt geen toegang tot deze inmeting.",
+  positie: "Deze positie hoort niet bij deze inmeting.",
+  artikel: "Dit artikel is niet beschikbaar.",
+  aantal: "Kies een aantal tussen 1 en 100.",
+  ongeldig: "Deze wijziging kan niet worden opgeslagen.",
+  naam: "Vul de volledige naam van de klant in.",
+  handtekening: "Laat de klant tekenen in het vak.",
+  leeg: "Er zijn geen wijzigingen om akkoord op te geven.",
+};
+const wijzigingFout = (code?: string) => WIJZIGING_FOUTEN[code ?? ""] ?? "Opslaan lukte niet. Probeer het opnieuw.";
+
+/**
+ * Stelt een andere indeling, draairichting, kleur of glas voor een positie voor. De meerprijs rekent de server uit met de prijsmodule;
+ * de maat, het beslag en het profiel blijven zoals in de offerte.
+ */
+export async function stelWijzigingVoor(_vorige: WijzigingStatus, formData: FormData): Promise<WijzigingStatus> {
+  const inmetingId = String(formData.get("inmeting_id") ?? "");
+  const positieId = String(formData.get("positie_id") ?? "");
+  if (!UUID.test(inmetingId) || !UUID.test(positieId)) return { fout: "Deze positie is niet gevonden." };
+
+  const supabase = await maakServerClient();
+  const { data: detail } = await supabase.rpc("inmeting_detail", { p_inmeting: inmetingId });
+  const d = leesDetail(detail);
+  const positie = d?.posities.find((p) => p.positie_id === positieId);
+  if (!d || !positie) return { fout: wijzigingFout("positie") };
+
+  let omschrijving: string;
+  let nieuw;
+  let meerprijs: number;
+  try {
+    const regels = haalPrijsregels();
+    const oud = leesConfiguratie(positie.config);
+    const cols = formData.getAll("col").map(String);
+    nieuw = pasVoorstelToe(oud, {
+      variant: String(formData.get("variant") ?? oud.variant),
+      cols: cols.length ? cols : null,
+      kleur: String(formData.get("kleur") ?? oud.kleur),
+      kleurVleugel: String(formData.get("kleur_vleugel") ?? "") || null,
+      glas: String(formData.get("glas") ?? oud.glas),
+    });
+    if (nieuw.kleurVleugel === nieuw.kleur) nieuw.kleurVleugel = null;
+    if (!heeftWijziging(oud, nieuw)) return { fout: "Je hebt nog niets aangepast." };
+    meerprijs = meerprijsConfiguratie(regels, oud, nieuw, positie.aantal);
+    omschrijving = beschrijfWijziging(regels, oud, nieuw);
+  } catch (e) {
+    if (e instanceof PrijsFout) return { fout: e.message };
+    throw e;
+  }
+
+  const { data, error } = await supabase.rpc("inmeting_stel_config_voor", {
+    p_inmeting: inmetingId, p_positie: positieId, p_config: nieuw, p_omschrijving: omschrijving, p_meerprijs: meerprijs,
+  });
+  if (error) {
+    console.error("wijziging voorstellen mislukt:", error.code, error.message);
+    return { fout: "Opslaan lukte niet. Probeer het opnieuw." };
+  }
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  if (!uitkomst?.ok) return { fout: wijzigingFout(uitkomst?.fout) };
+  revalidatePath(`/inmeting/${inmetingId}`);
+  return { opgeslagen: true };
+}
+
+/** Voegt een artikel uit de catalogus toe; de prijs komt uit de catalogus. */
+export async function voegExtraToe(_vorige: WijzigingStatus, formData: FormData): Promise<WijzigingStatus> {
+  const inmetingId = String(formData.get("inmeting_id") ?? "");
+  const artikelId = String(formData.get("artikel_id") ?? "");
+  const positieId = String(formData.get("positie_id") ?? "");
+  const aantal = Math.round(Number(String(formData.get("aantal") ?? "1").replace(",", ".")));
+  if (!UUID.test(inmetingId) || !UUID.test(artikelId)) return { fout: "Kies een artikel." };
+  if (positieId && !UUID.test(positieId)) return { fout: wijzigingFout("positie") };
+  if (!Number.isFinite(aantal) || aantal < 1 || aantal > 100) return { fout: wijzigingFout("aantal") };
+
+  const supabase = await maakServerClient();
+  const { data, error } = await supabase.rpc("inmeting_voeg_extra_toe", {
+    p_inmeting: inmetingId, p_positie: positieId || null, p_artikel: artikelId, p_aantal: aantal,
+  });
+  if (error) {
+    console.error("extra toevoegen mislukt:", error.code, error.message);
+    return { fout: "Toevoegen lukte niet. Probeer het opnieuw." };
+  }
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  if (!uitkomst?.ok) return { fout: wijzigingFout(uitkomst?.fout) };
+  revalidatePath(`/inmeting/${inmetingId}`);
+  return { opgeslagen: true };
+}
+
+/** Haalt een voorstel weg zolang de klant er nog geen akkoord op heeft gegeven. */
+export async function verwijderWijziging(formData: FormData) {
+  const inmetingId = String(formData.get("inmeting_id") ?? "");
+  const wijzigingId = String(formData.get("wijziging_id") ?? "");
+  if (!UUID.test(inmetingId) || !UUID.test(wijzigingId)) redirect("/inmeting");
+  const supabase = await maakServerClient();
+  await supabase.rpc("inmeting_verwijder_wijziging", { p_inmeting: inmetingId, p_wijziging: wijzigingId });
+  redirect(`/inmeting/${inmetingId}`);
+}
+
+/** Legt het akkoord van de klant ter plekke vast: naam, handtekening, tijdstip, IP-adres en apparaat. */
+export async function geefKlantAkkoord(_vorige: WijzigingStatus, formData: FormData): Promise<WijzigingStatus> {
+  const inmetingId = String(formData.get("inmeting_id") ?? "");
+  if (!UUID.test(inmetingId)) return { fout: "Deze inmeting is niet gevonden." };
+  const naam = String(formData.get("naam") ?? "").trim();
+  if (naam.length < 3 || naam.length > 120) return { fout: wijzigingFout("naam") };
+  const handtekening = formData.get("handtekening");
+  if (!isGeldigeHandtekening(handtekening)) return { fout: wijzigingFout("handtekening") };
+  if (formData.get("akkoord") !== "on") return { fout: "Vink aan dat de klant akkoord gaat met de wijzigingen en de meerprijs." };
+
+  const h = await headers();
+  const supabase = await maakServerClient();
+  const { data, error } = await supabase.rpc("inmeting_wijzigingen_akkoord", {
+    p_inmeting: inmetingId, p_naam: naam, p_handtekening: handtekening,
+    p_ip: eersteIp(h.get("x-forwarded-for")) ?? eersteIp(h.get("x-real-ip")), p_user_agent: h.get("user-agent"),
+  });
+  if (error) {
+    console.error("klantakkoord mislukt:", error.code, error.message);
+    return { fout: "Het akkoord kon niet worden opgeslagen. Probeer het opnieuw." };
+  }
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  if (!uitkomst?.ok) return { fout: wijzigingFout(uitkomst?.fout) };
+  revalidatePath(`/inmeting/${inmetingId}`);
+  return { opgeslagen: true };
 }
