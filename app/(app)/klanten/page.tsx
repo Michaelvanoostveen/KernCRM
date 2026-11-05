@@ -1,17 +1,9 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { maakServerClient } from "@/lib/supabase/server";
 import { KOLOMMEN, type KlantRij } from "@/lib/klanten/kolommen";
 import { KLANTTYPES } from "@/lib/klanten/klant";
 import { bewaarKolommen, leesKolommen } from "./actions";
-
-async function uitloggen() {
-  "use server";
-  const supabase = await maakServerClient();
-  await supabase.auth.signOut();
-  redirect("/login");
-}
 
 const SELECTIE =
   "id, naam, type, aanhef, voornaam, tussenvoegsel, achternaam, bedrijfsnaam, email, telefoon, mobiel, website, herkomst, aangemaakt, adressen(soort, straat, huisnummer, toevoeging, postcode, plaats, land, woningtype, bouwjaar, bereikbaarheid, monument)";
@@ -122,7 +114,6 @@ export default function Klanten({ searchParams }: { searchParams: Promise<{ q?: 
         <h1 className="text-2xl font-semibold">Klanten</h1>
         <div className="flex gap-2">
           <Link href="/klanten/nieuw" className="rounded-md bg-[#B35B40] px-4 py-2 font-semibold text-white hover:brightness-110">+ Nieuwe klant</Link>
-          <form action={uitloggen}><button className="rounded-md border border-stone-300 bg-white px-4 py-2 font-semibold">Uitloggen</button></form>
         </div>
       </div>
       <Suspense fallback={<p className="mt-8 text-stone-500">Klanten laden…</p>}>

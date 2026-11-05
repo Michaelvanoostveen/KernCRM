@@ -1,0 +1,2744 @@
+{
+ "bron": "configurator/index.html (website-functies indelingMult, kleurPaar, softCap)",
+ "gevallen": [
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep",
+    "w": 500,
+    "h": 500,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "wit"
+   },
+   "prijs": 2820
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "cols": [
+     "tilt"
+    ]
+   },
+   "prijs": 2360
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep",
+    "w": 3000,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast",
+    "w": 500,
+    "h": 500,
+    "glas": "triple",
+    "kleur": "staalblauw",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "cols": [
+     "turnL"
+    ]
+   },
+   "prijs": 2780
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast",
+    "w": 1000,
+    "h": 1200,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "cols": [
+     "fixed"
+    ]
+   },
+   "prijs": 1980
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "staalblauw",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 2970
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 2350
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "kleurVleugel": "wit",
+    "cols": [
+     "tilt"
+    ]
+   },
+   "prijs": 2330
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 2990
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "cols": [
+     "tilt"
+    ]
+   },
+   "prijs": 2200
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam",
+    "w": 1000,
+    "h": 1200,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "cols": [
+     "tiltturnR"
+    ]
+   },
+   "prijs": 2780
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "cols": [
+     "turnR"
+    ]
+   },
+   "prijs": 2980
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai_vast",
+    "w": 500,
+    "h": 500,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "wit"
+   },
+   "prijs": 2920
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai_vast",
+    "w": 1000,
+    "h": 1200,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 2920
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai_vast",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "cols": [
+     "tilt",
+     "turnL"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_dk",
+    "w": 500,
+    "h": 500,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 2980
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_dk",
+    "w": 1000,
+    "h": 1200,
+    "glas": "triple",
+    "kleur": "staalblauw",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "cols": [
+     "tiltturn",
+     "turnL"
+    ]
+   },
+   "prijs": 2990
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_dk",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "cols": [
+     "tilt",
+     "turnR"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "stolp",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 2900
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "stolp",
+    "w": 1000,
+    "h": 1200,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "dennengroen"
+   },
+   "prijs": 2990
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "stolp",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "antraciet"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "driedelig",
+    "w": 500,
+    "h": 500,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 2990
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "driedelig",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "staalblauw",
+    "cols": [
+     "turnL",
+     "fixed",
+     "fixed"
+    ]
+   },
+   "prijs": 2990
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "driedelig",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vierdelig",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "antraciet"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vierdelig",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "antraciet",
+    "cols": [
+     "tilt",
+     "fixed",
+     "turnR",
+     "turnR"
+    ]
+   },
+   "prijs": 2990
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vierdelig",
+    "w": 3000,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "bovenlicht",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "creme",
+    "cols": [
+     "turnL"
+    ]
+   },
+   "prijs": 2750
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "bovenlicht",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "kleurVleugel": "staalblauw"
+   },
+   "prijs": 2890
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "bovenlicht",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "kleurVleugel": "antraciet",
+    "cols": [
+     "tilt"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep2",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 2950
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep2",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 2980
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep2",
+    "w": 3000,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "cols": [
+     "turnR",
+     "tiltturnR"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam_vast",
+    "w": 500,
+    "h": 500,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "cols": [
+     "tilt",
+     "tilt"
+    ]
+   },
+   "prijs": 2960
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam_vast",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 2930
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam_vast",
+    "w": 3000,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "antraciet"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_valraam",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 2930
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_valraam",
+    "w": 1000,
+    "h": 1200,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "prijs": 2980
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_valraam",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast2",
+    "w": 500,
+    "h": 500,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "dennengroen"
+   },
+   "prijs": 2900
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast2",
+    "w": 1000,
+    "h": 1200,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 2980
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast2",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "cols": [
+     "turnR",
+     "turnR"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast3",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "cols": [
+     "tiltturn",
+     "tilt",
+     "turnL"
+    ]
+   },
+   "prijs": 2990
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast3",
+    "w": 1000,
+    "h": 1200,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "cols": [
+     "turnR",
+     "tiltturn",
+     "tiltturnR"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast3",
+    "w": 3000,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "cols": [
+     "turnR",
+     "turnR",
+     "tilt"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_lr_vast",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "cols": [
+     "fixed",
+     "turnR",
+     "tilt"
+    ]
+   },
+   "prijs": 2990
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_lr_vast",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "staalblauw",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "staalblauw",
+    "cols": [
+     "tilt",
+     "turnL",
+     "tilt"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_lr_vast",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "cols": [
+     "fixed",
+     "tiltturnR",
+     "tiltturnR"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_vast3",
+    "w": 500,
+    "h": 500,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "wit"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_vast3",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "cols": [
+     "fixed",
+     "turnL",
+     "fixed"
+    ]
+   },
+   "prijs": 2980
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_vast3",
+    "w": 3000,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "zwartgrijs",
+    "cols": [
+     "turnL",
+     "tilt",
+     "turnL"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_boven",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 2990
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_boven",
+    "w": 1000,
+    "h": 1200,
+    "glas": "triple",
+    "kleur": "staalblauw",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "kleurVleugel": "antraciet",
+    "cols": [
+     "turnR",
+     "fixed",
+     "tiltturnR"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_boven",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_b",
+    "w": 500,
+    "h": 500,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "zwartgrijs",
+    "cols": [
+     "turnL"
+    ]
+   },
+   "prijs": 2880
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_b",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 2850
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_b",
+    "w": 3000,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "staalblauw",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "cols": [
+     "tiltturn"
+    ]
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_stapel",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 2890
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_stapel",
+    "w": 1000,
+    "h": 1200,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 2720
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_stapel",
+    "w": 3000,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "dennengroen"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast6",
+    "w": 500,
+    "h": 500,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast6",
+    "w": 1000,
+    "h": 1200,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast6",
+    "w": 3000,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 3000
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dicht",
+    "w": 800,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 5740
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dicht",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "kleurVleugel": "antraciet"
+   },
+   "prijs": 6040
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dicht",
+    "w": 2800,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 6310
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "glasstrook",
+    "w": 800,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "antraciet"
+   },
+   "prijs": 5950
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "glasstrook",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "kleurVleugel": "wit"
+   },
+   "prijs": 6250
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "glasstrook",
+    "w": 2800,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "staalblauw",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 6350
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "bovenlicht",
+    "w": 800,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 6300
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "bovenlicht",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6100
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "bovenlicht",
+    "w": 2800,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 6280
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijlicht",
+    "w": 800,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6210
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijlicht",
+    "w": 1000,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6030
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijlicht",
+    "w": 2800,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6370
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijboven",
+    "w": 800,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "wit"
+   },
+   "prijs": 6250
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijboven",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "dennengroen"
+   },
+   "prijs": 6370
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijboven",
+    "w": 2800,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "staalblauw"
+   },
+   "prijs": 6400
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezijlicht",
+    "w": 800,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6280
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezijlicht",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6380
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezijlicht",
+    "w": 2800,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "staalblauw"
+   },
+   "prijs": 6400
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_r",
+    "w": 800,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6220
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_r",
+    "w": 1000,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6150
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_r",
+    "w": 2800,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "staalblauw",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6380
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_l",
+    "w": 800,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6210
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_l",
+    "w": 1000,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6140
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_l",
+    "w": 2800,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 6380
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_r",
+    "w": 800,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "dennengroen"
+   },
+   "prijs": 6390
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_r",
+    "w": 1000,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6310
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_r",
+    "w": 2800,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6400
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_l",
+    "w": 800,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 6360
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_l",
+    "w": 1000,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "dennengroen"
+   },
+   "prijs": 6320
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_l",
+    "w": 2800,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 6390
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezij_boven",
+    "w": 800,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6400
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezij_boven",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "staalblauw",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "prijs": 6390
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezij_boven",
+    "w": 2800,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "wit"
+   },
+   "prijs": 6400
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "half",
+    "w": 800,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 5470
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "half",
+    "w": 900,
+    "h": 2100,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 4970
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "half",
+    "w": 2800,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "antraciet"
+   },
+   "prijs": 6240
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "vol",
+    "w": 800,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "prijs": 4880
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "vol",
+    "w": 900,
+    "h": 2100,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 4880
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "vol",
+    "w": 2800,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 5950
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "bovenlicht",
+    "w": 800,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "prijs": 6070
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "bovenlicht",
+    "w": 900,
+    "h": 2100,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 5830
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "bovenlicht",
+    "w": 2800,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "prijs": 6060
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht",
+    "w": 800,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 5280
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht",
+    "w": 900,
+    "h": 2100,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 5480
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht",
+    "w": 2800,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 6380
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht_r",
+    "w": 800,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6030
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht_r",
+    "w": 900,
+    "h": 2100,
+    "glas": "hrpp",
+    "kleur": "staalblauw",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 5190
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht_r",
+    "w": 2800,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6340
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_r",
+    "w": 800,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 6250
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_r",
+    "w": 900,
+    "h": 2100,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 4850
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_r",
+    "w": 2800,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6390
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_l",
+    "w": 800,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 5600
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_l",
+    "w": 900,
+    "h": 2100,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 5790
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_l",
+    "w": 2800,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6350
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "boven_zij",
+    "w": 800,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6100
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "boven_zij",
+    "w": 900,
+    "h": 2100,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 6060
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "boven_zij",
+    "w": 2800,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 6390
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "2delig",
+    "w": 2000,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 9360
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "2delig",
+    "w": 3000,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "kleurVleugel": "staalblauw"
+   },
+   "prijs": 7080
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "2delig",
+    "w": 6500,
+    "h": 2700,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "dennengroen"
+   },
+   "prijs": 10380
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "3delig",
+    "w": 2000,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 9760
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "3delig",
+    "w": 3000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 10100
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "3delig",
+    "w": 6500,
+    "h": 2700,
+    "glas": "triple",
+    "kleur": "staalblauw",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 10600
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "4delig",
+    "w": 2000,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 10320
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "4delig",
+    "w": 3000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 10460
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "4delig",
+    "w": 6500,
+    "h": 2700,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 10600
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "hef",
+    "w": 2000,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 10180
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "hef",
+    "w": 3000,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 9100
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "hef",
+    "w": 6500,
+    "h": 2700,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "prijs": 10580
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel",
+    "w": 1200,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "kleurVleugel": "antraciet"
+   },
+   "prijs": 8090
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel",
+    "w": 1600,
+    "h": 2200,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "kleurVleugel": "dennengroen"
+   },
+   "prijs": 8300
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel",
+    "w": 3200,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 10140
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_borst",
+    "w": 1200,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 8130
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_borst",
+    "w": 1600,
+    "h": 2200,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 9460
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_borst",
+    "w": 3200,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "staalblauw",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 10140
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven",
+    "w": 1200,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 8990
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven",
+    "w": 1600,
+    "h": 2200,
+    "glas": "triple",
+    "kleur": "staalblauw",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 10190
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven",
+    "w": 3200,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 10050
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven_borst",
+    "w": 1200,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "kleurVleugel": "antraciet"
+   },
+   "prijs": 9290
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven_borst",
+    "w": 1600,
+    "h": 2200,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 9600
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven_borst",
+    "w": 3200,
+    "h": 2400,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 10500
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij",
+    "w": 1200,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 8730
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij",
+    "w": 1600,
+    "h": 2200,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco"
+   },
+   "prijs": 9320
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij",
+    "w": 3200,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "staalblauw",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 10480
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_borst",
+    "w": 1200,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 10160
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_borst",
+    "w": 1600,
+    "h": 2200,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 8870
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_borst",
+    "w": 3200,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 10420
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_boven",
+    "w": 1200,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "dennengroen"
+   },
+   "prijs": 10040
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_boven",
+    "w": 1600,
+    "h": 2200,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "wit"
+   },
+   "prijs": 10280
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_boven",
+    "w": 3200,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 10520
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_vol",
+    "w": 1200,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 10450
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_vol",
+    "w": 1600,
+    "h": 2200,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 10190
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_vol",
+    "w": 3200,
+    "h": 2400,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 10500
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "enkel",
+    "w": 700,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "cols": [
+     "turnR"
+    ]
+   },
+   "prijs": 5320
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "enkel",
+    "w": 1000,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "prijs": 3930
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "enkel",
+    "w": 3000,
+    "h": 2500,
+    "glas": "triple",
+    "kleur": "wit",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "prijs": 6280
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "boven",
+    "w": 700,
+    "h": 2000,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 4890
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "boven",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 5810
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "boven",
+    "w": 3000,
+    "h": 2500,
+    "glas": "triple",
+    "kleur": "staalblauw",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 6310
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_vast",
+    "w": 700,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "staalblauw",
+    "cols": [
+     "tiltturn",
+     "turnR"
+    ]
+   },
+   "prijs": 6020
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_vast",
+    "w": 1000,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "kleurVleugel": "wit",
+    "cols": [
+     "tiltturnR",
+     "turnL"
+    ]
+   },
+   "prijs": 5930
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_vast",
+    "w": 3000,
+    "h": 2500,
+    "glas": "hrpp",
+    "kleur": "wit",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "schuco",
+    "cols": [
+     "turnR",
+     "fixed"
+    ]
+   },
+   "prijs": 6250
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_vast",
+    "w": 700,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "kleurVleugel": "staalblauw",
+    "cols": [
+     "turnR",
+     "fixed"
+    ]
+   },
+   "prijs": 6050
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_vast",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "cols": [
+     "turnR",
+     "tiltturn"
+    ]
+   },
+   "prijs": 6280
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_vast",
+    "w": 3000,
+    "h": 2500,
+    "glas": "triple",
+    "kleur": "dennengroen",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "creme"
+   },
+   "prijs": 6380
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "m_vast",
+    "w": 700,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6130
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "m_vast",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 5960
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "m_vast",
+    "w": 3000,
+    "h": 2500,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "aluplast",
+    "kleurVleugel": "wit"
+   },
+   "prijs": 6330
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_boven",
+    "w": 700,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco",
+    "kleurVleugel": "dennengroen",
+    "cols": [
+     "tiltturn",
+     "turnR"
+    ]
+   },
+   "prijs": 6330
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_boven",
+    "w": 1000,
+    "h": 2300,
+    "glas": "hrpp",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "cremeglad",
+    "profiel": "schuco",
+    "kleurVleugel": "wit",
+    "cols": [
+     "turnL",
+     "tiltturn"
+    ]
+   },
+   "prijs": 5710
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_boven",
+    "w": 3000,
+    "h": 2500,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "schuco"
+   },
+   "prijs": 6400
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_boven",
+    "w": 700,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "creme",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast",
+    "cols": [
+     "fixed",
+     "tiltturnR"
+    ]
+   },
+   "prijs": 6060
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_boven",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "zwartgrijs",
+    "beslag": "rc3",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "cols": [
+     "turnL",
+     "turnR"
+    ]
+   },
+   "prijs": 6200
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_boven",
+    "w": 3000,
+    "h": 2500,
+    "glas": "triple",
+    "kleur": "staalblauw",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "schuco"
+   },
+   "prijs": 6390
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "vak1",
+    "w": 700,
+    "h": 2000,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc3",
+    "binnen": "cremeglad",
+    "profiel": "aluplast"
+   },
+   "prijs": 5310
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "vak1",
+    "w": 1000,
+    "h": 2300,
+    "glas": "triple",
+    "kleur": "antraciet",
+    "beslag": "rc2",
+    "binnen": "structuur",
+    "profiel": "aluplast"
+   },
+   "prijs": 5460
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "vak1",
+    "w": 3000,
+    "h": 2500,
+    "glas": "hrpp",
+    "kleur": "zwartgrijs",
+    "beslag": "rc2",
+    "binnen": "witglad",
+    "profiel": "aluplast",
+    "cols": [
+     "tiltturn"
+    ]
+   },
+   "prijs": 5820
+  }
+ ]
+}

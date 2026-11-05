@@ -6,3 +6,5 @@ node_modules/
 .DS_Store
 .vercel/
 coverage/
+*.tsbuildinfo
+next-env.d.ts

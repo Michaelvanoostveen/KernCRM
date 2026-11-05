@@ -1,0 +1,2505 @@
+{
+ "bron": "configurator/index.html (buildSVG, anim uit)",
+ "hashAlgoritme": "sha256, eerste 16 tekens",
+ "tekeningen": [
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep",
+    "w": 500,
+    "h": 500,
+    "kleur": "staalblauw",
+    "kleurVleugel": "creme",
+    "cols": [
+     "turnR"
+    ]
+   },
+   "hash": "d6bed807ff98ea22",
+   "lengte": 584,
+   "svg": "<rect x=\"14.0\" y=\"14.0\" width=\"172.0\" height=\"172.0\" fill=\"#1c3040\" stroke=\"#11202b\" stroke-width=\"1.5\"/><rect x=\"30.5\" y=\"30.5\" width=\"139.0\" height=\"139.0\" rx=\"0.69\" fill=\"#e6ddc8\" stroke=\"#ccc3ac\" stroke-width=\"0.7\"/><rect x=\"48.7\" y=\"48.7\" width=\"102.5\" height=\"102.5\" rx=\"0.48\" fill=\"#cac2b0\"/><rect x=\"54.2\" y=\"54.2\" width=\"91.5\" height=\"91.5\" fill=\"#d4e3ec\" fill-opacity=\"1\"/><line x1=\"54.2\" y1=\"54.2\" x2=\"145.8\" y2=\"100.0\" stroke=\"#4a6172\" stroke-width=\"1.19\" opacity=\"0.7\"/><line x1=\"54.2\" y1=\"145.8\" x2=\"145.8\" y2=\"100.0\" stroke=\"#4a6172\" stroke-width=\"1.19\" opacity=\"0.7\"/>"
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "antraciet",
+    "kleurVleugel": "staalblauw"
+   },
+   "hash": "3227449a51423168",
+   "lengte": 787,
+   "svg": "<rect x=\"28.3\" y=\"14.0\" width=\"143.3\" height=\"172.0\" fill=\"#383e42\" stroke=\"#262b2e\" stroke-width=\"1.5\"/><rect x=\"35.2\" y=\"20.9\" width=\"129.6\" height=\"158.2\" rx=\"0.40\" fill=\"#1c3040\" stroke=\"#11202b\" stroke-width=\"0.7\"/><rect x=\"42.8\" y=\"28.5\" width=\"114.4\" height=\"143.0\" rx=\"0.28\" fill=\"#334553\"/><rect x=\"45.1\" y=\"30.8\" width=\"109.8\" height=\"138.5\" fill=\"#d4e3ec\" fill-opacity=\"1\"/><line x1=\"154.9\" y1=\"30.8\" x2=\"45.1\" y2=\"100.0\" stroke=\"#4a6172\" stroke-width=\"1.43\" opacity=\"0.7\"/><line x1=\"154.9\" y1=\"169.2\" x2=\"45.1\" y2=\"100.0\" stroke=\"#4a6172\" stroke-width=\"1.43\" opacity=\"0.7\"/><line x1=\"45.1\" y1=\"169.2\" x2=\"100.0\" y2=\"30.8\" stroke=\"#4a6172\" stroke-width=\"1.43\" opacity=\"0.7\"/><line x1=\"154.9\" y1=\"169.2\" x2=\"100.0\" y2=\"30.8\" stroke=\"#4a6172\" stroke-width=\"1.43\" opacity=\"0.7\"/>"
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "staalblauw"
+   },
+   "hash": "deeb31a092324e2b",
+   "lengte": 787,
+   "svg": "<rect x=\"14.0\" y=\"31.2\" width=\"172.0\" height=\"137.6\" fill=\"#1c3040\" stroke=\"#11202b\" stroke-width=\"1.5\"/><rect x=\"16.8\" y=\"34.0\" width=\"166.5\" height=\"132.1\" rx=\"0.40\" fill=\"#1c3040\" stroke=\"#11202b\" stroke-width=\"0.7\"/><rect x=\"19.8\" y=\"37.0\" width=\"160.4\" height=\"126.0\" rx=\"0.28\" fill=\"#334553\"/><rect x=\"20.7\" y=\"37.9\" width=\"158.6\" height=\"124.2\" fill=\"#d4e3ec\" fill-opacity=\"1\"/><line x1=\"179.3\" y1=\"37.9\" x2=\"20.7\" y2=\"100.0\" stroke=\"#4a6172\" stroke-width=\"1.61\" opacity=\"0.7\"/><line x1=\"179.3\" y1=\"162.1\" x2=\"20.7\" y2=\"100.0\" stroke=\"#4a6172\" stroke-width=\"1.61\" opacity=\"0.7\"/><line x1=\"20.7\" y1=\"162.1\" x2=\"100.0\" y2=\"37.9\" stroke=\"#4a6172\" stroke-width=\"1.61\" opacity=\"0.7\"/><line x1=\"179.3\" y1=\"162.1\" x2=\"100.0\" y2=\"37.9\" stroke=\"#4a6172\" stroke-width=\"1.61\" opacity=\"0.7\"/>"
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast",
+    "w": 500,
+    "h": 500,
+    "kleur": "wit"
+   },
+   "hash": "e056a54ed9aefd19",
+   "lengte": 270
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "dennengroen",
+    "cols": [
+     "tilt"
+    ]
+   },
+   "hash": "1df5e4220345d310",
+   "lengte": 586
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "staalblauw",
+    "cols": [
+     "tiltturn"
+    ]
+   },
+   "hash": "deeb31a092324e2b",
+   "lengte": 787
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai",
+    "w": 500,
+    "h": 500,
+    "kleur": "wit"
+   },
+   "hash": "a02d7996a2a03ce3",
+   "lengte": 584
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "zwartgrijs",
+    "cols": [
+     "turnR"
+    ]
+   },
+   "hash": "1a133484fc848bba",
+   "lengte": 586
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "wit",
+    "kleurVleugel": "staalblauw",
+    "cols": [
+     "fixed"
+    ]
+   },
+   "hash": "712b9e60e257fe95",
+   "lengte": 270
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam",
+    "w": 500,
+    "h": 500,
+    "kleur": "wit",
+    "cols": [
+     "turnL"
+    ]
+   },
+   "hash": "8820ca45cc42ca11",
+   "lengte": 584
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "antraciet"
+   },
+   "hash": "4cf6b910a5e621dc",
+   "lengte": 586
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "staalblauw"
+   },
+   "hash": "58347df5165bee41",
+   "lengte": 586
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai_vast",
+    "w": 500,
+    "h": 500,
+    "kleur": "dennengroen",
+    "cols": [
+     "tilt",
+     "turnR"
+    ],
+    "kolombreedtes": [
+     1064,
+     578
+    ]
+   },
+   "hash": "9fdbbdb1a32801c0",
+   "lengte": 763
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai_vast",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "staalblauw",
+    "cols": [
+     "tiltturnR",
+     "tiltturnR"
+    ]
+   },
+   "hash": "cf1ab0e85672b4dc",
+   "lengte": 1532
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draai_vast",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "zwartgrijs",
+    "cols": [
+     "tiltturn",
+     "tiltturnR"
+    ],
+    "kolombreedtes": [
+     506,
+     838
+    ]
+   },
+   "hash": "ef1c90caf6980afd",
+   "lengte": 1526
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_dk",
+    "w": 500,
+    "h": 500,
+    "kleur": "staalblauw",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "hash": "072483a2ce74601f",
+   "lengte": 1019
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_dk",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "dennengroen"
+   },
+   "hash": "af34d98cc45fd230",
+   "lengte": 1021
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_dk",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "staalblauw",
+    "kolombreedtes": [
+     518,
+     980
+    ]
+   },
+   "hash": "2b675d6da35e3edc",
+   "lengte": 1016
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "stolp",
+    "w": 500,
+    "h": 500,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "creme"
+   },
+   "hash": "9e4ee684c2f1a519",
+   "lengte": 1062
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "stolp",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "wit",
+    "cols": [
+     "turnL",
+     "tiltturn"
+    ]
+   },
+   "hash": "53b4a7baff0be297",
+   "lengte": 1266
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "stolp",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "antraciet"
+   },
+   "hash": "a0212b29da63691c",
+   "lengte": 1064
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "driedelig",
+    "w": 500,
+    "h": 500,
+    "kleur": "creme",
+    "kleurVleugel": "staalblauw",
+    "kolombreedtes": [
+     678,
+     407,
+     1058
+    ]
+   },
+   "hash": "64ff82bb814fd88e",
+   "lengte": 683
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "driedelig",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "dennengroen",
+    "cols": [
+     "turnR",
+     "tiltturnR",
+     "tilt"
+    ],
+    "kolombreedtes": [
+     845,
+     907,
+     723
+    ]
+   },
+   "hash": "8d796ad03c6938a7",
+   "lengte": 1879
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "driedelig",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "antraciet",
+    "kleurVleugel": "wit",
+    "cols": [
+     "fixed",
+     "turnL",
+     "turnL"
+    ],
+    "kolombreedtes": [
+     850,
+     1191,
+     519
+    ]
+   },
+   "hash": "5c0fe30cffe4c071",
+   "lengte": 1364
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vierdelig",
+    "w": 500,
+    "h": 500,
+    "kleur": "wit",
+    "kleurVleugel": "creme",
+    "kolombreedtes": [
+     892,
+     455,
+     706,
+     501
+    ]
+   },
+   "hash": "e753d1845a59b862",
+   "lengte": 780
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vierdelig",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "dennengroen",
+    "kleurVleugel": "wit",
+    "cols": [
+     "tiltturn",
+     "tiltturnR",
+     "tilt",
+     "turnR"
+    ],
+    "kolombreedtes": [
+     810,
+     397,
+     1037,
+     429
+    ]
+   },
+   "hash": "7ce1a1f54e257c8b",
+   "lengte": 1694
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vierdelig",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "staalblauw",
+    "kolombreedtes": [
+     320,
+     548,
+     736,
+     319
+    ]
+   },
+   "hash": "3a1eed0bc9843343",
+   "lengte": 1988
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "bovenlicht",
+    "w": 500,
+    "h": 500,
+    "kleur": "creme",
+    "cols": [
+     "tiltturnR"
+    ],
+    "rijhoogtes": [
+     575,
+     786
+    ]
+   },
+   "hash": "fc1e8d2412a06fd0",
+   "lengte": 1020
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "bovenlicht",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "creme"
+   },
+   "hash": "c71fa62286010d85",
+   "lengte": 1017
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "bovenlicht",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "antraciet",
+    "kleurVleugel": "antraciet",
+    "cols": [
+     "fixed"
+    ]
+   },
+   "hash": "59e7cb5e3d294f13",
+   "lengte": 499
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep2",
+    "w": 500,
+    "h": 500,
+    "kleur": "zwartgrijs",
+    "cols": [
+     "tiltturnR",
+     "tiltturn"
+    ]
+   },
+   "hash": "3feb23910bc6ab7f",
+   "lengte": 1528
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep2",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "antraciet"
+   },
+   "hash": "9bf00b5b193ec1a3",
+   "lengte": 1532
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "draaikiep2",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "creme",
+    "kolombreedtes": [
+     1106,
+     509
+    ]
+   },
+   "hash": "349d472b08d2f5ac",
+   "lengte": 1538
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam_vast",
+    "w": 500,
+    "h": 500,
+    "kleur": "wit",
+    "kolombreedtes": [
+     1002,
+     1000
+    ]
+   },
+   "hash": "f25f3d62b89db456",
+   "lengte": 811
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam_vast",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "antraciet",
+    "kolombreedtes": [
+     628,
+     773
+    ]
+   },
+   "hash": "df4912b82367bd58",
+   "lengte": 813
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "valraam_vast",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "dennengroen",
+    "kleurVleugel": "dennengroen",
+    "cols": [
+     "turnL",
+     "turnR"
+    ]
+   },
+   "hash": "6b09d31096c610cd",
+   "lengte": 1131
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_valraam",
+    "w": 500,
+    "h": 500,
+    "kleur": "zwartgrijs",
+    "cols": [
+     "tiltturnR",
+     "tiltturnR"
+    ],
+    "kolombreedtes": [
+     1099,
+     1107
+    ]
+   },
+   "hash": "86b381513d5c5810",
+   "lengte": 1528
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_valraam",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "zwartgrijs",
+    "cols": [
+     "turnL",
+     "fixed"
+    ],
+    "kolombreedtes": [
+     1142,
+     787
+    ]
+   },
+   "hash": "c4c0d07a5121033c",
+   "lengte": 815
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_valraam",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "staalblauw",
+    "kleurVleugel": "zwartgrijs",
+    "kolombreedtes": [
+     574,
+     609
+    ]
+   },
+   "hash": "f734f6522bdffbce",
+   "lengte": 817
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast2",
+    "w": 500,
+    "h": 500,
+    "kleur": "wit"
+   },
+   "hash": "6bd5a6b5a8598f23",
+   "lengte": 501
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast2",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "zwartgrijs",
+    "kolombreedtes": [
+     468,
+     1037
+    ]
+   },
+   "hash": "e055529ac6df80cb",
+   "lengte": 499
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast2",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "wit",
+    "cols": [
+     "turnL",
+     "tiltturnR"
+    ],
+    "kolombreedtes": [
+     1023,
+     1121
+    ]
+   },
+   "hash": "ddd34530d9b4f66f",
+   "lengte": 1332
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast3",
+    "w": 500,
+    "h": 500,
+    "kleur": "creme",
+    "kleurVleugel": "antraciet",
+    "kolombreedtes": [
+     1108,
+     1111,
+     960
+    ]
+   },
+   "hash": "403a8c29215e1a78",
+   "lengte": 733
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast3",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "antraciet"
+   },
+   "hash": "2cf711dcd15f9198",
+   "lengte": 733
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast3",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "zwartgrijs",
+    "cols": [
+     "tiltturn",
+     "tilt",
+     "turnR"
+    ]
+   },
+   "hash": "112e9ec4875ba20a",
+   "lengte": 1875
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_lr_vast",
+    "w": 500,
+    "h": 500,
+    "kleur": "antraciet",
+    "cols": [
+     "tiltturnR",
+     "tiltturn",
+     "tilt"
+    ],
+    "kolombreedtes": [
+     389,
+     1061,
+     368
+    ]
+   },
+   "hash": "c873a69a8177d6dd",
+   "lengte": 1152
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_lr_vast",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "wit",
+    "cols": [
+     "fixed",
+     "turnR",
+     "tiltturn"
+    ],
+    "kolombreedtes": [
+     786,
+     893,
+     505
+    ]
+   },
+   "hash": "34faa91913162713",
+   "lengte": 1566
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_lr_vast",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "antraciet",
+    "cols": [
+     "tilt",
+     "turnR",
+     "tiltturn"
+    ],
+    "kolombreedtes": [
+     591,
+     827,
+     1046
+    ]
+   },
+   "hash": "9248ed919934d1a2",
+   "lengte": 1878
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_vast3",
+    "w": 500,
+    "h": 500,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "staalblauw"
+   },
+   "hash": "c2e3b02740690876",
+   "lengte": 599
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_vast3",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "creme",
+    "kolombreedtes": [
+     383,
+     512,
+     1109
+    ]
+   },
+   "hash": "5bab84eb55bf5ea7",
+   "lengte": 759
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_vast3",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "antraciet",
+    "kleurVleugel": "wit"
+   },
+   "hash": "1e11c66e74ec8de2",
+   "lengte": 1242
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_boven",
+    "w": 500,
+    "h": 500,
+    "kleur": "creme",
+    "kolombreedtes": [
+     501,
+     420,
+     874
+    ],
+    "rijhoogtes": [
+     956,
+     1183
+    ]
+   },
+   "hash": "db71d404951041cf",
+   "lengte": 826
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_boven",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "wit",
+    "cols": [
+     "tiltturn",
+     "tiltturnR",
+     "fixed"
+    ],
+    "rijhoogtes": [
+     487,
+     1120
+    ]
+   },
+   "hash": "023ef615edfd7ace",
+   "lengte": 1986
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_l_boven",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "antraciet",
+    "rijhoogtes": [
+     1052,
+     733
+    ]
+   },
+   "hash": "a3d3b18edaf008cf",
+   "lengte": 1476
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_b",
+    "w": 500,
+    "h": 500,
+    "kleur": "creme",
+    "rijhoogtes": [
+     569,
+     336
+    ]
+   },
+   "hash": "f46e997aed68f7b7",
+   "lengte": 1012
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_b",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "staalblauw"
+   },
+   "hash": "bf4a2a632754a930",
+   "lengte": 1017
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "dk_b",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "creme",
+    "kleurVleugel": "antraciet"
+   },
+   "hash": "8ef27c2e3980f828",
+   "lengte": 1015
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_stapel",
+    "w": 500,
+    "h": 500,
+    "kleur": "antraciet",
+    "kleurVleugel": "wit"
+   },
+   "hash": "ce2f23b1b32ccce6",
+   "lengte": 501
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_stapel",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "creme",
+    "rijhoogtes": [
+     319,
+     1185
+    ]
+   },
+   "hash": "3e61de8318fd3c1c",
+   "lengte": 501
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast_stapel",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "antraciet",
+    "kleurVleugel": "dennengroen",
+    "rijhoogtes": [
+     742,
+     658
+    ]
+   },
+   "hash": "63c4b71ca5c12de9",
+   "lengte": 501
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast6",
+    "w": 500,
+    "h": 500,
+    "kleur": "zwartgrijs",
+    "rijhoogtes": [
+     956,
+     947
+    ]
+   },
+   "hash": "eb027edc0ddc54c0",
+   "lengte": 1286
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast6",
+    "w": 1000,
+    "h": 1200,
+    "kleur": "dennengroen"
+   },
+   "hash": "dff06708b2999779",
+   "lengte": 1286
+  },
+  {
+   "cfg": {
+    "product": "raam",
+    "variant": "vast6",
+    "w": 3000,
+    "h": 2400,
+    "kleur": "staalblauw",
+    "kleurVleugel": "dennengroen",
+    "rijhoogtes": [
+     693,
+     348
+    ]
+   },
+   "hash": "dd67fe94513662ee",
+   "lengte": 1284
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dicht",
+    "w": 800,
+    "h": 2000,
+    "kleur": "wit"
+   },
+   "hash": "1e3451e32f23f38a",
+   "lengte": 488
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dicht",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "staalblauw"
+   },
+   "hash": "1bd930f3f96b6cd6",
+   "lengte": 488
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dicht",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "staalblauw"
+   },
+   "hash": "bb8effb3d3fba651",
+   "lengte": 492
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "glasstrook",
+    "w": 800,
+    "h": 2000,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "d81455942dfe0231",
+   "lengte": 436
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "glasstrook",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "dennengroen"
+   },
+   "hash": "be557cd9446dab70",
+   "lengte": 436
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "glasstrook",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "dennengroen"
+   },
+   "hash": "ef6a9f600be305e1",
+   "lengte": 438
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "bovenlicht",
+    "w": 800,
+    "h": 2000,
+    "kleur": "staalblauw"
+   },
+   "hash": "b041d95bc81a7209",
+   "lengte": 715
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "bovenlicht",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "dennengroen"
+   },
+   "hash": "68a16d065519d5aa",
+   "lengte": 715
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "bovenlicht",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "wit",
+    "kleurVleugel": "staalblauw"
+   },
+   "hash": "fa4182175d59a3e7",
+   "lengte": 722
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijlicht",
+    "w": 800,
+    "h": 2000,
+    "kleur": "creme",
+    "kleurVleugel": "dennengroen",
+    "kolombreedtes": [
+     990,
+     778
+    ]
+   },
+   "hash": "b1ad84dbcbc449af",
+   "lengte": 667
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijlicht",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "3e79a6d05f622d4f",
+   "lengte": 665
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijlicht",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "dennengroen"
+   },
+   "hash": "c905ae41b3a3a70e",
+   "lengte": 668
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijboven",
+    "w": 800,
+    "h": 2000,
+    "kleur": "dennengroen"
+   },
+   "hash": "90220e94a2f19853",
+   "lengte": 891
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijboven",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "wit"
+   },
+   "hash": "528d06a813469116",
+   "lengte": 892
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijboven",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "staalblauw",
+    "kolombreedtes": [
+     590,
+     1133
+    ]
+   },
+   "hash": "a24c7f1663bda0f8",
+   "lengte": 898
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezijlicht",
+    "w": 800,
+    "h": 2000,
+    "kleur": "staalblauw",
+    "kleurVleugel": "antraciet"
+   },
+   "hash": "c42c9e447dff8e6a",
+   "lengte": 894
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezijlicht",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "antraciet"
+   },
+   "hash": "1cf22b6563a89981",
+   "lengte": 896
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezijlicht",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "creme",
+    "kleurVleugel": "dennengroen"
+   },
+   "hash": "4c1aefe14db8103a",
+   "lengte": 900
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_r",
+    "w": 800,
+    "h": 2000,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "staalblauw",
+    "kolombreedtes": [
+     582,
+     984
+    ]
+   },
+   "hash": "cdd48792113de81d",
+   "lengte": 776
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_r",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "dennengroen"
+   },
+   "hash": "b5594e3c5d63ca14",
+   "lengte": 781
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_r",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "dennengroen",
+    "kolombreedtes": [
+     810,
+     870
+    ]
+   },
+   "hash": "4bfe952a4b43c1b1",
+   "lengte": 777
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_l",
+    "w": 800,
+    "h": 2000,
+    "kleur": "zwartgrijs",
+    "kolombreedtes": [
+     662,
+     743
+    ]
+   },
+   "hash": "1943de4809ccb3ac",
+   "lengte": 780
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_l",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "dennengroen",
+    "kolombreedtes": [
+     376,
+     1057
+    ]
+   },
+   "hash": "3f001c2ca78243eb",
+   "lengte": 780
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "zijborst_l",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "staalblauw",
+    "kolombreedtes": [
+     512,
+     970
+    ]
+   },
+   "hash": "d8abcdd0f6463e66",
+   "lengte": 780
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_r",
+    "w": 800,
+    "h": 2000,
+    "kleur": "staalblauw"
+   },
+   "hash": "9d46027bda8bd533",
+   "lengte": 896
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_r",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "47f45f144816ecb6",
+   "lengte": 896
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_r",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "staalblauw"
+   },
+   "hash": "6754aab1c5ec130f",
+   "lengte": 902
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_l",
+    "w": 800,
+    "h": 2000,
+    "kleur": "zwartgrijs",
+    "kolombreedtes": [
+     725,
+     380,
+     882
+    ]
+   },
+   "hash": "7c9bd6059705041b",
+   "lengte": 894
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_l",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "staalblauw"
+   },
+   "hash": "18758ad2afc17dd4",
+   "lengte": 892
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "dubbelzij_l",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "creme"
+   },
+   "hash": "3eba9678e776ddea",
+   "lengte": 898
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezij_boven",
+    "w": 800,
+    "h": 2000,
+    "kleur": "dennengroen"
+   },
+   "hash": "72cbbd0d88e27342",
+   "lengte": 1121
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezij_boven",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "staalblauw"
+   },
+   "hash": "5166d5d9ebf50e8c",
+   "lengte": 1123
+  },
+  {
+   "cfg": {
+    "product": "voordeur",
+    "variant": "tweezij_boven",
+    "w": 2800,
+    "h": 2400,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "19179dca5f8ffc99",
+   "lengte": 1128
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "half",
+    "w": 800,
+    "h": 2000,
+    "kleur": "staalblauw"
+   },
+   "hash": "7ecb5aa13170358f",
+   "lengte": 432
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "half",
+    "w": 900,
+    "h": 2100,
+    "kleur": "staalblauw",
+    "kleurVleugel": "wit"
+   },
+   "hash": "34f97bb953da2595",
+   "lengte": 432
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "half",
+    "w": 2800,
+    "h": 2300,
+    "kleur": "antraciet"
+   },
+   "hash": "31aea35402cb717e",
+   "lengte": 436
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "vol",
+    "w": 800,
+    "h": 2000,
+    "kleur": "antraciet"
+   },
+   "hash": "f8c3e50288e8cb24",
+   "lengte": 434
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "vol",
+    "w": 900,
+    "h": 2100,
+    "kleur": "antraciet"
+   },
+   "hash": "30c643b77d0ad613",
+   "lengte": 434
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "vol",
+    "w": 2800,
+    "h": 2300,
+    "kleur": "wit"
+   },
+   "hash": "da3b67beab8b0ef6",
+   "lengte": 438
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "bovenlicht",
+    "w": 800,
+    "h": 2000,
+    "kleur": "wit",
+    "rijhoogtes": [
+     372,
+     814
+    ]
+   },
+   "hash": "2ca9afd040fadf99",
+   "lengte": 659
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "bovenlicht",
+    "w": 900,
+    "h": 2100,
+    "kleur": "wit"
+   },
+   "hash": "040b6aa973c59293",
+   "lengte": 659
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "bovenlicht",
+    "w": 2800,
+    "h": 2300,
+    "kleur": "creme"
+   },
+   "hash": "99ea5826e94112ae",
+   "lengte": 666
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht",
+    "w": 800,
+    "h": 2000,
+    "kleur": "staalblauw",
+    "kleurVleugel": "zwartgrijs",
+    "kolombreedtes": [
+     432,
+     569
+    ]
+   },
+   "hash": "31bb77ddf9926430",
+   "lengte": 665
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht",
+    "w": 900,
+    "h": 2100,
+    "kleur": "antraciet"
+   },
+   "hash": "35b2fee1ca36e844",
+   "lengte": 661
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht",
+    "w": 2800,
+    "h": 2300,
+    "kleur": "wit",
+    "kleurVleugel": "wit",
+    "kolombreedtes": [
+     754,
+     985
+    ]
+   },
+   "hash": "0c0840f5c62da616",
+   "lengte": 666
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht_r",
+    "w": 800,
+    "h": 2000,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "75b97443337a840e",
+   "lengte": 663
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht_r",
+    "w": 900,
+    "h": 2100,
+    "kleur": "dennengroen",
+    "kleurVleugel": "wit"
+   },
+   "hash": "12ffe283913179dc",
+   "lengte": 664
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijlicht_r",
+    "w": 2800,
+    "h": 2300,
+    "kleur": "staalblauw",
+    "kleurVleugel": "dennengroen",
+    "kolombreedtes": [
+     1003,
+     547
+    ]
+   },
+   "hash": "0a73ef1bda27b9d7",
+   "lengte": 667
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_r",
+    "w": 800,
+    "h": 2000,
+    "kleur": "wit",
+    "kolombreedtes": [
+     800,
+     895
+    ]
+   },
+   "hash": "ce7e963b81425fd8",
+   "lengte": 779
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_r",
+    "w": 900,
+    "h": 2100,
+    "kleur": "creme",
+    "kleurVleugel": "antraciet",
+    "kolombreedtes": [
+     371,
+     993
+    ]
+   },
+   "hash": "0ec81116205ec65f",
+   "lengte": 774
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_r",
+    "w": 2800,
+    "h": 2300,
+    "kleur": "creme",
+    "kleurVleugel": "wit"
+   },
+   "hash": "16d1236bece4d81a",
+   "lengte": 781
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_l",
+    "w": 800,
+    "h": 2000,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "a7e6620519615a27",
+   "lengte": 773
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_l",
+    "w": 900,
+    "h": 2100,
+    "kleur": "wit"
+   },
+   "hash": "60c3943f8e3322b2",
+   "lengte": 775
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "zijborst_l",
+    "w": 2800,
+    "h": 2300,
+    "kleur": "creme"
+   },
+   "hash": "3eaf673ae0aa84ee",
+   "lengte": 777
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "boven_zij",
+    "w": 800,
+    "h": 2000,
+    "kleur": "antraciet"
+   },
+   "hash": "6b686273a6a505d3",
+   "lengte": 887
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "boven_zij",
+    "w": 900,
+    "h": 2100,
+    "kleur": "staalblauw",
+    "kleurVleugel": "antraciet",
+    "rijhoogtes": [
+     467,
+     1197
+    ]
+   },
+   "hash": "e738d70531da9a12",
+   "lengte": 888
+  },
+  {
+   "cfg": {
+    "product": "achterdeur",
+    "variant": "boven_zij",
+    "w": 2800,
+    "h": 2300,
+    "kleur": "dennengroen",
+    "kleurVleugel": "wit",
+    "kolombreedtes": [
+     870,
+     698
+    ]
+   },
+   "hash": "fb98267e9449d25b",
+   "lengte": 898
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "2delig",
+    "w": 2000,
+    "h": 2000,
+    "kleur": "dennengroen"
+   },
+   "hash": "0a87598ca829dd00",
+   "lengte": 795
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "2delig",
+    "w": 3000,
+    "h": 2300,
+    "kleur": "staalblauw"
+   },
+   "hash": "103e1828ae841a90",
+   "lengte": 795
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "2delig",
+    "w": 6500,
+    "h": 2700,
+    "kleur": "wit",
+    "kleurVleugel": "wit"
+   },
+   "hash": "6436172e79469bb1",
+   "lengte": 786
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "3delig",
+    "w": 2000,
+    "h": 2000,
+    "kleur": "antraciet",
+    "kleurVleugel": "staalblauw"
+   },
+   "hash": "0817fbf511e9163c",
+   "lengte": 1138
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "3delig",
+    "w": 3000,
+    "h": 2300,
+    "kleur": "creme",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "hash": "09268fd07b7e6bf7",
+   "lengte": 1138
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "3delig",
+    "w": 6500,
+    "h": 2700,
+    "kleur": "staalblauw"
+   },
+   "hash": "c1579405a3ace799",
+   "lengte": 1125
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "4delig",
+    "w": 2000,
+    "h": 2000,
+    "kleur": "dennengroen"
+   },
+   "hash": "81b21a2c5bc0f06f",
+   "lengte": 1485
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "4delig",
+    "w": 3000,
+    "h": 2300,
+    "kleur": "dennengroen"
+   },
+   "hash": "7096164b8d0192f9",
+   "lengte": 1485
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "4delig",
+    "w": 6500,
+    "h": 2700,
+    "kleur": "dennengroen"
+   },
+   "hash": "4d34a32687bf3fa3",
+   "lengte": 1468
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "hef",
+    "w": 2000,
+    "h": 2000,
+    "kleur": "wit"
+   },
+   "hash": "a5f7a1d76704c714",
+   "lengte": 795
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "hef",
+    "w": 3000,
+    "h": 2300,
+    "kleur": "staalblauw",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "hash": "57e07236dec37336",
+   "lengte": 795
+  },
+  {
+   "cfg": {
+    "product": "schuifpui",
+    "variant": "hef",
+    "w": 6500,
+    "h": 2700,
+    "kleur": "creme",
+    "kleurVleugel": "wit"
+   },
+   "hash": "dfdb361c895637a3",
+   "lengte": 788
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel",
+    "w": 1200,
+    "h": 2000,
+    "kleur": "staalblauw"
+   },
+   "hash": "cd836d74993fb41b",
+   "lengte": 769
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel",
+    "w": 1600,
+    "h": 2200,
+    "kleur": "antraciet"
+   },
+   "hash": "5fc52f936e2b9581",
+   "lengte": 769
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel",
+    "w": 3200,
+    "h": 2400,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "e5c2a86ea50de85b",
+   "lengte": 769
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_borst",
+    "w": 1200,
+    "h": 2000,
+    "kleur": "dennengroen"
+   },
+   "hash": "0854c055b521b549",
+   "lengte": 998
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_borst",
+    "w": 1600,
+    "h": 2200,
+    "kleur": "creme"
+   },
+   "hash": "311f6f006f870014",
+   "lengte": 998
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_borst",
+    "w": 3200,
+    "h": 2400,
+    "kleur": "wit",
+    "kleurVleugel": "staalblauw"
+   },
+   "hash": "1d50a7b2f693706d",
+   "lengte": 994
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven",
+    "w": 1200,
+    "h": 2000,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "416a9e1101097f90",
+   "lengte": 997
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven",
+    "w": 1600,
+    "h": 2200,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "creme"
+   },
+   "hash": "6dafd0ca97bc63bf",
+   "lengte": 999
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven",
+    "w": 3200,
+    "h": 2400,
+    "kleur": "creme"
+   },
+   "hash": "593c7bd5f7dfd898",
+   "lengte": 996
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven_borst",
+    "w": 1200,
+    "h": 2000,
+    "kleur": "staalblauw"
+   },
+   "hash": "f346ac8aee3e361f",
+   "lengte": 1222
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven_borst",
+    "w": 1600,
+    "h": 2200,
+    "kleur": "staalblauw"
+   },
+   "hash": "d314e0744ff3ac25",
+   "lengte": 1224
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_boven_borst",
+    "w": 3200,
+    "h": 2400,
+    "kleur": "dennengroen",
+    "kleurVleugel": "wit"
+   },
+   "hash": "d6bb85cd81c2b738",
+   "lengte": 1223
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij",
+    "w": 1200,
+    "h": 2000,
+    "kleur": "dennengroen",
+    "kleurVleugel": "creme"
+   },
+   "hash": "b4637c11c7b9aa3c",
+   "lengte": 1232
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij",
+    "w": 1600,
+    "h": 2200,
+    "kleur": "staalblauw",
+    "kleurVleugel": "antraciet"
+   },
+   "hash": "df28e392e0827591",
+   "lengte": 1232
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij",
+    "w": 3200,
+    "h": 2400,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "a5da71060614624a",
+   "lengte": 1232
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_borst",
+    "w": 1200,
+    "h": 2000,
+    "kleur": "antraciet"
+   },
+   "hash": "ec9273bfd444d367",
+   "lengte": 1690
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_borst",
+    "w": 1600,
+    "h": 2200,
+    "kleur": "antraciet"
+   },
+   "hash": "270bcaa5a8a3ce4a",
+   "lengte": 1690
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_borst",
+    "w": 3200,
+    "h": 2400,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "c9a125e3f71ef7e5",
+   "lengte": 1682
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_boven",
+    "w": 1200,
+    "h": 2000,
+    "kleur": "dennengroen",
+    "kleurVleugel": "wit"
+   },
+   "hash": "fd73fe327d864261",
+   "lengte": 1460
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_boven",
+    "w": 1600,
+    "h": 2200,
+    "kleur": "antraciet",
+    "kleurVleugel": "zwartgrijs"
+   },
+   "hash": "b4d8e34c04494443",
+   "lengte": 1462
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_zij_boven",
+    "w": 3200,
+    "h": 2400,
+    "kleur": "creme",
+    "kleurVleugel": "creme"
+   },
+   "hash": "96701ed4e10f1a2d",
+   "lengte": 1459
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_vol",
+    "w": 1200,
+    "h": 2000,
+    "kleur": "zwartgrijs"
+   },
+   "hash": "86bedbb223d88b79",
+   "lengte": 1910
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_vol",
+    "w": 1600,
+    "h": 2200,
+    "kleur": "creme",
+    "kleurVleugel": "staalblauw"
+   },
+   "hash": "7274ed2f1116e76c",
+   "lengte": 1912
+  },
+  {
+   "cfg": {
+    "product": "tuindeuren",
+    "variant": "dubbel_vol",
+    "w": 3200,
+    "h": 2400,
+    "kleur": "wit",
+    "kleurVleugel": "antraciet"
+   },
+   "hash": "fc9967db66119797",
+   "lengte": 1911
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "enkel",
+    "w": 700,
+    "h": 2000,
+    "kleur": "antraciet",
+    "cols": [
+     "tiltturn"
+    ],
+    "rijhoogtes": [
+     690,
+     1193
+    ]
+   },
+   "hash": "8c4f728e0a6350b3",
+   "lengte": 1003
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "enkel",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "creme",
+    "kleurVleugel": "antraciet"
+   },
+   "hash": "945568ab7aba8108",
+   "lengte": 1011
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "enkel",
+    "w": 3000,
+    "h": 2500,
+    "kleur": "zwartgrijs",
+    "cols": [
+     "turnL"
+    ]
+   },
+   "hash": "3d4ef352e56fca44",
+   "lengte": 815
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "boven",
+    "w": 700,
+    "h": 2000,
+    "kleur": "wit",
+    "cols": [
+     "tiltturnR"
+    ]
+   },
+   "hash": "b3b48916f0009fe2",
+   "lengte": 1235
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "boven",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "staalblauw",
+    "kleurVleugel": "zwartgrijs",
+    "cols": [
+     "tiltturnR"
+    ],
+    "rijhoogtes": [
+     1125,
+     348,
+     770
+    ]
+   },
+   "hash": "dc5814533ae80929",
+   "lengte": 1242
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "boven",
+    "w": 3000,
+    "h": 2500,
+    "kleur": "zwartgrijs",
+    "kleurVleugel": "creme",
+    "rijhoogtes": [
+     735,
+     1120,
+     718
+    ]
+   },
+   "hash": "ee967ed33c633ee3",
+   "lengte": 1247
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_vast",
+    "w": 700,
+    "h": 2000,
+    "kleur": "wit",
+    "rijhoogtes": [
+     459,
+     791
+    ]
+   },
+   "hash": "fc0f3a2008f724c6",
+   "lengte": 1227
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_vast",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "wit",
+    "cols": [
+     "turnR",
+     "tilt"
+    ],
+    "rijhoogtes": [
+     1160,
+     497
+    ]
+   },
+   "hash": "7915688aaa088867",
+   "lengte": 1357
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_vast",
+    "w": 3000,
+    "h": 2500,
+    "kleur": "staalblauw",
+    "kleurVleugel": "antraciet",
+    "cols": [
+     "tiltturn",
+     "turnR"
+    ]
+   },
+   "hash": "ccaa4b31befa4d6c",
+   "lengte": 1554
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_vast",
+    "w": 700,
+    "h": 2000,
+    "kleur": "staalblauw"
+   },
+   "hash": "b79ec78cb6c7f3e9",
+   "lengte": 1247
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_vast",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "staalblauw",
+    "kleurVleugel": "wit",
+    "cols": [
+     "turnR",
+     "tilt"
+    ],
+    "rijhoogtes": [
+     732,
+     836
+    ]
+   },
+   "hash": "d43a21c1d26b8868",
+   "lengte": 1344
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_vast",
+    "w": 3000,
+    "h": 2500,
+    "kleur": "staalblauw",
+    "rijhoogtes": [
+     1048,
+     842
+    ]
+   },
+   "hash": "bdf13d9914201015",
+   "lengte": 1245
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "m_vast",
+    "w": 700,
+    "h": 2000,
+    "kleur": "creme",
+    "kleurVleugel": "antraciet",
+    "cols": [
+     "tilt",
+     "fixed",
+     "turnR"
+    ],
+    "kolombreedtes": [
+     509,
+     753,
+     568
+    ],
+    "rijhoogtes": [
+     435,
+     1132
+    ]
+   },
+   "hash": "ad8cd28696cc3ea9",
+   "lengte": 1006
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "m_vast",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "wit",
+    "kleurVleugel": "creme",
+    "rijhoogtes": [
+     988,
+     669
+    ]
+   },
+   "hash": "ee523b27e5766833",
+   "lengte": 1465
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "m_vast",
+    "w": 3000,
+    "h": 2500,
+    "kleur": "wit",
+    "kolombreedtes": [
+     826,
+     419,
+     1135
+    ]
+   },
+   "hash": "e5a9c20e22c26a7a",
+   "lengte": 1469
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_boven",
+    "w": 700,
+    "h": 2000,
+    "kleur": "creme",
+    "kleurVleugel": "zwartgrijs",
+    "cols": [
+     "turnR",
+     "fixed"
+    ],
+    "rijhoogtes": [
+     740,
+     1194,
+     1158
+    ]
+   },
+   "hash": "803ab20ac88e9452",
+   "lengte": 1261
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_boven",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "zwartgrijs",
+    "cols": [
+     "tilt",
+     "turnL"
+    ],
+    "kolombreedtes": [
+     665,
+     728
+    ],
+    "rijhoogtes": [
+     931,
+     380,
+     504
+    ]
+   },
+   "hash": "11f73258aa771f01",
+   "lengte": 1589
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "l_boven",
+    "w": 3000,
+    "h": 2500,
+    "kleur": "creme",
+    "kleurVleugel": "zwartgrijs",
+    "cols": [
+     "tiltturn",
+     "tilt"
+    ],
+    "kolombreedtes": [
+     329,
+     822
+    ]
+   },
+   "hash": "e949613ee2a08389",
+   "lengte": 1781
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_boven",
+    "w": 700,
+    "h": 2000,
+    "kleur": "antraciet",
+    "kleurVleugel": "creme",
+    "cols": [
+     "fixed",
+     "tiltturn"
+    ],
+    "kolombreedtes": [
+     651,
+     1160
+    ],
+    "rijhoogtes": [
+     388,
+     801,
+     501
+    ]
+   },
+   "hash": "d817c0a7acf8e21f",
+   "lengte": 1467
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_boven",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "antraciet",
+    "cols": [
+     "fixed",
+     "tiltturnR"
+    ],
+    "kolombreedtes": [
+     356,
+     882
+    ]
+   },
+   "hash": "5fa90517f76234cc",
+   "lengte": 1463
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "r_boven",
+    "w": 3000,
+    "h": 2500,
+    "kleur": "staalblauw",
+    "kolombreedtes": [
+     859,
+     543
+    ]
+   },
+   "hash": "f0f8866bd237d5b7",
+   "lengte": 1476
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "vak1",
+    "w": 700,
+    "h": 2000,
+    "kleur": "antraciet",
+    "kleurVleugel": "creme"
+   },
+   "hash": "6b3ff1c485db2c12",
+   "lengte": 783
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "vak1",
+    "w": 1000,
+    "h": 2300,
+    "kleur": "staalblauw",
+    "kleurVleugel": "wit",
+    "cols": [
+     "turnL"
+    ]
+   },
+   "hash": "aab0bcae532d7700",
+   "lengte": 582
+  },
+  {
+   "cfg": {
+    "product": "balkondeur",
+    "variant": "vak1",
+    "w": 3000,
+    "h": 2500,
+    "kleur": "antraciet",
+    "kleurVleugel": "antraciet",
+    "cols": [
+     "fixed"
+    ]
+   },
+   "hash": "343bc924f718853e",
+   "lengte": 270
+  }
+ ]
+}
