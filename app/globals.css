@@ -1,26 +1,28 @@
 @import "tailwindcss";
 
+/* Voorlopig alleen een lichte weergave: het ontwerp en de kleuren zijn daarop afgestemd. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #f4f1eb;
+  --foreground: #23272a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+input,
+select,
+textarea {
+  color: #23272a;
+}
+input::placeholder {
+  color: #8a9199;
 }
