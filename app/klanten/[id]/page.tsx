@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { maakServerClient } from "@/lib/supabase/server";
 import { adresTekst, isBedrijf, persoonsnaam, typeLabel } from "@/lib/klanten/klant";
 import type { KlantAdres, KlantRij } from "@/lib/klanten/kolommen";
+import { verwijderKlant } from "../formulier-actions";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const AANHEF: Record<string, string> = { dhr: "Dhr.", mevr: "Mevr.", geen: "" };
@@ -53,7 +54,18 @@ async function Inhoud({ params }: { params: Promise<{ id: string }> }) {
         <h1 className="text-2xl font-semibold">{k.naam}</h1>
         <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs text-stone-600">{typeLabel(k.type)}</span>
       </div>
-      <p className="mt-1 text-sm text-stone-500">Aangemaakt op {new Date(k.aangemaakt).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <Link href={`/klanten/${k.id}/bewerken`} className="rounded-md bg-[#B35B40] px-4 py-2 text-sm font-semibold text-white hover:brightness-110">Bewerken</Link>
+        <details className="relative">
+          <summary className="cursor-pointer list-none rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-semibold">Verwijderen</summary>
+          <form action={verwijderKlant} className="absolute left-0 z-10 mt-2 w-72 rounded-lg border border-stone-200 bg-white p-4 shadow-lg">
+            <input type="hidden" name="id" value={k.id} />
+            <p className="text-sm">Weet je zeker dat je <b>{k.naam}</b> en bijbehorende adressen wilt verwijderen? Dit kan niet ongedaan worden gemaakt.</p>
+            <button className="mt-3 rounded-md bg-red-700 px-3 py-1.5 text-sm font-semibold text-white">Ja, verwijderen</button>
+          </form>
+        </details>
+      </div>
+      <p className="mt-3 text-sm text-stone-500">Aangemaakt op {new Date(k.aangemaakt).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })}</p>
 
       <div className="mt-6 grid gap-5 md:grid-cols-2">
         <Kaart titel={isBedrijf(k.type) ? "Contactpersoon" : "Contactgegevens"}>
