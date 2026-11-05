@@ -27,10 +27,12 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   if (!d) notFound();
 
   const regels = haalPrijsregels();
-  const [{ data: wData }, { data: aData }] = await Promise.all([
+  const [{ data: wData }, { data: aData }, { data: magData }] = await Promise.all([
     supabase.rpc("inmeting_wijzigingen_lijst", { p_inmeting: id }),
     supabase.rpc("inmeting_extra_artikelen", { p_inmeting: id }),
+    supabase.rpc("inmeting_mag_prijzen", { p_inmeting: id }),
   ]);
+  const magPrijzen = magData === true;
   const wijzigingen = leesWijzigingen(wData);
   const artikelen = (Array.isArray(aData) ? aData : []) as ExtraArtikel[];
   const openstaand = wijzigingen.filter((w) => w.status === "voorgesteld");
@@ -77,7 +79,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
             {cfg && !vergrendeld && (
               <details className="mt-2 rounded-xl border border-stone-200 bg-white px-4 py-3">
                 <summary className="cursor-pointer text-sm font-semibold">Indeling, draairichting, kleur of glas aanpassen</summary>
-                <WijzigingFormulier inmetingId={d.id} positieId={p.positie_id} regels={regels} begin={cfg} aantal={p.aantal} />
+                <WijzigingFormulier inmetingId={d.id} positieId={p.positie_id} regels={regels} begin={cfg} aantal={p.aantal} magPrijzen={magPrijzen} />
               </details>
             )}
             </div>
@@ -114,7 +116,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
             <details className="mt-4 rounded-lg border border-stone-200 px-3 py-2">
               <summary className="cursor-pointer text-sm font-semibold">Extra artikel toevoegen</summary>
               <div className="mt-2">
-                <ExtraFormulier inmetingId={d.id} artikelen={artikelen} posities={d.posities.map((p) => ({ id: p.positie_id, label: `Pos. ${p.nummer}${p.ruimte ? ` · ${p.ruimte}` : ""}` }))} />
+                <ExtraFormulier inmetingId={d.id} magPrijzen={magPrijzen} artikelen={artikelen} posities={d.posities.map((p) => ({ id: p.positie_id, label: `Pos. ${p.nummer}${p.ruimte ? ` · ${p.ruimte}` : ""}` }))} />
               </div>
             </details>
           )}

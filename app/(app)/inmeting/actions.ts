@@ -105,6 +105,15 @@ export async function rondInmetingAf(formData: FormData) {
 
 export type WijzigingStatus = { fout?: string; opgeslagen?: boolean };
 
+/** Leest het veld "eigen prijs": leeg betekent de berekende prijs; ongeldig geeft NaN. */
+function eigenPrijs(formData: FormData): number | null {
+  const t = String(formData.get("eigen_prijs") ?? "").trim();
+  if (t === "") return null;
+  // Met een komma is de punt een duizendtal ("1.250,50"); zonder komma is de punt het decimaalteken ("125.5").
+  const n = Number(t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : Number.NaN;
+}
+
 const WIJZIGING_FOUTEN: Record<string, string> = {
   afgerond: "Deze inmeting is al afgerond.",
   geen_toegang: "Je hebt geen toegang tot deze inmeting.",
@@ -113,6 +122,8 @@ const WIJZIGING_FOUTEN: Record<string, string> = {
   aantal: "Kies een aantal tussen 1 en 100.",
   ongeldig: "Deze wijziging kan niet worden opgeslagen.",
   naam: "Vul de volledige naam van de klant in.",
+  geen_toestemming: "Je hebt geen toestemming om zelf een prijs in te voeren.",
+  reden: "Vul bij een eigen prijs een reden in.",
   handtekening: "Laat de klant tekenen in het vak.",
   leeg: "Er zijn geen wijzigingen om akkoord op te geven.",
   gewijzigd: "De wijzigingen zijn aangepast sinds de klant ze zag. Controleer ze en laat de klant opnieuw tekenen.",
@@ -137,6 +148,9 @@ export async function stelWijzigingVoor(_vorige: WijzigingStatus, formData: Form
   const positie = d?.posities.find((p) => p.positie_id === positieId);
   if (!d || !positie) return { fout: wijzigingFout("positie") };
 
+  const eigen = eigenPrijs(formData);
+  if (eigen !== null && Number.isNaN(eigen)) return { fout: "Vul de eigen prijs in als bedrag, bijvoorbeeld 125,00." };
+  const reden = String(formData.get("reden") ?? "").trim().slice(0, 1000);
   let omschrijving: string;
   let nieuw;
   let meerprijs: number;
@@ -162,6 +176,7 @@ export async function stelWijzigingVoor(_vorige: WijzigingStatus, formData: Form
 
   const { data, error } = await supabase.rpc("inmeting_stel_config_voor", {
     p_inmeting: inmetingId, p_positie: positieId, p_config: nieuw, p_omschrijving: omschrijving, p_meerprijs: meerprijs,
+    p_eigen_prijs: eigen, p_reden: eigen === null ? null : reden,
   });
   if (error) {
     console.error("wijziging voorstellen mislukt:", error.code, error.message);
@@ -182,10 +197,14 @@ export async function voegExtraToe(_vorige: WijzigingStatus, formData: FormData)
   if (!UUID.test(inmetingId) || !UUID.test(artikelId)) return { fout: "Kies een artikel." };
   if (positieId && !UUID.test(positieId)) return { fout: wijzigingFout("positie") };
   if (!Number.isFinite(aantal) || aantal < 1 || aantal > 100) return { fout: wijzigingFout("aantal") };
+  const eigen = eigenPrijs(formData);
+  if (eigen !== null && Number.isNaN(eigen)) return { fout: "Vul de eigen prijs in als bedrag, bijvoorbeeld 125,00." };
+  const reden = String(formData.get("reden") ?? "").trim().slice(0, 1000);
 
   const supabase = await maakServerClient();
   const { data, error } = await supabase.rpc("inmeting_voeg_extra_toe", {
     p_inmeting: inmetingId, p_positie: positieId || null, p_artikel: artikelId, p_aantal: aantal,
+    p_eigen_prijs: eigen, p_reden: eigen === null ? null : reden,
   });
   if (error) {
     console.error("extra toevoegen mislukt:", error.code, error.message);

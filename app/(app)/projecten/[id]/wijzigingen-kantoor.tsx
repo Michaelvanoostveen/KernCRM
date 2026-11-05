@@ -5,6 +5,7 @@ import { euroTekst } from "@/lib/offerte/bereken";
 import { leesConfiguratie } from "@/lib/projecten/positie";
 
 type Rij = { id: string; positie_id: string | null; soort: string; nieuwe_config: unknown; omschrijving: string; aantal: number; meerprijs: number | string; status: string; akkoord_id: string | null };
+type Aanpassing = { wijziging_id: string; oud: number | string; nieuw: number | string; reden: string; door: string | null; op: string };
 type Akkoord = { id: string; naam: string; op: string; totaal_meerprijs: number | string };
 
 const dagTijd = (iso: string) => new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }).format(new Date(iso));
@@ -13,11 +14,16 @@ const prijs = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${euroTekst(Mat
 /** Wijzigingen en extra's die de inmeter heeft voorgesteld en de klant ter plekke heeft goedgekeurd. Voor kantoor, met controle op de prijs. */
 export default async function WijzigingenKantoor({ inmetingId, offerteId }: { inmetingId: string; offerteId: string }) {
   const supabase = await maakServerClient();
-  const [{ data: wData }, { data: aData }, { data: pData }] = await Promise.all([
+  const [{ data: wData }, { data: aData }, { data: pData }, { data: paData }, { data: ledenData }] = await Promise.all([
     supabase.from("inmeting_wijzigingen").select("id, positie_id, soort, nieuwe_config, omschrijving, aantal, meerprijs, status, akkoord_id").eq("inmeting_id", inmetingId).neq("status", "vervallen").order("aangemaakt"),
     supabase.from("inmeting_akkoorden").select("id, naam, op, totaal_meerprijs").eq("inmeting_id", inmetingId).order("op"),
     supabase.from("posities").select("id, nummer, ruimte, aantal, config").eq("offerte_id", offerteId),
+    // Alleen de directie krijgt hier rijen terug; voor anderen is dit leeg.
+    supabase.from("inmeting_prijsaanpassingen").select("wijziging_id, oud, nieuw, reden, door, op").eq("inmeting_id", inmetingId),
+    supabase.rpc("leden_voor_planning"),
   ]);
+  const aanpassingen = (paData ?? []) as Aanpassing[];
+  const leden = (ledenData ?? []) as { user_id: string; email: string }[];
   const rijen = (wData ?? []) as Rij[];
   if (rijen.length === 0) return null;
   const akkoorden = (aData ?? []) as Akkoord[];
@@ -40,12 +46,19 @@ export default async function WijzigingenKantoor({ inmetingId, offerteId }: { in
       <ul className="mt-2 divide-y divide-stone-100 text-sm">
         {rijen.map((r) => {
           const controle = rekenControle(r);
-          const afwijkend = controle !== null && Math.abs(controle - Number(r.meerprijs)) > 0.01;
+          const aanpassing = aanpassingen.find((x) => x.wijziging_id === r.id);
+          const afwijkend = !aanpassing && controle !== null && Math.abs(controle - Number(r.meerprijs)) > 0.01;
           return (
             <li key={r.id} className="flex items-start justify-between gap-3 py-2">
               <div className="min-w-0">
                 <div className="font-semibold">{r.soort === "extra" ? `Extra: ${r.omschrijving}${r.aantal > 1 ? ` (${r.aantal}×)` : ""}` : `Wijziging: ${r.omschrijving}`}</div>
                 <div className="text-stone-600">{label(r.positie_id)} · {r.status === "akkoord" ? "akkoord klant" : "wacht op akkoord"}</div>
+                {aanpassing && (
+                  <div className="mt-1 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                    <b>Prijs handmatig aangepast</b> door {leden.find((l) => l.user_id === aanpassing.door)?.email ?? "onbekend"}: voorstel {prijs(Number(aanpassing.oud))} → {prijs(Number(aanpassing.nieuw))}. Reden: {aanpassing.reden}
+                    <span className="block text-amber-800">Alleen zichtbaar voor de directie.</span>
+                  </div>
+                )}
                 {afwijkend && <div className="mt-1 rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-800">Let op: de prijsmodule rekent {prijs(controle!)}. Controleer dit voor je het verwerkt.</div>}
               </div>
               <div className="shrink-0 font-bold tabular-nums">{prijs(Number(r.meerprijs))}</div>
