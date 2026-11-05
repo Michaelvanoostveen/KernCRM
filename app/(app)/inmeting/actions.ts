@@ -115,6 +115,10 @@ const WIJZIGING_FOUTEN: Record<string, string> = {
   naam: "Vul de volledige naam van de klant in.",
   handtekening: "Laat de klant tekenen in het vak.",
   leeg: "Er zijn geen wijzigingen om akkoord op te geven.",
+  gewijzigd: "De wijzigingen zijn aangepast sinds de klant ze zag. Controleer ze en laat de klant opnieuw tekenen.",
+  al_akkoord: "Voor deze positie heeft de klant al akkoord gegeven op een wijziging.",
+  te_veel: "Er zijn al te veel extra's toegevoegd aan deze inmeting.",
+  niet_te_verwijderen: "Deze wijziging kan niet meer worden verwijderd.",
 };
 const wijzigingFout = (code?: string) => WIJZIGING_FOUTEN[code ?? ""] ?? "Opslaan lukte niet. Probeer het opnieuw.";
 
@@ -211,6 +215,8 @@ export async function geefKlantAkkoord(_vorige: WijzigingStatus, formData: FormD
   if (naam.length < 3 || naam.length > 120) return { fout: wijzigingFout("naam") };
   const handtekening = formData.get("handtekening");
   if (!isGeldigeHandtekening(handtekening)) return { fout: wijzigingFout("handtekening") };
+  const verwacht = Number(String(formData.get("verwacht_totaal") ?? "").replace(",", "."));
+  if (!Number.isFinite(verwacht)) return { fout: wijzigingFout("gewijzigd") };
   if (formData.get("akkoord") !== "on") return { fout: "Vink aan dat de klant akkoord gaat met de wijzigingen en de meerprijs." };
 
   const h = await headers();
@@ -218,6 +224,7 @@ export async function geefKlantAkkoord(_vorige: WijzigingStatus, formData: FormD
   const { data, error } = await supabase.rpc("inmeting_wijzigingen_akkoord", {
     p_inmeting: inmetingId, p_naam: naam, p_handtekening: handtekening,
     p_ip: eersteIp(h.get("x-forwarded-for")) ?? eersteIp(h.get("x-real-ip")), p_user_agent: h.get("user-agent"),
+    p_verwacht_totaal: verwacht,
   });
   if (error) {
     console.error("klantakkoord mislukt:", error.code, error.message);

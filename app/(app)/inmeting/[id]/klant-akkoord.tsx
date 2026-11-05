@@ -5,7 +5,7 @@ import HandtekeningVeld from "@/components/handtekening-veld";
 import { geefKlantAkkoord, type WijzigingStatus } from "../actions";
 
 /** De klant ziet de wijzigingen met de meerprijs en tekent ter plekke op het scherm van de inmeter. */
-export default function KlantAkkoord({ inmetingId, klantNaam, bedrag }: { inmetingId: string; klantNaam: string; bedrag: string }) {
+export default function KlantAkkoord({ inmetingId, klantNaam, bedrag, totaal }: { inmetingId: string; klantNaam: string; bedrag: string; totaal: number }) {
   const [status, actie, bezig] = useActionState<WijzigingStatus, FormData>(geefKlantAkkoord, {});
   const [naam, setNaam] = useState("");
   const [vink, setVink] = useState(false);
@@ -15,6 +15,7 @@ export default function KlantAkkoord({ inmetingId, klantNaam, bedrag }: { inmeti
   return (
     <form action={actie} className="mt-4 rounded-xl border-2 border-[#B35B40] bg-white p-4">
       <input type="hidden" name="inmeting_id" value={inmetingId} />
+      <input type="hidden" name="verwacht_totaal" value={totaal.toFixed(2)} />
       <h3 className="text-lg font-bold">Akkoord van de klant</h3>
       <p className="mt-1 text-sm text-stone-600">Geef de telefoon aan {klantNaam}. Met de handtekening gaat de klant akkoord met de wijzigingen hierboven en de {bedrag} incl. btw.</p>
 

@@ -118,7 +118,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
               </div>
             </details>
           )}
-          {!vergrendeld && openstaand.length > 0 && <KlantAkkoord inmetingId={d.id} klantNaam={d.klant_naam} bedrag={prijsTekst(openTotaal)} />}
+          {!vergrendeld && openstaand.length > 0 && <KlantAkkoord inmetingId={d.id} klantNaam={d.klant_naam} bedrag={prijsTekst(openTotaal)} totaal={openTotaal} />}
         </section>
       )}
 
