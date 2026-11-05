@@ -18,7 +18,7 @@ export interface PubliekeOfferte {
   bedrijf: string;
   nummer: string;
   versie: number;
-  status: "verstuurd" | "akkoord";
+  status: "verstuurd" | "akkoord" | "vervallen";
   geldig_tot: string | null;
   verstuurd_op: string | null;
   project_naam: string;
@@ -38,7 +38,7 @@ export function leesPubliekeOfferte(invoer: unknown): PubliekeOfferte | null {
   if (typeof invoer !== "object" || invoer === null) return null;
   const o = invoer as Record<string, unknown>;
   if (typeof o.bedrijf !== "string" || typeof o.nummer !== "string" || !Array.isArray(o.regels)) return null;
-  if (o.status !== "verstuurd" && o.status !== "akkoord") return null;
+  if (o.status !== "verstuurd" && o.status !== "akkoord" && o.status !== "vervallen") return null;
   if (!o.regels.every((r) => typeof r === "object" && r !== null && SOORTEN.includes((r as { soort?: string }).soort ?? ""))) return null;
   return invoer as PubliekeOfferte;
 }

@@ -5,7 +5,7 @@ import { useActionState, useEffect, useMemo, useRef, useState, useTransition } f
 import { berekenOfferte, euroTekst, kortingToegestaan } from "@/lib/offerte/bereken";
 import { SJABLONEN, type SjabloonSleutel } from "@/lib/offerte/instellingen";
 import type { Instellingen, OfferteRegel } from "@/lib/offerte/types";
-import { bewaarOfferte, trekOfferteIn, verstuurOfferte, verwijderPositie, type OfferteStatus } from "../actions";
+import { bewaarOfferte, maakNieuweVersie, trekOfferteIn, verstuurOfferte, verwijderPositie, type OfferteStatus } from "../actions";
 
 export type EditorRegel = OfferteRegel & { nummer?: number; ruimte?: string | null; omschrijving?: string; svg?: string | null; code?: string | null; eenheid?: string | null };
 export type ArtikelOptie = { id: string; groep: string; code: string; naam: string; eenheid: string; prijsIncl: number };
@@ -16,7 +16,7 @@ const knop = "rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm fo
 const soortLabel = (s: string) => ({ positie: "Positie", artikel: "Artikelregel", kop: "Kopregel", tekst: "Tekst", korting: "Korting" })[s] ?? s;
 const getalOfNull = (t: string) => { const n = Number(t.replace(",", ".")); return t.trim() !== "" && Number.isFinite(n) && n >= 0 ? n : null; };
 
-export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld, versie, statusLabel, opgeslagen, mag, artikelen, totaalOverride, isDirectie, redenen, totaalReden: bewaardeTotaalReden, statusRuw, link, geldigTot, gebeurtenissen, mail, melding: serverMelding }: {
+export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld, versie, statusLabel, opgeslagen, mag, artikelen, totaalOverride, isDirectie, redenen, totaalReden: bewaardeTotaalReden, statusRuw, link, geldigTot, gebeurtenissen, mail, melding: serverMelding, versies }: {
   projectId: string;
   begin: EditorRegel[];
   rol: string | null;
@@ -38,6 +38,7 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
   gebeurtenissen: { soort: string; op: string; ip: string | null }[];
   mail: { onderwerp: string; tekst: string } | null;
   melding: string | null;
+  versies: { versie: number; status: string }[];
 }) {
   const [regels, setRegels] = useState<EditorRegel[]>(begin);
   const [vuil, setVuil] = useState(false);
@@ -52,6 +53,7 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
   const [tafel, setTafel] = useState(false);
   const [verstuurBevestig, setVerstuurBevestig] = useState(false);
   const [intrekBevestig, setIntrekBevestig] = useState(false);
+  const [versieBevestig, setVersieBevestig] = useState(false);
   const [gekopieerd, setGekopieerd] = useState("");
   const linkVeld = useRef<HTMLInputElement>(null);
   const mailVeld = useRef<HTMLTextAreaElement>(null);
@@ -177,6 +179,8 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
           <button type="button" role="switch" aria-checked={tafel} onClick={() => setTafel((t) => !t)} className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${tafel ? "border-[#24332B] bg-[#24332B] text-white" : "border-stone-300 bg-white hover:bg-stone-50"}`}>{tafel ? "Uitzetten" : "Aanzetten"}</button>
         </div>
         {serverMelding === "verstuurd" && <p role="status" className="rounded-md bg-green-50 px-4 py-2.5 text-sm text-green-800"><b>De offerte is verstuurd en vergrendeld.</b> Kopieer de link of de mailtekst hieronder en stuur die naar de klant.</p>}
+        {serverMelding === "nieuweversie" && <p role="status" className="rounded-md bg-green-50 px-4 py-2.5 text-sm text-green-800"><b>Versie {versie} is aangemaakt als concept.</b> Alles is overgenomen van de vorige versie, die is vervallen en bewaard blijft. Pas aan wat nodig is en verstuur de offerte opnieuw.</p>}
+        {serverMelding === "versie" && <p role="alert" className="rounded-md bg-red-50 px-4 py-2.5 text-sm text-red-800">Een nieuwe versie maken is niet gelukt. Dat kan alleen van een verstuurde offerte die nog niet is getekend. Ververs de pagina en probeer het opnieuw.</p>}
         {serverMelding === "ingetrokken" && <p role="status" className="rounded-md bg-amber-50 px-4 py-2.5 text-sm text-amber-900">De offerte is ingetrokken en staat weer als concept. De oude link werkt niet meer.</p>}
         {serverMelding === "korting" && <p role="alert" className="rounded-md bg-red-50 px-4 py-2.5 text-sm text-red-800">Versturen niet gelukt: de prijs ligt meer dan {inst.maxKortingGebruiker}% onder de berekende prijs. Dat kan alleen de directie versturen.</p>}
         {serverMelding === "leeg" && <p role="alert" className="rounded-md bg-red-50 px-4 py-2.5 text-sm text-red-800">Versturen niet gelukt: de offerte heeft nog geen positie of artikel, of een totaal van € 0.</p>}
@@ -325,6 +329,9 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
             <dt className="text-stone-500">Btw {Math.round(inst.btwLaag * 100)}% over {Math.round((1 - inst.deelHoog) * 100)}%</dt><dd className="text-right tabular-nums">{euroTekst(b.btwLaag)}</dd>
             <dt className="mt-1 self-end border-t border-stone-200 pt-2 text-[15px] font-bold">Totaal incl. btw</dt><dd className="mt-1 border-t border-stone-200 pt-2 text-right text-xl font-bold tabular-nums">{euroTekst(b.totaal)}</dd>
           </dl>
+          {versies.length > 1 && (
+            <p className="mt-3 border-t border-stone-100 pt-2 text-xs text-stone-500">Eerdere versies: {versies.filter((v) => v.versie !== versie).map((v) => `v${v.versie} (${v.status})`).join(", ")}</p>
+          )}
           {boven && intern && (
             <p role="status" className={`mt-3 rounded-md px-3 py-2 text-sm ${toegestaan ? "bg-blue-50 text-blue-900" : "bg-amber-50 text-amber-900"}`}>
               {toegestaan ? `Totale verlaging ${pctTekst}%: boven ${inst.maxKortingGebruiker}%, toegestaan voor de directie.` : <><b>De prijs ligt {pctTekst}% onder de berekende prijs.</b> De grens is {inst.maxKortingGebruiker}%. Opslaan kan, maar versturen vraagt goedkeuring van de directie.</>}
@@ -416,6 +423,22 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
                 {gebeurtenissen.filter((g) => g.soort === "verstuurd").slice(0, 1).map((g) => <li key={g.op} className="text-stone-600">Verstuurd · {datumTijd(g.op)}</li>)}
               </ul>
             </div>
+
+            {statusRuw === "verstuurd" && (
+              <div className="mt-4 border-t border-stone-100 pt-3">
+                {!versieBevestig ? (
+                  <button type="button" onClick={() => setVersieBevestig(true)} className={knop}>Nieuwe versie maken</button>
+                ) : (
+                  <div className="rounded-md bg-stone-50 p-3 text-sm">
+                    <p>Er komt een kopie als concept (versie {versie + 1}). De huidige versie vervalt: wie de oude link opent, ziet dat de offerte is vervangen en kan niet meer tekenen. Je stuurt daarna de nieuwe versie met een nieuwe link.</p>
+                    <div className="mt-2 flex gap-2">
+                      <button type="button" onClick={() => zendProject(maakNieuweVersie)} className="rounded-md bg-[#B35B40] px-3 py-1.5 text-sm font-semibold text-white hover:brightness-110">Ja, nieuwe versie maken</button>
+                      <button type="button" onClick={() => setVersieBevestig(false)} className={knop}>Annuleren</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {isDirectie && statusRuw === "verstuurd" && (
               <div className="mt-4 border-t border-stone-100 pt-3">

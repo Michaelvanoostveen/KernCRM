@@ -92,7 +92,9 @@ export default function OfferteWeergave({ o, token, verlopen }: { o: PubliekeOff
         </div>
 
         <div className="mt-8">
-          {o.status === "akkoord" && o.akkoord ? (
+          {o.status === "vervallen" ? (
+            <div role="status" className="rounded-xl bg-[#F6EAC9] p-5 font-semibold text-[#8A5A0B]">Deze offerte is vervangen door een nieuwe versie en kan niet meer worden getekend. Neem contact met ons op voor de nieuwe offerte.</div>
+          ) : o.status === "akkoord" && o.akkoord ? (
             <div role="status" className="rounded-xl bg-[#DDEFE5] p-5 font-semibold text-[#1E5C3C]">
               Bedankt, {o.akkoord.naam}. Wij hebben uw handtekening op {datum(o.akkoord.op)} ontvangen. U ontvangt een factuur van {euroTekst(b.termijnen[0].bedrag)} (30%) voor de eerste termijn. Daarna nemen wij contact met u op om de inmeting te plannen.
             </div>
