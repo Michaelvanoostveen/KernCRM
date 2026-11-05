@@ -57,3 +57,10 @@ describe("effectieveVariant", () => {
     expect(effectieveVariant(stolp, ["fixed"])).toBe(stolp);
   });
 });
+
+describe("miniatuur", () => {
+  it("tekent met vaste profielverhouding, anders dan op ware schaal", () => {
+    const cfg: Tekenconfig = { product: "raam", variant: "stolp", w: 850, h: 1000, kleur: "wit" };
+    expect(tekenInhoud(regels, { ...cfg, miniatuur: true })).not.toBe(tekenInhoud(regels, cfg));
+  });
+});

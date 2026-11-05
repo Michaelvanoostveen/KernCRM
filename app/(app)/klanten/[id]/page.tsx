@@ -5,6 +5,8 @@ import { maakServerClient } from "@/lib/supabase/server";
 import { adresTekst, isBedrijf, persoonsnaam, typeLabel } from "@/lib/klanten/klant";
 import type { KlantAdres, KlantRij } from "@/lib/klanten/kolommen";
 import { verwijderKlant } from "../formulier-actions";
+import { maakProject } from "../../projecten/actions";
+import { faseLabel } from "@/lib/projecten/fase";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const AANHEF: Record<string, string> = { dhr: "Dhr.", mevr: "Mevr.", geen: "" };
@@ -30,8 +32,9 @@ function Kaart({ titel, children }: { titel: string; children: React.ReactNode }
   );
 }
 
-async function Inhoud({ params }: { params: Promise<{ id: string }> }) {
+async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ fout?: string }> }) {
   const { id } = await params;
+  const { fout } = await zoek;
   if (!UUID.test(id)) notFound();
 
   const supabase = await maakServerClient();
@@ -43,6 +46,8 @@ async function Inhoud({ params }: { params: Promise<{ id: string }> }) {
   if (!data) notFound();
 
   const k = data as unknown as Detail;
+  const { data: projectenData } = await supabase.from("projecten").select("id, nummer, naam, fase").eq("klant_id", id).order("aangemaakt", { ascending: false });
+  const projecten = (projectenData ?? []) as { id: string; nummer: string; naam: string; fase: string }[];
   const project = k.adressen.find((a: KlantAdres) => a.soort === "project");
   const factuur = k.adressen.find((a: KlantAdres) => a.soort === "factuur");
   const factuurGelijk = !factuur || !project || adresTekst(factuur) === adresTekst(project);
@@ -112,20 +117,42 @@ async function Inhoud({ params }: { params: Promise<{ id: string }> }) {
           </dl>
         </Kaart>
 
-        <section className="rounded-lg border border-dashed border-stone-300 p-5 text-sm text-stone-500 md:col-span-2">
-          Projecten, offertes en de tijdlijn met mails, gesprekken en afspraken komen hier in een volgende stap.
+        <section className="rounded-lg border border-stone-200 bg-white p-5 md:col-span-2">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Projecten</h2>
+            <form action={maakProject} className="flex flex-wrap items-center gap-2">
+              <input type="hidden" name="klant_id" value={k.id} />
+              <input name="naam" aria-label="Naam van het project" placeholder={project ? `${project.straat} ${project.huisnummer}, ${project.plaats}` : "Naam van het project"} className="w-64 max-w-full rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm" />
+              <button className="rounded-md bg-[#B35B40] px-3 py-1.5 text-sm font-semibold text-white hover:brightness-110">Nieuw project</button>
+            </form>
+          </div>
+          {fout === "project" && <p role="alert" className="mb-3 text-sm text-red-700">Het project kon niet worden aangemaakt. Probeer het opnieuw.</p>}
+          {projecten.length === 0 ? (
+            <p className="text-sm text-stone-500">Nog geen projecten voor deze klant.</p>
+          ) : (
+            <ul className="divide-y divide-stone-100">
+              {projecten.map((p) => (
+                <li key={p.id} className="flex flex-wrap items-center gap-3 py-2 text-sm">
+                  <span className="font-mono text-xs text-stone-500">{p.nummer}</span>
+                  <Link href={`/projecten/${p.id}`} className="font-semibold underline-offset-2 hover:underline">{p.naam}</Link>
+                  <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-700">{faseLabel(p.fase)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-4 text-xs text-stone-500">De tijdlijn met mails, gesprekken en afspraken komt in een volgende stap.</p>
         </section>
       </div>
     </>
   );
 }
 
-export default function KlantPagina(props: { params: Promise<{ id: string }> }) {
+export default function KlantPagina(props: { params: Promise<{ id: string }>; searchParams: Promise<{ fout?: string }> }) {
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
       <Link href="/klanten" className="text-sm text-stone-600 underline">&larr; Terug naar klanten</Link>
       <Suspense fallback={<p className="mt-6 text-stone-500">Klant laden…</p>}>
-        <Inhoud {...props} />
+        <Inhoud params={props.params} zoek={props.searchParams} />
       </Suspense>
     </main>
   );

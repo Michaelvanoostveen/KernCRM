@@ -298,6 +298,8 @@ export interface Tekenconfig {
   kolombreedtes?: number[] | null;
   /** Eigen rijhoogtes in mm of als verhouding. */
   rijhoogtes?: number[] | null;
+  /** Voor kleine keuzetegels: profielen in een vaste verhouding in plaats van op ware schaal. */
+  miniatuur?: boolean;
 }
 
 /** De variant met de gekozen vaktypes erin; een stolpraam zonder twee draaiende vleugels heeft geen stolpnaad. */
@@ -319,7 +321,7 @@ export function tekenInhoud(regels: Prijsregels, cfg: Tekenconfig): string {
   if (!kozijn) throw new Error(`Onbekende kleur: "${cfg.kleur}".`);
   const tweede = cfg.kleurVleugel && cfg.kleurVleugel !== "zelfde" && cfg.kleurVleugel !== cfg.kleur ? regels.kleuren[cfg.kleurVleugel] : undefined;
   if (!(cfg.w > 0 && cfg.h > 0)) throw new Error("Breedte en hoogte moeten groter dan 0 zijn.");
-  return buildSVG(product.kind, effectieveVariant(variant, cfg.cols), cfg.w / cfg.h, kozijn, cfg.kolombreedtes, cfg.rijhoogtes, cfg.w, tweede ?? kozijn);
+  return buildSVG(product.kind, effectieveVariant(variant, cfg.cols), cfg.w / cfg.h, kozijn, cfg.kolombreedtes, cfg.rijhoogtes, cfg.miniatuur ? 0 : cfg.w, tweede ?? kozijn);
 }
 
 /** Volledige <svg> voor een positie, klaar voor op het scherm, in de offerte of in een PDF. */
