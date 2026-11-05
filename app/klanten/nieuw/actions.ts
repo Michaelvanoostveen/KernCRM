@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { maakServerClient } from "@/lib/supabase/server";
+import { maakAdresRijen } from "@/lib/klanten/adresrijen";
 import { KLANTTYPES, isBedrijf, normaliseerPostcode, splitsHuisnummer, weergavenaam } from "@/lib/klanten/klant";
 
 export type FormStatus = { fout?: string; waarden: Record<string, string> };
@@ -84,54 +85,45 @@ export async function bewaarKlant(_vorige: FormStatus, formData: FormData): Prom
   if (error || !klant) return fout("Opslaan lukte niet. Controleer de gegevens en probeer het opnieuw.");
 
   if (adresIngevuld) {
-    const { huisnummer, toevoeging: toev } = splitsHuisnummer(adres.huisnummer);
-    const bouwjaar = Number(tekst(formData, "bouwjaar")) || null;
-    const rij = (soort: "project" | "factuur", extra: Record<string, unknown>) => ({
-      tenant_id: lid.tenant_id,
-      klant_id: klant.id,
-      soort,
-      straat: adres.straat,
-      huisnummer,
-      toevoeging: leeg(adres.toevoeging || toev),
-      postcode,
-      plaats: adres.plaats,
+    const { huisnummer, toevoeging } = splitsHuisnummer(adres.huisnummer);
+    let factuur = null;
+    if (formData.get("factuur_anders") === "on") {
+      const f = splitsHuisnummer(tekst(formData, "f_huisnummer"));
+      const fPostcode = land === "NL" ? normaliseerPostcode(tekst(formData, "f_postcode")) : tekst(formData, "f_postcode");
+      if (!fPostcode || !f.huisnummer || !tekst(formData, "f_straat") || !tekst(formData, "f_plaats")) {
+        await supabase.from("klanten").delete().eq("id", klant.id);
+        return fout("Vul het factuuradres compleet in (met een geldige postcode) of haal het vinkje weg.");
+      }
+      factuur = {
+        straat: tekst(formData, "f_straat"),
+        huisnummer: f.huisnummer,
+        toevoeging: leeg(f.toevoeging),
+        postcode: fPostcode,
+        plaats: tekst(formData, "f_plaats"),
+      };
+    }
+    const rijen = maakAdresRijen({
+      tenantId: lid.tenant_id,
+      klantId: klant.id,
       land,
-      ...extra,
-    });
-    const rijen = [
-      rij("project", {
-        bouwjaar,
+      project: {
+        straat: adres.straat,
+        huisnummer,
+        toevoeging: leeg(adres.toevoeging || toevoeging),
+        postcode,
+        plaats: adres.plaats,
+        bouwjaar: Number(tekst(formData, "bouwjaar")) || null,
         woningtype: leeg(tekst(formData, "woningtype")),
         bereikbaarheid: leeg(tekst(formData, "bereikbaarheid")),
         monument: formData.get("monument") === "on",
-      }),
-    ];
-    if (formData.get("factuur_anders") !== "on") {
-      // Geen apart factuuradres: het projectadres geldt ook als factuuradres.
-      rijen.push(rij("factuur", {}));
-    } else {
-      const fHuis = splitsHuisnummer(tekst(formData, "f_huisnummer"));
-      const fPostcode = normaliseerPostcode(tekst(formData, "f_postcode")) ?? tekst(formData, "f_postcode");
-      if (!fPostcode || !fHuis.huisnummer || !tekst(formData, "f_straat") || !tekst(formData, "f_plaats")) {
-        await supabase.from("klanten").delete().eq("id", klant.id);
-        return fout("Vul het factuuradres compleet in of haal het vinkje weg.");
-      }
-      rijen.push({
-        tenant_id: lid.tenant_id,
-        klant_id: klant.id,
-        soort: "factuur",
-        straat: tekst(formData, "f_straat"),
-        huisnummer: fHuis.huisnummer,
-        toevoeging: leeg(fHuis.toevoeging),
-        postcode: fPostcode,
-        plaats: tekst(formData, "f_plaats"),
-        land,
-      });
-    }
+      },
+      factuur,
+    });
     const { error: adresFout } = await supabase.from("adressen").insert(rijen);
     if (adresFout) {
+      console.error("adressen insert mislukt:", adresFout.code, adresFout.message);
       await supabase.from("klanten").delete().eq("id", klant.id);
-      return fout("Het adres kon niet worden opgeslagen. De klant is niet bewaard; probeer het opnieuw.");
+      return fout(`Het adres kon niet worden opgeslagen (${adresFout.code ?? "onbekend"}). De klant is niet bewaard; probeer het opnieuw.`);
     }
   }
 
