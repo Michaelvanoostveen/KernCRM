@@ -40,6 +40,10 @@ flowchart LR
 
 Wijkt de inmeting af van de offerte, dan gaat het project terug naar de offerte voor een meer- of minderwerkregel die de klant opnieuw akkoord geeft.
 
+## Startscherm (besluit 2026-11-05)
+
+Na het inloggen komt iedereen op een startscherm met drie blokken: **Vraagt aandacht**, de **pijplijn per fase** en **Onlangs**. Het toont per project de laatste offerte; een verkoper ziet standaard de eigen projecten, directie en kantoor alle projecten, en iedereen kan wisselen. De acties zijn afgeleide regels, geen losse taken: getekend (klaar voor inmeting), verlopen, verloopt binnen 3 dagen, warm (de klant heeft de offerte de afgelopen 3 dagen bekeken), na 3 dagen nog niet geopend, een week geen reactie, en een concept dat een week openstaat. Per project telt alleen de belangrijkste actie. Taken, leads van de website en de planning komen op dit scherm zodra die onderdelen er zijn.
+
 ## Module 1: Klantbestand en activiteit
 
 Elke klant krijgt één dossier waarin alle contactmomenten, offertes, projecten en servicemeldingen op een tijdlijn staan, net als in Teamleader.
