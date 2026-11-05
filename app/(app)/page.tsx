@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { begroeting, bepaalActies, groepeerPijplijn } from "@/lib/dashboard/start";
+import FacturenActies from "./facturen-acties";
 import StartScherm from "./start-scherm";
 import { haalRol, laadStart } from "./start-gegevens";
 
@@ -15,6 +16,8 @@ async function Inhoud({ zoek }: { zoek: Promise<{ weergave?: string }> }) {
   const data = await laadStart(weergave, nu);
 
   return (
+    <>
+    <FacturenActies rol={rol} />
     <StartScherm
       begroeting={begroeting(nu)}
       weergave={weergave}
@@ -24,6 +27,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ weergave?: string }> }) {
       activiteit={data.activiteit}
       aantalProjecten={data.items.length}
     />
+    </>
   );
 }
 

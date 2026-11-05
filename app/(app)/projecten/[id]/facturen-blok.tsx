@@ -1,12 +1,15 @@
 import { maakServerClient } from "@/lib/supabase/server";
 import { euroTekst } from "@/lib/offerte/bereken";
 import { bedrijfsgegevensCompleet } from "@/lib/facturatie/bedrijf";
-import { isTeLaat, openstaand, type FactuurStatus } from "@/lib/facturatie/bereken";
-import { annuleerFactuur, maakFactuur, registreerBetaling, wijzigFactuur } from "../../facturen/actions";
+import { begroeting, isTeLaat, openstaand, type FactuurStatus } from "@/lib/facturatie/bereken";
+import { dagenTeLaat, maakFactuurMail, maakHerinneringMail } from "@/lib/facturatie/mail";
+import { BEDRIJF_FACTUUR } from "@/lib/facturatie/bedrijf";
+import { annuleerFactuur, maakFactuur, markeerVerzonden, registreerBetaling, registreerHerinnering, wijzigFactuur } from "../../facturen/actions";
 import { laadFactuurplan } from "../../facturen/plan";
 
-type Factuur = { id: string; tenant_id: string; toelichting: string | null; nummer: string; termijn: number; omschrijving: string; factuurdatum: string; vervaldatum: string; totaal_incl: number | string; meerwerk: number | string; status: FactuurStatus; annulering_reden: string | null };
+type Factuur = { id: string; tenant_id: string; toelichting: string | null; verzonden_op: string | null; debiteur: { aanhef?: string | null; achternaam?: string | null; naam?: string } | null; nummer: string; termijn: number; omschrijving: string; factuurdatum: string; vervaldatum: string; totaal_incl: number | string; meerwerk: number | string; status: FactuurStatus; annulering_reden: string | null };
 type Wijziging = { factuur_id: string; oud: Record<string, unknown>; nieuw: Record<string, unknown>; reden: string; door: string | null; op: string };
+type Herinnering = { factuur_id: string; niveau: number; verstuurd_op: string };
 type Betaling = { factuur_id: string; bedrag: number | string; betaald_op: string; notitie: string | null };
 
 const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
@@ -14,6 +17,15 @@ const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   betaald: { tekst: "De betaling is geregistreerd. De factuur is betaald.", fout: false },
   deelbetaling: { tekst: "De betaling is geregistreerd. Er staat nog een bedrag open.", fout: false },
   geannuleerd: { tekst: "De factuur is geannuleerd. Je kunt de termijn opnieuw factureren.", fout: false },
+  verzonden: { tekst: "Vastgelegd dat de factuur naar de klant is gestuurd.", fout: false },
+  herinnerd: { tekst: "De herinnering is vastgelegd.", fout: false },
+  herinnering_bestaat: { tekst: "Na een herinnering kan de vervaldatum niet meer worden aangepast.", fout: true },
+  vervaldatum_eerder: { tekst: "Een verzonden factuur kan alleen een latere vervaldatum krijgen.", fout: true },
+  al_verzonden: { tekst: "Deze factuur is al als verzonden gemarkeerd.", fout: true },
+  niet_verzonden: { tekst: "Markeer de factuur eerst als verzonden voordat je een herinnering vastlegt.", fout: true },
+  nog_niet_verlopen: { tekst: "De vervaldatum is nog niet verstreken.", fout: true },
+  te_snel: { tekst: "Er is minder dan 7 dagen geleden al een herinnering vastgelegd.", fout: true },
+  geen_volgende: { tekst: "Er zijn al drie herinneringen vastgelegd.", fout: true },
   gewijzigd: { tekst: "De factuur is aangepast. De wijziging staat in het logboek.", fout: false },
   niets_gewijzigd: { tekst: "Er was niets om aan te passen.", fout: false },
   geen_toestemming: { tekst: "Voor een ander bedrag dan het termijnbedrag heb je de toestemming \"prijzen aanpassen\" nodig. Vraag de directie, of pas alleen de tekst of de vervaldatum aan.", fout: true },
@@ -47,11 +59,15 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
   const plan = await laadFactuurplan(supabase, projectId);
   if (!plan || plan.offerteStatus !== "akkoord") return null;
 
-  const { data: fData } = await supabase.from("facturen").select("id, tenant_id, toelichting, nummer, termijn, omschrijving, factuurdatum, vervaldatum, totaal_incl, meerwerk, status, annulering_reden").eq("project_id", projectId).order("termijn").order("aangemaakt");
+  const { data: fData } = await supabase.from("facturen").select("id, tenant_id, toelichting, verzonden_op, debiteur, nummer, termijn, omschrijving, factuurdatum, vervaldatum, totaal_incl, meerwerk, status, annulering_reden").eq("project_id", projectId).order("termijn").order("aangemaakt");
   const facturen = (fData ?? []) as Factuur[];
   const { data: bData } = facturen.length ? await supabase.from("factuur_betalingen").select("factuur_id, bedrag, betaald_op, notitie").in("factuur_id", facturen.map((f) => f.id)).order("betaald_op") : { data: [] };
   const betalingen = (bData ?? []) as Betaling[];
 
+  const { data: hData } = facturen.length ? await supabase.from("factuur_herinneringen").select("factuur_id, niveau, verstuurd_op").in("factuur_id", facturen.map((f) => f.id)).order("niveau") : { data: [] };
+  const herinneringen = (hData ?? []) as Herinnering[];
+  const { data: pRij } = await supabase.from("projecten").select("naam").eq("id", projectId).maybeSingle();
+  const projectNaam = (pRij as { naam?: string } | null)?.naam ?? "";
   const mag = rol === "directie" || rol === "kantoor";
   const { data: magPrijzenData } = facturen.length ? await supabase.rpc("mag_prijzen_aanpassen", { p_tenant: facturen[0].tenant_id }) : { data: false };
   const magPrijzen = magPrijzenData === true;
@@ -122,6 +138,7 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
                           const o = w.oud, n = w.nieuw;
                           const delen: string[] = [];
                           if (n.status === "geannuleerd") delen.push("geannuleerd");
+                          if (n.verzonden === true) delen.push("als verzonden gemarkeerd");
                           if (o.totaal_incl !== undefined && n.totaal_incl !== undefined && Number(o.totaal_incl) !== Number(n.totaal_incl)) delen.push(`bedrag ${euroTekst(Number(o.totaal_incl))} → ${euroTekst(Number(n.totaal_incl))}`);
                           if (o.vervaldatum !== undefined && o.vervaldatum !== n.vervaldatum) delen.push(`vervaldatum ${String(o.vervaldatum)} → ${String(n.vervaldatum)}`);
                           if (o.omschrijving !== undefined && o.omschrijving !== n.omschrijving) delen.push("omschrijving");
@@ -131,6 +148,47 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
                       </ul>
                     </details>
                   )}
+                  {f.status === "open" && (
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                      {f.verzonden_op ? <span className="text-green-700">Verzonden op {datum(f.verzonden_op.slice(0, 10))}</span> : <span className="text-amber-800">Nog niet verzonden</span>}
+                      {herinneringen.filter((h) => h.factuur_id === f.id).map((h) => <span key={h.niveau} className="text-stone-600">Herinnering {h.niveau}: {datum(h.verstuurd_op.slice(0, 10))}</span>)}
+                    </div>
+                  )}
+                  {f.status === "open" && mag && (() => {
+                    const groet = begroeting(f.debiteur?.aanhef, f.debiteur?.achternaam, f.debiteur?.naam ?? "");
+                    const mailTekst = maakFactuurMail({ begroeting: groet, nummer: f.nummer, termijn: f.termijn, omschrijving: f.omschrijving, bedrag: Number(f.totaal_incl), vervaldatum: datum(f.vervaldatum), adres: projectNaam, bedrijf: BEDRIJF_FACTUUR.naam });
+                    const volgende = Math.min(3, herinneringen.filter((h) => h.factuur_id === f.id).length + 1);
+                    const laatsteH = herinneringen.filter((h) => h.factuur_id === f.id).length >= 3;
+                    const herMail = teLaat && f.verzonden_op && !laatsteH ? maakHerinneringMail({ begroeting: groet, nummer: f.nummer, bedrag: open, vervaldatum: datum(f.vervaldatum), bedrijf: BEDRIJF_FACTUUR.naam, niveau: volgende }) : null;
+                    return (
+                      <div className="mt-3 grid gap-2">
+                        <details className="rounded-md border border-stone-200 px-3 py-2">
+                          <summary className="cursor-pointer font-semibold">Mailtekst met de factuur</summary>
+                          <p className="mt-2 text-xs text-stone-500">Kopieer de tekst, voeg de PDF als bijlage toe en verstuur de mail zelf. Leg daarna vast dat hij is verzonden.</p>
+                          <label className="mt-2 block text-xs font-semibold">Onderwerp<input readOnly value={mailTekst.onderwerp} className="mt-1 w-full rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm" /></label>
+                          <label className="mt-2 block text-xs font-semibold">Tekst<textarea readOnly rows={9} value={mailTekst.tekst} className="mt-1 w-full rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm" /></label>
+                          {!f.verzonden_op && (
+                            <form action={markeerVerzonden} className="mt-2">
+                              <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="factuur_id" value={f.id} />
+                              <button className="rounded-md bg-[#24332B] px-4 py-2 text-sm font-semibold text-white">Markeer als verzonden</button>
+                            </form>
+                          )}
+                          {f.verzonden_op && <p className="mt-2 text-xs text-amber-800">Pas je de factuur na het verzenden nog aan, stuur de klant dan de nieuwe PDF.</p>}
+                        </details>
+                        {herMail && (
+                          <details className="rounded-md border border-red-200 bg-red-50 px-3 py-2" open>
+                            <summary className="cursor-pointer font-semibold text-red-800">Herinnering {volgende} klaarzetten ({dagenTeLaat(f.vervaldatum, vandaag)} dagen te laat)</summary>
+                            <label className="mt-2 block text-xs font-semibold">Onderwerp<input readOnly value={herMail.onderwerp} className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
+                            <label className="mt-2 block text-xs font-semibold">Tekst<textarea readOnly rows={8} value={herMail.tekst} className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
+                            <form action={registreerHerinnering} className="mt-2">
+                              <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="factuur_id" value={f.id} />
+                              <button className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white">Herinnering is verstuurd</button>
+                            </form>
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })()}
                   {f.status === "open" && mag && (
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       <details className="rounded-md border border-stone-200 px-3 py-2">

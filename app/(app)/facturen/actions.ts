@@ -108,3 +108,27 @@ export async function wijzigFactuur(formData: FormData) {
   if (!uitkomst?.ok) return terug(projectId, uitkomst?.fout ?? "mislukt");
   return terug(projectId, uitkomst.gewijzigd === false ? "niets_gewijzigd" : uitkomst.betaald ? "betaald" : "gewijzigd");
 }
+
+/** Legt vast dat de factuur naar de klant is gestuurd (tot de mailkoppeling er is, stuurt de medewerker hem zelf). */
+export async function markeerVerzonden(formData: FormData) {
+  const projectId = String(formData.get("project_id") ?? "");
+  const factuurId = String(formData.get("factuur_id") ?? "");
+  if (!UUID.test(projectId)) redirect("/projecten");
+  if (!UUID.test(factuurId)) return terug(projectId, "ongeldig");
+  const supabase = await maakServerClient();
+  const { data } = await supabase.rpc("markeer_factuur_verzonden", { p_factuur: factuurId });
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  return terug(projectId, uitkomst?.ok ? "verzonden" : uitkomst?.fout ?? "mislukt");
+}
+
+/** Legt vast dat er een betalingsherinnering is gestuurd. De database bewaakt de volgorde en de wachttijd tussen herinneringen. */
+export async function registreerHerinnering(formData: FormData) {
+  const projectId = String(formData.get("project_id") ?? "");
+  const factuurId = String(formData.get("factuur_id") ?? "");
+  if (!UUID.test(projectId)) redirect("/projecten");
+  if (!UUID.test(factuurId)) return terug(projectId, "ongeldig");
+  const supabase = await maakServerClient();
+  const { data } = await supabase.rpc("registreer_herinnering", { p_factuur: factuurId });
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  return terug(projectId, uitkomst?.ok ? "herinnerd" : uitkomst?.fout ?? "mislukt");
+}

@@ -22,7 +22,7 @@ Tekening en maten worden maar één keer ingevoerd.
   4 Bestellen + facturatie (incl. ISDE) · 5 Service, opleverpunten, werkbonnen. Plus klantportaal.
 - Leveranciers: Kozijnbouw Enschede en Eko-Okna (Polen).
 - Boekhouding: Twinfield (verkoopfacturen, debiteuren, betaalstatus). Inkoopfacturen blijven via Basecone binnenkomen.
-- Mail/agenda: Outlook / Microsoft 365 via Microsoft Graph.
+- Mail/agenda: aansluiting per bedrijf achter een eigen interface (`MailProvider`/`AgendaProvider`); eerst Microsoft 365 via Microsoft Graph (KernKozijnen) en gewone SMTP/IMAP als terugval, Google later. Nooit rechtstreeks aan Microsoft vastbouwen.
 - Migratie: alles uit Teamleader via de Teamleader Focus API (+ CSV waar nodig).
 - Inkoopprijzen worden later handmatig ingevoerd; tot dan toont het CRM geen marge.
 - Fasering: 1 Verkoop → 2 Uitvoering → 3 Financieel (daarna Teamleader opzeggen) → 4 Service + portaal.
