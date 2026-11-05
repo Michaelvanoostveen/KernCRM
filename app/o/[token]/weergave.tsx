@@ -35,7 +35,7 @@ export default function OfferteWeergave({ o, token, verlopen }: { o: PubliekeOff
       <header className="bg-[#24332B] px-6 py-4 text-white">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2">
           <b className="text-lg">{o.bedrijf}</b>
-          <span className="text-sm opacity-80">Offerte {o.nummer}-v{o.versie}{o.geldig_tot ? ` · geldig tot ${datum(o.geldig_tot)}` : ""}</span>
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"><span className="opacity-80">Offerte {o.nummer}-v{o.versie}{o.geldig_tot ? ` · geldig tot ${datum(o.geldig_tot)}` : ""}</span><a href={`/o/${token}/pdf`} target="_blank" rel="noreferrer" className="rounded-md border border-white/40 px-3 py-1 font-semibold hover:bg-white/10">PDF openen</a></span>
         </div>
       </header>
 

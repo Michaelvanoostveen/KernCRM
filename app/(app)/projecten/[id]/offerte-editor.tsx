@@ -393,6 +393,7 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
             </div>
             {gekopieerd === "link" && <p role="status" className="mt-1 text-xs text-green-700">Link gekopieerd.</p>}
             {gekopieerd === "link-handmatig" && <p role="status" className="mt-1 text-xs text-amber-800">Selecteer de link en kopieer met Ctrl+C.</p>}
+            <a href={`/projecten/${projectId}/pdf`} target="_blank" rel="noreferrer" className={`${knop} mt-3 inline-block`}>PDF openen</a>
             {geldigTot && <p className="mt-2 text-xs text-stone-500">Geldig tot {new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric" }).format(new Date(geldigTot))}.</p>}
 
             {mail && (
