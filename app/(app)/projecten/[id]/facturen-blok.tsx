@@ -16,7 +16,7 @@ const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   geannuleerd: { tekst: "De factuur is geannuleerd. Je kunt de termijn opnieuw factureren.", fout: false },
   gewijzigd: { tekst: "De factuur is aangepast. De wijziging staat in het logboek.", fout: false },
   niets_gewijzigd: { tekst: "Er was niets om aan te passen.", fout: false },
-  geen_toestemming: { tekst: "Je hebt geen toestemming om bedragen op een factuur aan te passen. Vraag de directie, of pas alleen de tekst of de vervaldatum aan.", fout: true },
+  geen_toestemming: { tekst: "Voor een ander bedrag dan het termijnbedrag heb je de toestemming \"prijzen aanpassen\" nodig. Vraag de directie, of pas alleen de tekst of de vervaldatum aan.", fout: true },
   onder_betaald: { tekst: "Het nieuwe bedrag is lager dan wat al is betaald.", fout: true },
   boven_opdracht: { tekst: "Het totaal van de facturen mag niet hoger worden dan de opdracht (getekende offerte plus goedgekeurd meerwerk).", fout: true },
   dubbel: { tekst: "Deze betaling is zojuist al geregistreerd.", fout: true },
@@ -121,10 +121,11 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
                         {wijzigingen.filter((w) => w.factuur_id === f.id).map((w, i) => {
                           const o = w.oud, n = w.nieuw;
                           const delen: string[] = [];
-                          if (Number(o.totaal_incl) !== Number(n.totaal_incl)) delen.push(`bedrag ${euroTekst(Number(o.totaal_incl))} → ${euroTekst(Number(n.totaal_incl))}`);
-                          if (o.vervaldatum !== n.vervaldatum) delen.push(`vervaldatum ${String(o.vervaldatum)} → ${String(n.vervaldatum)}`);
-                          if (o.omschrijving !== n.omschrijving) delen.push("omschrijving");
-                          if ((o.toelichting ?? "") !== (n.toelichting ?? "")) delen.push("begeleidende tekst");
+                          if (n.status === "geannuleerd") delen.push("geannuleerd");
+                          if (o.totaal_incl !== undefined && n.totaal_incl !== undefined && Number(o.totaal_incl) !== Number(n.totaal_incl)) delen.push(`bedrag ${euroTekst(Number(o.totaal_incl))} → ${euroTekst(Number(n.totaal_incl))}`);
+                          if (o.vervaldatum !== undefined && o.vervaldatum !== n.vervaldatum) delen.push(`vervaldatum ${String(o.vervaldatum)} → ${String(n.vervaldatum)}`);
+                          if (o.omschrijving !== undefined && o.omschrijving !== n.omschrijving) delen.push("omschrijving");
+                          if (o.omschrijving !== undefined && (o.toelichting ?? "") !== (n.toelichting ?? "")) delen.push("begeleidende tekst");
                           return <li key={i}>{datum(w.op.slice(0, 10))} · {leden.find((l) => l.user_id === w.door)?.email ?? "onbekend"}: {delen.join(", ") || "aangepast"}{w.reden ? `. Reden: ${w.reden}` : ""}</li>;
                         })}
                       </ul>

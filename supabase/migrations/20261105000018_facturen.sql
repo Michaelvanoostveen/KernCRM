@@ -104,9 +104,10 @@ create function public.facturen_bewaken() returns trigger
 declare
   v_bewerken boolean := coalesce(current_setting('kerncrm.factuur_bewerken', true), '') = 'on';
 begin
-  if (new.tenant_id, new.project_id, new.offerte_id, new.nummer, new.termijn, new.termijn_pct, new.factuurdatum, new.debiteur, new.aangemaakt_door, new.aangemaakt)
+  if (new.id, new.tenant_id, new.project_id, new.offerte_id, new.nummer, new.termijn, new.termijn_pct, new.factuurdatum, new.debiteur, new.aangemaakt)
      is distinct from
-     (old.tenant_id, old.project_id, old.offerte_id, old.nummer, old.termijn, old.termijn_pct, old.factuurdatum, old.debiteur, old.aangemaakt_door, old.aangemaakt) then
+     (old.id, old.tenant_id, old.project_id, old.offerte_id, old.nummer, old.termijn, old.termijn_pct, old.factuurdatum, old.debiteur, old.aangemaakt)
+     or (new.aangemaakt_door is distinct from old.aangemaakt_door and new.aangemaakt_door is not null) then
     raise exception 'Nummer, termijn, factuurdatum en klantgegevens van een factuur liggen vast' using errcode = '55000';
   end if;
   if (new.omschrijving, new.toelichting, new.vervaldatum, new.bedrag_excl, new.btw_hoog, new.btw_laag, new.totaal_incl, new.meerwerk)
@@ -126,6 +127,9 @@ begin
     if new.status = 'geannuleerd' and length(btrim(coalesce(new.annulering_reden, ''))) = 0 then
       raise exception 'Vul een reden in om een factuur te annuleren' using errcode = '55000';
     end if;
+    if new.status = 'geannuleerd' and exists (select 1 from public.factuur_betalingen b where b.factuur_id = new.id) then
+      raise exception 'Een factuur met betalingen kan niet worden geannuleerd' using errcode = '55000';
+    end if;
   end if;
   if new.annulering_reden is distinct from old.annulering_reden and not (old.status = 'open' and new.status = 'geannuleerd') then
     raise exception 'De reden van annuleren staat vast' using errcode = '55000';
@@ -140,6 +144,11 @@ create function public.factuur_stukken_vergrendelen() returns trigger
   language plpgsql set search_path = ''
   as $$
 begin
+  -- Het enige dat mag: de naam van wie het deed, als die gebruiker uit het systeem verdwijnt (dan wordt "door" leeg).
+  if tg_op = 'UPDATE' and tg_table_name in ('factuur_betalingen', 'factuur_wijzigingen')
+     and old.door is not null and new.door is null and (to_jsonb(new) - 'door') = (to_jsonb(old) - 'door') then
+    return new;
+  end if;
   raise exception 'Facturen, betalingen en het logboek kunnen niet worden gewijzigd of verwijderd' using errcode = '55000';
 end $$;
 create trigger factuur_betalingen_vergrendelen before update or delete on public.factuur_betalingen
@@ -190,6 +199,7 @@ declare
   v_id uuid;
   v_debiteur jsonb;
   v_meerwerk numeric := 0;
+  v_pct numeric;
 begin
   select * into p from public.projecten where id = p_project;
   if not found or not public.heeft_rol(p.tenant_id, array['directie','kantoor']::public.gebruikersrol[]) then
@@ -207,7 +217,7 @@ begin
   if p_excl is null or p_hoog is null or p_laag is null or p_incl is null or p_pct is null or p_dagen is null
      or p_excl < 0 or p_hoog < 0 or p_laag < 0 or p_incl <= 0 or p_incl > 10000000
      or round(p_excl + p_hoog + p_laag, 2) <> round(p_incl, 2)
-     or p_hoog + p_laag > 0.21 * p_excl + 0.05
+     or p_hoog + p_laag > 0.21 * p_excl + 0.05 or p_hoog + p_laag < 0.09 * p_excl - 0.05
      or p_dagen < 0 or p_dagen > 90 or p_pct < 0 or p_pct > 100
      or length(btrim(coalesce(p_omschrijving, ''))) = 0 then
     return jsonb_build_object('ok', false, 'fout', 'ongeldig');
@@ -217,9 +227,19 @@ begin
   if p_meerwerk is null or (round(p_meerwerk, 2) <> 0 and round(p_meerwerk, 2) <> round(v_meerwerk, 2)) then
     return jsonb_build_object('ok', false, 'fout', 'ongeldig');
   end if;
-  if (select coalesce(sum(f.totaal_incl), 0) from public.facturen f where f.project_id = p.id and f.status <> 'geannuleerd') + round(p_incl, 2)
+  if (select coalesce(sum(f.totaal_incl), 0) from public.facturen f where f.offerte_id = o.id and f.status <> 'geannuleerd') + round(p_incl, 2)
      > public.factuur_plafond(o.id) + 0.05 then
     return jsonb_build_object('ok', false, 'fout', 'boven_opdracht');
+  end if;
+  -- De termijnpercentages van de lopende facturen mogen samen niet boven 100% komen; meer- en minderwerk staat alleen op de laatste termijn.
+  v_pct := (select coalesce(sum(f.termijn_pct), 0) from public.facturen f where f.offerte_id = o.id and f.status <> 'geannuleerd') + p_pct;
+  if v_pct > 100.01 or (round(p_meerwerk, 2) <> 0 and v_pct < 99.99) then
+    return jsonb_build_object('ok', false, 'fout', 'ongeldig');
+  end if;
+  -- Wijkt het bedrag af van het termijnpercentage van het getekende bedrag (plus het meerwerk), dan heb je de toestemming "prijzen aanpassen" nodig.
+  if abs(round(p_incl, 2) - round(p_pct / 100 * coalesce((select a.totaal from public.offerte_akkoorden a where a.offerte_id = o.id), 0), 2) - round(p_meerwerk, 2)) > 1
+     and not public.mag_prijzen_aanpassen(p.tenant_id) then
+    return jsonb_build_object('ok', false, 'fout', 'geen_toestemming');
   end if;
 
   select jsonb_build_object('naam', k.naam, 'aanhef', k.aanhef, 'achternaam', k.achternaam, 'regels', coalesce((
@@ -257,6 +277,8 @@ declare
   v_tekst boolean;
   v_status text;
 begin
+  -- Vaste volgorde van vergrendelen (eerst de offerte, dan de factuur), zodat gelijktijdige wijzigingen het plafond niet kunnen omzeilen.
+  perform 1 from public.offertes where id = (select x.offerte_id from public.facturen x where x.id = p_factuur) for update;
   select * into f from public.facturen where id = p_factuur for update;
   if not found or not public.heeft_rol(f.tenant_id, array['directie','kantoor']::public.gebruikersrol[]) then
     return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
@@ -281,11 +303,12 @@ begin
     if not public.mag_prijzen_aanpassen(f.tenant_id) then return jsonb_build_object('ok', false, 'fout', 'geen_toestemming'); end if;
     if length(btrim(coalesce(p_reden, ''))) = 0 then return jsonb_build_object('ok', false, 'fout', 'reden'); end if;
     if p_excl < 0 or p_hoog < 0 or p_laag < 0 or p_incl <= 0 or p_incl > 10000000
-       or round(p_excl + p_hoog + p_laag, 2) <> round(p_incl, 2) or p_hoog + p_laag > 0.21 * p_excl + 0.05 then
+       or round(p_excl + p_hoog + p_laag, 2) <> round(p_incl, 2)
+       or p_hoog + p_laag > 0.21 * p_excl + 0.05 or p_hoog + p_laag < 0.09 * p_excl - 0.05 then
       return jsonb_build_object('ok', false, 'fout', 'ongeldig');
     end if;
     if round(p_incl, 2) < v_betaald then return jsonb_build_object('ok', false, 'fout', 'onder_betaald'); end if;
-    if (select coalesce(sum(x.totaal_incl), 0) from public.facturen x where x.project_id = f.project_id and x.status <> 'geannuleerd' and x.id <> f.id) + round(p_incl, 2)
+    if (select coalesce(sum(x.totaal_incl), 0) from public.facturen x where x.offerte_id = f.offerte_id and x.status <> 'geannuleerd' and x.id <> f.id) + round(p_incl, 2)
        > public.factuur_plafond(f.offerte_id) + 0.05 then
       return jsonb_build_object('ok', false, 'fout', 'boven_opdracht');
     end if;
@@ -369,6 +392,8 @@ begin
     return jsonb_build_object('ok', false, 'fout', 'latere_termijn');
   end if;
   update public.facturen set status = 'geannuleerd', annulering_reden = left(btrim(p_reden), 500) where id = f.id;
+  insert into public.factuur_wijzigingen (tenant_id, factuur_id, oud, nieuw, reden)
+    values (f.tenant_id, f.id, jsonb_build_object('status', 'open'), jsonb_build_object('status', 'geannuleerd'), left(btrim(p_reden), 1000));
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.annuleer_factuur(uuid, text) from public, anon;
