@@ -51,6 +51,9 @@ begin
   if old.verzonden_op is not null and new.verzonden_op is distinct from old.verzonden_op then
     raise exception 'Het moment van verzenden staat vast' using errcode = '55000';
   end if;
+  if old.verzonden_op is null and new.verzonden_op is not null and (old.status <> 'open' or new.verzonden_op < now() - interval '1 minute' or new.verzonden_op > now() + interval '1 minute') then
+    raise exception 'Alleen een open factuur kan nu als verzonden worden gemarkeerd' using errcode = '55000';
+  end if;
   if (new.omschrijving, new.toelichting, new.vervaldatum, new.bedrag_excl, new.btw_hoog, new.btw_laag, new.totaal_incl, new.meerwerk)
      is distinct from
      (old.omschrijving, old.toelichting, old.vervaldatum, old.bedrag_excl, old.btw_hoog, old.btw_laag, old.totaal_incl, old.meerwerk) then
@@ -92,6 +95,8 @@ begin
   if f.status <> 'open' then return jsonb_build_object('ok', false, 'fout', 'niet_open'); end if;
   if f.verzonden_op is not null then return jsonb_build_object('ok', false, 'fout', 'al_verzonden'); end if;
   update public.facturen set verzonden_op = now() where id = f.id;
+  insert into public.factuur_wijzigingen (tenant_id, factuur_id, oud, nieuw, reden)
+    values (f.tenant_id, f.id, jsonb_build_object('verzonden', false), jsonb_build_object('verzonden', true), '');
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.markeer_factuur_verzonden(uuid) from public, anon;
@@ -122,6 +127,94 @@ begin
   end if;
   insert into public.factuur_herinneringen (tenant_id, factuur_id, niveau) values (f.tenant_id, f.id, v_niveau);
   return jsonb_build_object('ok', true, 'niveau', v_niveau);
+exception when unique_violation then
+  return jsonb_build_object('ok', false, 'fout', 'te_snel');
 end $$;
 revoke all on function public.registreer_herinnering(uuid) from public, anon;
 grant execute on function public.registreer_herinnering(uuid) to authenticated;
+
+-- Aanpassen van een open factuur: als in migratie 18, met extra regels voor de vervaldatum na verzenden of herinneren.
+create or replace function public.wijzig_factuur(
+  p_factuur uuid, p_omschrijving text, p_toelichting text, p_vervaldatum date,
+  p_excl numeric, p_hoog numeric, p_laag numeric, p_incl numeric, p_reden text
+) returns jsonb
+  language plpgsql security definer set search_path = ''
+  as $$
+declare
+  f public.facturen;
+  v_betaald numeric(10, 2);
+  v_bedragen boolean;
+  v_tekst boolean;
+  v_status text;
+begin
+  -- Vaste volgorde van vergrendelen (eerst de offerte, dan de factuur), zodat gelijktijdige wijzigingen het plafond niet kunnen omzeilen.
+  perform 1 from public.offertes where id = (select x.offerte_id from public.facturen x where x.id = p_factuur) for update;
+  select * into f from public.facturen where id = p_factuur for update;
+  if not found or not public.heeft_rol(f.tenant_id, array['directie','kantoor']::public.gebruikersrol[]) then
+    return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
+  end if;
+  if f.status <> 'open' then return jsonb_build_object('ok', false, 'fout', 'niet_open'); end if;
+  if length(btrim(coalesce(p_omschrijving, ''))) = 0 or p_vervaldatum is null
+     or p_vervaldatum < f.factuurdatum or p_vervaldatum > f.factuurdatum + 365 then
+    return jsonb_build_object('ok', false, 'fout', 'ongeldig');
+  end if;
+  -- De vervaldatum is niet te gebruiken om herinneringen te omzeilen of uit te lokken: na een herinnering staat hij vast, en na het verzenden kan hij alleen worden verlengd.
+  if p_vervaldatum is distinct from f.vervaldatum then
+    if exists (select 1 from public.factuur_herinneringen h where h.factuur_id = f.id) then
+      return jsonb_build_object('ok', false, 'fout', 'herinnering_bestaat');
+    end if;
+    if f.verzonden_op is not null and p_vervaldatum < f.vervaldatum then
+      return jsonb_build_object('ok', false, 'fout', 'vervaldatum_eerder');
+    end if;
+  end if;
+
+  v_tekst := (left(btrim(p_omschrijving), 300), left(p_toelichting, 2000), p_vervaldatum)
+             is distinct from (f.omschrijving, f.toelichting, f.vervaldatum);
+  v_bedragen := p_excl is not null and p_hoog is not null and p_laag is not null and p_incl is not null
+                and (round(p_excl, 2), round(p_hoog, 2), round(p_laag, 2), round(p_incl, 2))
+                    is distinct from (f.bedrag_excl, f.btw_hoog, f.btw_laag, f.totaal_incl);
+  if (p_excl is null or p_hoog is null or p_laag is null or p_incl is null) and not (p_excl is null and p_hoog is null and p_laag is null and p_incl is null) then
+    return jsonb_build_object('ok', false, 'fout', 'ongeldig');
+  end if;
+
+  select coalesce(sum(bedrag), 0) into v_betaald from public.factuur_betalingen where factuur_id = f.id;
+  if v_bedragen then
+    if not public.mag_prijzen_aanpassen(f.tenant_id) then return jsonb_build_object('ok', false, 'fout', 'geen_toestemming'); end if;
+    if length(btrim(coalesce(p_reden, ''))) = 0 then return jsonb_build_object('ok', false, 'fout', 'reden'); end if;
+    if p_excl < 0 or p_hoog < 0 or p_laag < 0 or p_incl <= 0 or p_incl > 10000000
+       or round(p_excl + p_hoog + p_laag, 2) <> round(p_incl, 2)
+       or p_hoog + p_laag > 0.21 * p_excl + 0.05 or p_hoog + p_laag < 0.09 * p_excl - 0.05 then
+      return jsonb_build_object('ok', false, 'fout', 'ongeldig');
+    end if;
+    if round(p_incl, 2) < v_betaald then return jsonb_build_object('ok', false, 'fout', 'onder_betaald'); end if;
+    if (select coalesce(sum(x.totaal_incl), 0) from public.facturen x where x.offerte_id = f.offerte_id and x.status <> 'geannuleerd' and x.id <> f.id) + round(p_incl, 2)
+       > public.factuur_plafond(f.offerte_id) + 0.05 then
+      return jsonb_build_object('ok', false, 'fout', 'boven_opdracht');
+    end if;
+  end if;
+  if not v_tekst and not v_bedragen then return jsonb_build_object('ok', true, 'gewijzigd', false); end if;
+
+  perform set_config('kerncrm.factuur_bewerken', 'on', true);
+  insert into public.factuur_wijzigingen (tenant_id, factuur_id, oud, nieuw, reden)
+    values (f.tenant_id, f.id,
+            jsonb_build_object('omschrijving', f.omschrijving, 'toelichting', f.toelichting, 'vervaldatum', f.vervaldatum, 'bedrag_excl', f.bedrag_excl, 'btw_hoog', f.btw_hoog, 'btw_laag', f.btw_laag, 'totaal_incl', f.totaal_incl),
+            jsonb_build_object('omschrijving', left(btrim(p_omschrijving), 300), 'toelichting', left(p_toelichting, 2000), 'vervaldatum', p_vervaldatum,
+                               'bedrag_excl', case when v_bedragen then round(p_excl, 2) else f.bedrag_excl end,
+                               'btw_hoog', case when v_bedragen then round(p_hoog, 2) else f.btw_hoog end,
+                               'btw_laag', case when v_bedragen then round(p_laag, 2) else f.btw_laag end,
+                               'totaal_incl', case when v_bedragen then round(p_incl, 2) else f.totaal_incl end),
+            left(btrim(coalesce(p_reden, '')), 1000));
+  v_status := case when v_bedragen and v_betaald > 0 and round(p_incl, 2) = v_betaald then 'betaald' else 'open' end;
+  update public.facturen set
+    omschrijving = left(btrim(p_omschrijving), 300), toelichting = left(p_toelichting, 2000), vervaldatum = p_vervaldatum,
+    bedrag_excl = case when v_bedragen then round(p_excl, 2) else bedrag_excl end,
+    btw_hoog = case when v_bedragen then round(p_hoog, 2) else btw_hoog end,
+    btw_laag = case when v_bedragen then round(p_laag, 2) else btw_laag end,
+    totaal_incl = case when v_bedragen then round(p_incl, 2) else totaal_incl end,
+    status = v_status
+    where id = f.id;
+  perform set_config('kerncrm.factuur_bewerken', 'off', true);
+  return jsonb_build_object('ok', true, 'gewijzigd', true, 'betaald', v_status = 'betaald');
+end $$;
+revoke all on function public.wijzig_factuur(uuid, text, text, date, numeric, numeric, numeric, numeric, text) from public, anon;
+grant execute on function public.wijzig_factuur(uuid, text, text, date, numeric, numeric, numeric, numeric, text) to authenticated;

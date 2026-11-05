@@ -19,6 +19,8 @@ const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   geannuleerd: { tekst: "De factuur is geannuleerd. Je kunt de termijn opnieuw factureren.", fout: false },
   verzonden: { tekst: "Vastgelegd dat de factuur naar de klant is gestuurd.", fout: false },
   herinnerd: { tekst: "De herinnering is vastgelegd.", fout: false },
+  herinnering_bestaat: { tekst: "Na een herinnering kan de vervaldatum niet meer worden aangepast.", fout: true },
+  vervaldatum_eerder: { tekst: "Een verzonden factuur kan alleen een latere vervaldatum krijgen.", fout: true },
   al_verzonden: { tekst: "Deze factuur is al als verzonden gemarkeerd.", fout: true },
   niet_verzonden: { tekst: "Markeer de factuur eerst als verzonden voordat je een herinnering vastlegt.", fout: true },
   nog_niet_verlopen: { tekst: "De vervaldatum is nog niet verstreken.", fout: true },
@@ -136,6 +138,7 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
                           const o = w.oud, n = w.nieuw;
                           const delen: string[] = [];
                           if (n.status === "geannuleerd") delen.push("geannuleerd");
+                          if (n.verzonden === true) delen.push("als verzonden gemarkeerd");
                           if (o.totaal_incl !== undefined && n.totaal_incl !== undefined && Number(o.totaal_incl) !== Number(n.totaal_incl)) delen.push(`bedrag ${euroTekst(Number(o.totaal_incl))} → ${euroTekst(Number(n.totaal_incl))}`);
                           if (o.vervaldatum !== undefined && o.vervaldatum !== n.vervaldatum) delen.push(`vervaldatum ${String(o.vervaldatum)} → ${String(n.vervaldatum)}`);
                           if (o.omschrijving !== undefined && o.omschrijving !== n.omschrijving) delen.push("omschrijving");
