@@ -8,6 +8,7 @@ import { FASEN, faseIndex, faseLabel } from "@/lib/projecten/fase";
 import { leesConfiguratie, positieOmschrijving } from "@/lib/projecten/positie";
 import { INSTELLINGEN_KERNKOZIJNEN } from "@/lib/offerte/instellingen";
 import OfferteEditor, { type EditorRegel } from "./offerte-editor";
+import { verwijderProject } from "../actions";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STATUS: Record<string, string> = { concept: "Concept", verstuurd: "Verstuurd", akkoord: "Akkoord", afgewezen: "Afgewezen", vervallen: "Vervallen" };
@@ -35,9 +36,9 @@ function maakRegel(r: RegelRij): EditorRegel {
   return { ...basis, aantal: p.aantal, prijs: Number(p.prijs), nummer: p.nummer, ruimte: p.ruimte, omschrijving, svg };
 }
 
-async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ opgeslagen?: string }> }) {
+async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ opgeslagen?: string; fout?: string }> }) {
   const { id } = await params;
-  const { opgeslagen } = await zoek;
+  const { opgeslagen, fout } = await zoek;
   if (!UUID.test(id)) notFound();
   const supabase = await maakServerClient();
   const { data: p } = await supabase
@@ -70,7 +71,16 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           <h1 className="text-2xl font-semibold">{p.naam}</h1>
           <p className="mt-1 text-sm text-stone-600">{klant ? <>Klant: <Link href={`/klanten/${klant.id}`} className="underline underline-offset-2">{klant.naam}</Link></> : null}</p>
         </div>
+        <details className="relative">
+          <summary className="cursor-pointer list-none rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-semibold">Project verwijderen</summary>
+          <form action={verwijderProject} className="absolute right-0 z-10 mt-2 w-72 rounded-lg border border-stone-200 bg-white p-4 shadow-lg">
+            <input type="hidden" name="project_id" value={p.id} />
+            <p className="text-sm">Weet je zeker dat je <b>{p.naam}</b> wilt verwijderen, met alle posities en de offerte? Dit kan niet ongedaan worden gemaakt.</p>
+            <button className="mt-3 rounded-md bg-red-700 px-3 py-1.5 text-sm font-semibold text-white">Ja, verwijderen</button>
+          </form>
+        </details>
       </div>
+      {fout === "verwijderen" && <p role="alert" className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">Het project kon niet worden verwijderd. Een verstuurde of getekende offerte kan alleen de directie verwijderen.</p>}
 
       <ol className="mt-5 flex overflow-x-auto rounded-lg border border-stone-200 bg-white p-3 text-xs" aria-label={`Fase van het project: ${faseLabel(p.fase)}`}>
         {FASEN.map((f, i) => (
@@ -100,7 +110,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   );
 }
 
-export default function ProjectPagina(props: { params: Promise<{ id: string }>; searchParams: Promise<{ opgeslagen?: string }> }) {
+export default function ProjectPagina(props: { params: Promise<{ id: string }>; searchParams: Promise<{ opgeslagen?: string; fout?: string }> }) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <Link href="/projecten" className="text-sm text-stone-600 underline">&larr; Alle projecten</Link>

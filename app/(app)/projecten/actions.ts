@@ -213,3 +213,22 @@ export async function bewaarOfferte(_vorige: OfferteStatus, formData: FormData):
   await supabase.from("projecten").update({ gewijzigd: new Date().toISOString() }).eq("id", projectId);
   redirect(`/projecten/${projectId}?opgeslagen=1`);
 }
+
+/** Verwijdert een project met alle offertes, posities en regels. Een verstuurde of getekende offerte alleen door de directie. */
+export async function verwijderProject(formData: FormData) {
+  const projectId = String(formData.get("project_id") ?? "");
+  if (!UUID.test(projectId)) redirect("/projecten");
+  const supabase = await maakServerClient();
+  const { data: project } = await supabase.from("projecten").select("id, tenant_id, klant_id, offertes(status)").eq("id", projectId).maybeSingle();
+  if (!project) redirect("/projecten");
+
+  const vastgelegd = (project.offertes as { status: string }[]).some((o) => o.status !== "concept");
+  if (vastgelegd) {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: lid } = user ? await supabase.from("tenant_leden").select("rol").eq("tenant_id", project.tenant_id).eq("user_id", user.id).maybeSingle() : { data: null };
+    if (lid?.rol !== "directie") redirect(`/projecten/${projectId}?fout=verwijderen`);
+  }
+  const { error } = await supabase.from("projecten").delete().eq("id", projectId);
+  if (error) redirect(`/projecten/${projectId}?fout=verwijderen`);
+  redirect(`/klanten/${project.klant_id}`);
+}
