@@ -17,7 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="border-b border-stone-200 bg-[#24332B] text-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
           <span className="text-lg font-bold tracking-tight">KernCRM</span>
-          <Suspense fallback={<nav aria-label="Hoofdmenu" className="flex gap-1"><Link href="/klanten" className="px-3 py-1.5 text-sm text-white/75">Klanten</Link><Link href="/projecten" className="px-3 py-1.5 text-sm text-white/75">Projecten</Link><Link href="/instellingen/gebruikers" className="px-3 py-1.5 text-sm text-white/75">Gebruikers</Link></nav>}>
+          <Suspense fallback={<nav aria-label="Hoofdmenu" className="flex gap-1"><Link href="/klanten" className="px-3 py-1.5 text-sm text-white/75">Klanten</Link><Link href="/projecten" className="px-3 py-1.5 text-sm text-white/75">Projecten</Link><Link href="/instellingen/catalogus" className="px-3 py-1.5 text-sm text-white/75">Catalogus</Link><Link href="/instellingen/gebruikers" className="px-3 py-1.5 text-sm text-white/75">Gebruikers</Link></nav>}>
             <Navigatie />
           </Suspense>
           <form action={uitloggen} className="ml-auto">

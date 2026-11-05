@@ -47,4 +47,12 @@ where t.slug = ${sql(slug)}
 on conflict (tenant_id, code) do nothing;
 `;
 fs.writeFileSync(new URL("../supabase/migrations/20261105000008_seed_artikelen_kernkozijnen.sql", import.meta.url), uit);
+
+// Dezelfde gegevens als JSON, voor de knop "Standaardcatalogus importeren" in de app.
+const json = data.map((r) => ({
+  groep: r[k.groep], code: r[k.code], naam: r[k.naam], omschrijving: r[k.oms], eenheid: r[k.eenheid],
+  verkoopprijs_excl: Number(getal(r[k.prijs])), verkoopprijs_incl: Math.round(Number(getal(r[k.prijs])) * 1.174 * 100) / 100,
+  btw_tarief_bron: Number(r[k.btw]), actief: !inactief(r[k.groep]),
+}));
+fs.writeFileSync(new URL("../lib/offerte/catalogus-kernkozijnen.json", import.meta.url), JSON.stringify(json, null, 1) + "\n");
 console.log(`${data.length} artikelen geschreven.`);
