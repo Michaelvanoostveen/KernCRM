@@ -8,6 +8,7 @@ import { amsterdamNaarIso } from "@/lib/inmeting/afwijking";
 import { leesDetail } from "@/lib/inmeting/types";
 import { beschrijfWijziging, heeftWijziging, meerprijsConfiguratie, pasVoorstelToe } from "@/lib/inmeting/wijzigingen";
 import { eersteIp, isGeldigeHandtekening } from "@/lib/offerte/handtekening";
+import { FOTO_BUCKET } from "@/lib/inmeting/foto";
 import { PrijsFout } from "@/lib/prijs/berekenen";
 import { haalPrijsregels } from "@/lib/prijs";
 import { leesConfiguratie } from "@/lib/projecten/positie";
@@ -254,4 +255,40 @@ export async function geefKlantAkkoord(_vorige: WijzigingStatus, formData: FormD
   if (!uitkomst?.ok) return { fout: wijzigingFout(uitkomst?.fout) };
   revalidatePath(`/inmeting/${inmetingId}`);
   return { opgeslagen: true };
+}
+
+const FOTO_FOUTEN: Record<string, string> = {
+  afgerond: "Deze inmeting is al afgerond.",
+  geen_toegang: "Je hebt geen toegang tot deze inmeting.",
+  positie: "Deze positie hoort niet bij deze inmeting.",
+  te_veel: "Er staan al 60 foto's bij deze inmeting.",
+  bestand: "De foto is niet aangekomen. Probeer het opnieuw.",
+  ongeldig: "Deze foto kan niet worden opgeslagen.",
+};
+
+/** Legt een foto vast die de browser al naar de opslag heeft gestuurd. */
+export async function registreerFoto(inmetingId: string, positieId: string | null, fotoId: string): Promise<{ fout?: string }> {
+  if (!UUID.test(inmetingId) || !UUID.test(fotoId) || (positieId !== null && !UUID.test(positieId))) return { fout: FOTO_FOUTEN.ongeldig };
+  const supabase = await maakServerClient();
+  const { data, error } = await supabase.rpc("inmeting_foto_toevoegen", { p_inmeting: inmetingId, p_positie: positieId, p_id: fotoId, p_ext: "jpg" });
+  if (error) {
+    console.error("foto vastleggen mislukt:", error.code, error.message);
+    return { fout: "Opslaan lukte niet. Probeer het opnieuw." };
+  }
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  if (!uitkomst?.ok) return { fout: FOTO_FOUTEN[uitkomst?.fout ?? ""] ?? FOTO_FOUTEN.ongeldig };
+  revalidatePath(`/inmeting/${inmetingId}`);
+  return {};
+}
+
+/** Verwijdert een foto: eerst uit de lijst, daarna het bestand uit de opslag. */
+export async function verwijderFoto(inmetingId: string, fotoId: string): Promise<{ fout?: string }> {
+  if (!UUID.test(inmetingId) || !UUID.test(fotoId)) return { fout: FOTO_FOUTEN.ongeldig };
+  const supabase = await maakServerClient();
+  const { data, error } = await supabase.rpc("inmeting_foto_verwijderen", { p_inmeting: inmetingId, p_foto: fotoId });
+  const uitkomst = data as { ok?: boolean; fout?: string; pad?: string } | null;
+  if (error || !uitkomst?.ok) return { fout: FOTO_FOUTEN[uitkomst?.fout ?? ""] ?? "Verwijderen lukte niet." };
+  if (uitkomst.pad) await supabase.storage.from(FOTO_BUCKET).remove([uitkomst.pad]);
+  revalidatePath(`/inmeting/${inmetingId}`);
+  return {};
 }
