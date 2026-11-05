@@ -35,6 +35,7 @@ describe("leesPubliekeOfferte", () => {
     expect(leesPubliekeOfferte(basis)).not.toBeNull();
     expect(leesPubliekeOfferte(null)).toBeNull();
     expect(leesPubliekeOfferte({ ...basis, status: "concept" })).toBeNull();
+    expect(leesPubliekeOfferte({ ...basis, status: "vervallen" })).not.toBeNull();
     expect(leesPubliekeOfferte({ ...basis, regels: [{ soort: "onbekend" }] })).toBeNull();
   });
 });

@@ -40,9 +40,9 @@ function maakRegel(r: RegelRij): EditorRegel {
   return { ...basis, aantal: p.aantal, prijs: Number(p.prijs), nummer: p.nummer, ruimte: p.ruimte, omschrijving, svg };
 }
 
-async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string }> }) {
+async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string; nieuweversie?: string }> }) {
   const { id } = await params;
-  const { opgeslagen, fout, verstuurd, ingetrokken } = await zoek;
+  const { opgeslagen, fout, verstuurd, ingetrokken, nieuweversie } = await zoek;
   if (!UUID.test(id)) notFound();
   const supabase = await maakServerClient();
   const { data: p } = await supabase
@@ -138,7 +138,8 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           geldigTot={offerte.geldig_tot}
           gebeurtenissen={gebeurtenissen}
           mail={mail}
-          melding={verstuurd === "1" ? "verstuurd" : ingetrokken === "1" ? "ingetrokken" : fout ?? null}
+          melding={verstuurd === "1" ? "verstuurd" : ingetrokken === "1" ? "ingetrokken" : nieuweversie === "1" ? "nieuweversie" : fout ?? null}
+          versies={[...(p.offertes as { versie: number; status: string }[])].sort((a, b) => b.versie - a.versie).map((v) => ({ versie: v.versie, status: v.status }))}
           redenen={redenen}
           totaalReden={totaalReden}
         />
@@ -149,7 +150,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   );
 }
 
-export default function ProjectPagina(props: { params: Promise<{ id: string }>; searchParams: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string }> }) {
+export default function ProjectPagina(props: { params: Promise<{ id: string }>; searchParams: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string; nieuweversie?: string }> }) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <Link href="/projecten" className="text-sm text-stone-600 underline">&larr; Alle projecten</Link>

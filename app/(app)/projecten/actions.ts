@@ -326,6 +326,19 @@ export async function verstuurOfferte(formData: FormData) {
   redirect(`/projecten/${projectId}?verstuurd=1`);
 }
 
+/** Maakt een nieuwe versie van een verstuurde offerte: een kopie als concept, terwijl de vorige versie vervalt en bewaard blijft. */
+export async function maakNieuweVersie(formData: FormData) {
+  const projectId = String(formData.get("project_id") ?? "");
+  if (!UUID.test(projectId)) redirect("/projecten");
+  const supabase = await maakServerClient();
+  const { error } = await supabase.rpc("maak_nieuwe_versie", { p_project: projectId });
+  if (error) {
+    console.error("nieuwe versie mislukt:", error.code, error.message);
+    redirect(`/projecten/${projectId}?fout=versie`);
+  }
+  redirect(`/projecten/${projectId}?nieuweversie=1`);
+}
+
 /** Haalt een verstuurde, nog niet getekende offerte terug naar concept. De oude link werkt dan niet meer. Alleen de directie. */
 export async function trekOfferteIn(formData: FormData) {
   const projectId = String(formData.get("project_id") ?? "");
