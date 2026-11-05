@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { bewaarKlant, type FormStatus } from "./actions";
+import type { FormStatus } from "../formulier-actions";
 import { KLANTTYPES, isBedrijf } from "@/lib/klanten/klant";
 import { zoekAdres } from "@/lib/klanten/adres";
 
@@ -61,8 +61,13 @@ function AdresBlok({ voorvoegsel, w, land }: { voorvoegsel: string; w: Record<st
   );
 }
 
-export default function Formulier() {
-  const [status, actie, bezig] = useActionState<FormStatus, FormData>(bewaarKlant, { waarden: {} });
+export default function Klantformulier({ actie: opslaan, begin = {}, knop = "Klant opslaan", id }: {
+  actie: (vorige: FormStatus, formData: FormData) => Promise<FormStatus>;
+  begin?: Record<string, string>;
+  knop?: string;
+  id?: string;
+}) {
+  const [status, actie, bezig] = useActionState<FormStatus, FormData>(opslaan, { waarden: begin });
   const w = status.waarden;
   const [type, setType] = useState(w.type || "particulier");
   const [land, setLand] = useState(w.land || "NL");
@@ -71,6 +76,7 @@ export default function Formulier() {
 
   return (
     <form action={actie} className="mt-6 flex flex-col gap-5">
+      {id && <input type="hidden" name="id" value={id} />}
       <section className={sectie}>
         <h2 className={kop}>Soort klant</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -189,7 +195,7 @@ export default function Formulier() {
       {status.fout && <p role="alert" className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">{status.fout}</p>}
       <div className="flex gap-3">
         <button disabled={bezig} className="rounded-md bg-[#B35B40] px-5 py-2.5 font-semibold text-white hover:brightness-110 disabled:opacity-60">
-          {bezig ? "Opslaan…" : "Klant opslaan"}
+          {bezig ? "Opslaan…" : knop}
         </button>
       </div>
     </form>
