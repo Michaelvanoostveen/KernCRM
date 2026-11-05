@@ -39,9 +39,9 @@ export function maakFactuurplan(termijnen: { naam: string; pct: number; bedrag: 
   });
 }
 
-/** Betaaltermijn in dagen per termijn volgens de voorwaarden: aanbetaling binnen 3 dagen, bij levering dezelfde dag, eindfactuur binnen 14 dagen. */
-export const BETAALDAGEN = [3, 0, 14] as const;
-export const betaaldagen = (nr: number) => BETAALDAGEN[nr - 1] ?? 14;
+/** Betaaltermijn in dagen per termijn volgens de voorwaarden: aanbetaling binnen 3 dagen, bij levering dezelfde dag, eindfactuur binnen 3 dagen. */
+export const BETAALDAGEN = [3, 0, 3] as const;
+export const betaaldagen = (nr: number) => BETAALDAGEN[nr - 1] ?? 3;
 
 /** Vervaldatum (jjjj-mm-dd) als factuurdatum plus een aantal dagen. */
 export function vervaldatum(factuurdatum: string, dagen: number): string {
@@ -67,8 +67,8 @@ export function factuurTeksten(nr: number, pct: number, heeftMeerwerk: boolean):
   return {
     omschrijving: heeftMeerwerk ? `Eindtermijn ${pct}% van de opdracht, inclusief meer- en minderwerk` : `Eindtermijn ${pct}% van de opdracht`,
     toelichting: heeftMeerwerk
-      ? "Fijn dat alles is opgeleverd! Dit is de eindafrekening: de laatste 5% van de opdracht, inclusief het meer- of minderwerk waar u tijdens de inmeting akkoord op heeft gegeven. Wilt u dit bedrag binnen 14 dagen voldoen? Hartelijk dank!"
-      : "Fijn dat alles is opgeleverd! Dit is de eindafrekening: de laatste 5% van de opdracht. Wilt u dit bedrag binnen 14 dagen voldoen? Hartelijk dank!",
+      ? "Fijn dat alles is opgeleverd! Dit is de eindafrekening: de laatste 5% van de opdracht, inclusief het meer- of minderwerk waar u tijdens de inmeting akkoord op heeft gegeven. Wilt u dit bedrag binnen 3 dagen voldoen? Hartelijk dank!"
+      : "Fijn dat alles is opgeleverd! Dit is de eindafrekening: de laatste 5% van de opdracht. Wilt u dit bedrag binnen 3 dagen voldoen? Hartelijk dank!",
   };
 }
 

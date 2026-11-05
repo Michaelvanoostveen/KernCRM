@@ -47,7 +47,7 @@ describe("factuurplan", () => {
 
 describe("betaling", () => {
   it("geeft de betaaltermijnen uit de voorwaarden", () => {
-    expect([1, 2, 3].map(betaaldagen)).toEqual([3, 0, 14]);
+    expect([1, 2, 3].map(betaaldagen)).toEqual([3, 0, 3]);
   });
   it("rekent de vervaldatum, ook over een maandwissel en schrikkeljaar", () => {
     expect(vervaldatum("2026-11-05", 3)).toBe("2026-11-08");

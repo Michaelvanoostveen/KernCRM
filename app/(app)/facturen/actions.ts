@@ -7,6 +7,8 @@ import { INSTELLINGEN_KERNKOZIJNEN } from "@/lib/offerte/instellingen";
 import { betaaldagen, factuurTeksten, splitsBtw } from "@/lib/facturatie/bereken";
 import { laadFactuurplan } from "./plan";
 
+type FactuurRij = { id: string; omschrijving: string; toelichting: string | null; vervaldatum: string; totaal_incl: number | string; bedrag_excl: number | string; btw_hoog: number | string; btw_laag: number | string };
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Meldingscodes die de projectpagina laat zien (?factuur=...). */
@@ -69,4 +71,40 @@ export async function annuleerFactuur(formData: FormData) {
   const { data } = await supabase.rpc("annuleer_factuur", { p_factuur: factuurId, p_reden: String(formData.get("reden") ?? "") });
   const uitkomst = data as { ok?: boolean; fout?: string } | null;
   return terug(projectId, uitkomst?.ok ? "geannuleerd" : uitkomst?.fout ?? "mislukt");
+}
+
+/**
+ * Past een open factuur aan: omschrijving, begeleidende tekst, vervaldatum en (met toestemming en reden) het bedrag.
+ * Het btw-bedrag rekent de server opnieuw uit volgens dezelfde regel als de offerte.
+ */
+export async function wijzigFactuur(formData: FormData) {
+  const projectId = String(formData.get("project_id") ?? "");
+  const factuurId = String(formData.get("factuur_id") ?? "");
+  if (!UUID.test(projectId)) redirect("/projecten");
+  if (!UUID.test(factuurId)) return terug(projectId, "ongeldig");
+  const omschrijving = String(formData.get("omschrijving") ?? "").trim();
+  const toelichting = String(formData.get("toelichting") ?? "").trim();
+  const vervaldatum = String(formData.get("vervaldatum") ?? "");
+  const nieuwBedrag = parseBedrag(String(formData.get("totaal") ?? ""));
+  if (!omschrijving || !/^\d{4}-\d{2}-\d{2}$/.test(vervaldatum) || (nieuwBedrag !== null && (Number.isNaN(nieuwBedrag) || nieuwBedrag <= 0))) return terug(projectId, "ongeldig");
+
+  const supabase = await maakServerClient();
+  const { data: rij } = await supabase.from("facturen").select("id, omschrijving, toelichting, vervaldatum, totaal_incl, bedrag_excl, btw_hoog, btw_laag").eq("id", factuurId).eq("project_id", projectId).maybeSingle();
+  const f = rij as FactuurRij | null;
+  if (!f) return terug(projectId, "ongeldig");
+
+  // Is het bedrag niet veranderd, dan geven we de bestaande bedragen door; anders splitsen we het nieuwe bedrag in excl. en btw.
+  const veranderd = nieuwBedrag !== null && Math.round(nieuwBedrag * 100) !== Math.round(Number(f.totaal_incl) * 100);
+  const btw = veranderd ? splitsBtw(nieuwBedrag!, INSTELLINGEN_KERNKOZIJNEN) : { exclBtw: Number(f.bedrag_excl), btwHoog: Number(f.btw_hoog), btwLaag: Number(f.btw_laag), totaal: Number(f.totaal_incl) };
+  const { data, error } = await supabase.rpc("wijzig_factuur", {
+    p_factuur: factuurId, p_omschrijving: omschrijving, p_toelichting: toelichting, p_vervaldatum: vervaldatum,
+    p_excl: btw.exclBtw, p_hoog: btw.btwHoog, p_laag: btw.btwLaag, p_incl: btw.totaal, p_reden: String(formData.get("reden") ?? ""),
+  });
+  if (error) {
+    console.error("factuur wijzigen mislukt:", error.code, error.message);
+    return terug(projectId, "mislukt");
+  }
+  const uitkomst = data as { ok?: boolean; fout?: string; gewijzigd?: boolean; betaald?: boolean } | null;
+  if (!uitkomst?.ok) return terug(projectId, uitkomst?.fout ?? "mislukt");
+  return terug(projectId, uitkomst.gewijzigd === false ? "niets_gewijzigd" : uitkomst.betaald ? "betaald" : "gewijzigd");
 }

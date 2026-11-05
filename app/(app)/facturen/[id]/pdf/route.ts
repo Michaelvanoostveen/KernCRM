@@ -11,22 +11,21 @@ export async function GET(_verzoek: Request, { params }: { params: Promise<{ id:
 
   const supabase = await maakServerClient();
   const { data: f } = await supabase.from("facturen")
-    .select("nummer, factuurdatum, vervaldatum, omschrijving, toelichting, bedrag_excl, btw_hoog, btw_laag, totaal_incl, meerwerk, status, projecten(nummer, naam, klanten(id, naam, aanhef, achternaam))")
+    .select("nummer, factuurdatum, vervaldatum, omschrijving, toelichting, bedrag_excl, btw_hoog, btw_laag, totaal_incl, meerwerk, status, debiteur, projecten(nummer, naam)")
     .eq("id", id).maybeSingle();
   if (!f) return new Response("Factuur niet gevonden.", { status: 404 });
 
-  const project = f.projecten as unknown as { nummer: string; naam: string; klanten: { id: string; naam: string; aanhef: string | null; achternaam: string | null } | null } | null;
-  const klant = project?.klanten ?? null;
-  const { data: adressen } = klant ? await supabase.from("adressen").select("soort, straat, huisnummer, toevoeging, postcode, plaats").eq("klant_id", klant.id) : { data: [] };
-  const lijst = (adressen ?? []) as { soort: string; straat: string; huisnummer: string; toevoeging: string | null; postcode: string; plaats: string }[];
-  const adres = lijst.find((a) => a.soort === "factuur") ?? lijst[0];
+  // De klantgegevens zoals ze waren bij het aanmaken van de factuur, niet zoals ze nu in het klantbestand staan.
+  const project = f.projecten as unknown as { nummer: string; naam: string } | null;
+  const debiteur = f.debiteur as { naam?: string; aanhef?: string | null; achternaam?: string | null; regels?: string[] } | null;
+  const klantNaam = debiteur?.naam ?? "";
 
   const pdf = await maakFactuurPdf({
     nummer: f.nummer, factuurdatum: f.factuurdatum, vervaldatum: f.vervaldatum, omschrijving: f.omschrijving, toelichting: f.toelichting,
     bedragExcl: Number(f.bedrag_excl), btwHoog: Number(f.btw_hoog), btwLaag: Number(f.btw_laag), totaal: Number(f.totaal_incl), meerwerk: Number(f.meerwerk),
-    status: f.status, projectNummer: project?.nummer ?? "", projectNaam: project?.naam ?? "", klantNaam: klant?.naam ?? "",
-    begroeting: begroeting(klant?.aanhef, klant?.achternaam, klant?.naam ?? ""),
-    adresRegels: adres ? [`${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}`, `${adres.postcode} ${adres.plaats}`] : [],
+    status: f.status, projectNummer: project?.nummer ?? "", projectNaam: project?.naam ?? "", klantNaam,
+    begroeting: begroeting(debiteur?.aanhef, debiteur?.achternaam, klantNaam),
+    adresRegels: Array.isArray(debiteur?.regels) ? debiteur.regels.filter((r): r is string => typeof r === "string") : [],
   });
   return new Response(new Uint8Array(pdf), {
     headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${factuurBestandsnaam(f.nummer)}"`, "Cache-Control": "private, no-store" },
