@@ -91,7 +91,7 @@ Dit is het hart van KernCRM: de verkoper stelt elk kozijn in het CRM samen, het 
 - De prijslogica van de website-configurator wordt overgenomen (bron: configurator/index.html in de KernKozijnen-map), maar als beheerbare tabellen in het CRM in plaats van vaste waarden in de code
 - Inkoopprijs, marge en verkoopprijs per regel; marge alleen zichtbaar voor verkoop en directie
 - Kortingen per regel of op het totaal, met een minimale marge als grens
-- **Btw (besluit 2026-11-05):** over het orderbedrag excl. btw geldt 21% over 70% en 9% over 30% (materiaal en arbeid). De offerte toont beide btw-bedragen apart. De verdeling is een instelling per bedrijf. Het verlaagde tarief geldt alleen voor woningen ouder dan 2 jaar; het bouwjaar staat op het projectadres, dus het CRM kan dat controleren. De boekhouder bevestigt de berekening
+- **Btw (besluit 2026-11-05):** over het orderbedrag excl. btw geldt 21% over 70% en 9% over 30% (materiaal en arbeid). De offerte toont beide btw-bedragen apart. De verdeling is een instelling per bedrijf. KernKozijnen werkt uitsluitend aan renovatie van woningen ouder dan 2 jaar, dus het verlaagde tarief geldt voor alle opdrachten en het CRM doet geen aparte controle. De boekhouder bevestigt de berekening
 - ISDE-indicatie per regel (glas met de juiste U-waarde)
 
 De formule per positie, zoals de configurator nu rekent (bedragen incl. btw, all-in):
@@ -155,7 +155,7 @@ Na de inmeting maakt KernCRM met één klik de bestelling aan op basis van de in
 
 **Facturatie**
 
-- **Termijnschema (besluit 2026-11-05):** 30% bij akkoord, 65% op de eerste dag van de levering en 5% na oplevering. De percentages zijn instelbaar per bedrijf en per project
+- **Termijnschema (besluit 2026-11-05):** 30% bij akkoord, 65% op de eerste dag van de levering en montage van de kozijnen en 5% na oplevering. De percentages zijn instelbaar per bedrijf en per project
 - Facturen met een vast nummer, PDF in huisstijl, betaallink (bijv. Mollie of iDEAL) en automatische herinneringen
 - Meer- en minderwerk uit inmeting of montage komt automatisch op de eindfactuur
 - Koppeling met Twinfield: verkoopfacturen en debiteuren gaan automatisch naar Twinfield, betaalstatus komt terug; inkoopfacturen van leveranciers blijven via Basecone binnenkomen en worden aan het project gekoppeld voor nacalculatie
@@ -218,7 +218,7 @@ Vijf rollen dekken het team; marges en inkoopprijzen zijn alleen zichtbaar voor 
 | Rol | Ziet | Kan |
 | --- | --- | --- |
 | Directie / beheer | alles, incl. marges en rapportages | instellingen, prijzen, gebruikers, kortingen zonder grens (de admin is het account info@kernkozijnen.nl) |
-| Verkoop | eigen klanten en projecten, marges | leads, offertes, configurator, kortingen tot maximaal 10% van het orderbedrag |
+| Verkoop | eigen klanten en projecten, marges | leads, offertes, configurator, kortingen tot maximaal 10% van het totaal van de offerte |
 | Kantoor / planning | alle klanten en projecten, geen marges | inmeting en montage plannen, bestellen, factureren, service |
 | Inmeter | toegewezen inmetingen | inmeetstaat invullen, foto's, handtekening klant |
 | Monteur | eigen werkbonnen en montages | checklists, foto's, uren, opleverpunten, handtekening |
