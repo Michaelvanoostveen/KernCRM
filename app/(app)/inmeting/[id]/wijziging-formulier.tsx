@@ -8,11 +8,17 @@ import { heeftWijziging, meerprijsConfiguratie, pasVoorstelToe } from "@/lib/inm
 import { euro } from "@/lib/projecten/positie";
 import { stelWijzigingVoor, type WijzigingStatus } from "../actions";
 
+const prijsTekst = (n: number) => (n >= 0 ? `+ ${euro(n)}` : `− ${euro(-n)}`);
+/** Zelfde regels als op de server: met een komma is de punt een duizendtal, zonder komma het decimaalteken. */
+function parseBedrag(t: string): number | null {
+  const n = Number(t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t);
+  return Number.isFinite(n) ? n : null;
+}
 const veld = "w-full rounded-lg border border-stone-300 bg-white px-3 py-3 text-base";
 
 /** Indeling, draairichting, kleur en glas van één positie aanpassen. De maat blijft de offertemaat. */
-export default function WijzigingFormulier({ inmetingId, positieId, regels, begin, aantal }: {
-  inmetingId: string; positieId: string; regels: Prijsregels; begin: Configuratie; aantal: number;
+export default function WijzigingFormulier({ inmetingId, positieId, regels, begin, aantal, magPrijzen }: {
+  inmetingId: string; positieId: string; regels: Prijsregels; begin: Configuratie; aantal: number; magPrijzen: boolean;
 }) {
   const [status, actie, bezig] = useActionState<WijzigingStatus, FormData>(stelWijzigingVoor, {});
   const [variant, setVariant] = useState(begin.variant);
@@ -20,6 +26,7 @@ export default function WijzigingFormulier({ inmetingId, positieId, regels, begi
   const [kleur, setKleur] = useState(begin.kleur);
   const [kleurVleugel, setKleurVleugel] = useState(begin.kleurVleugel ?? "");
   const [glas, setGlas] = useState(begin.glas);
+  const [eigen, setEigen] = useState("");
 
   const product = regels.producten[begin.product];
   const gekozen = product.variants.find((v) => v.key === variant) ?? product.variants[0];
@@ -28,6 +35,7 @@ export default function WijzigingFormulier({ inmetingId, positieId, regels, begi
 
   const nieuw = useMemo(() => pasVoorstelToe(begin, { variant, cols, kleur, kleurVleugel: kleurVleugel && kleurVleugel !== kleur ? kleurVleugel : null, glas }), [begin, variant, cols, kleur, kleurVleugel, glas]);
   const gewijzigd = heeftWijziging(begin, nieuw);
+  const eigenBedrag = eigen.trim() === "" ? null : parseBedrag(eigen);
   const { meerprijs, fout } = useMemo(() => {
     try { return { meerprijs: meerprijsConfiguratie(regels, begin, nieuw, aantal), fout: null }; }
     catch (e) { if (e instanceof PrijsFout) return { meerprijs: 0, fout: e.message }; throw e; }
@@ -93,8 +101,22 @@ export default function WijzigingFormulier({ inmetingId, positieId, regels, begi
       {status.fout && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{status.fout}</p>}
       {gewijzigd && !fout && (
         <p role="status" className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
-          {meerprijs === 0 ? "Geen prijsverschil" : meerprijs > 0 ? `Meerprijs ${euro(meerprijs)}` : `Minderprijs ${euro(-meerprijs)}`} incl. btw{aantal > 1 ? ` voor ${aantal} stuks` : ""}
+          {eigenBedrag !== null ? `Prijs ${prijsTekst(eigenBedrag)}` : meerprijs === 0 ? "Geen prijsverschil" : meerprijs > 0 ? `Meerprijs ${euro(meerprijs)}` : `Minderprijs ${euro(-meerprijs)}`} incl. btw{aantal > 1 ? ` voor ${aantal} stuks` : ""}
         </p>
+      )}
+      {magPrijzen && gewijzigd && !fout && (
+        <details className="mt-3 rounded-lg border border-stone-200 bg-white px-3 py-2">
+          <summary className="cursor-pointer text-sm font-semibold">Eigen prijs invoeren</summary>
+          <label className="mt-2 block text-sm font-semibold">Eigen meerprijs (incl. btw{aantal > 1 ? `, voor ${aantal} stuks` : ""})
+            <input name="eigen_prijs" inputMode="decimal" value={eigen} onChange={(e) => setEigen(e.target.value)} placeholder="Leeg = berekende prijs" className={`${veld} mt-1`} />
+          </label>
+          {eigen.trim() !== "" && (
+            <label className="mt-2 block text-sm font-semibold">Reden
+              <input name="reden" required autoComplete="off" placeholder="Bijvoorbeeld: coulance of extra werk" className={`${veld} mt-1`} />
+            </label>
+          )}
+          <p className="mt-2 text-xs text-stone-500">De reden en het oorspronkelijke voorstel zijn alleen zichtbaar voor de directie, niet voor de klant.</p>
+        </details>
       )}
       <div className="mt-3 flex items-center gap-3">
         <button disabled={bezig || !gewijzigd || !!fout} className="rounded-lg bg-[#B35B40] px-6 py-3 text-base font-bold text-white hover:brightness-110 disabled:opacity-50">{bezig ? "Opslaan…" : "Wijziging voorstellen"}</button>
