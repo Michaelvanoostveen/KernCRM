@@ -65,10 +65,22 @@ export async function bewaarPositie(_vorige: PositieStatus, formData: FormData):
   const rij = { config, prijs, aantal, ruimte, prijsregels_versie: PRIJSREGELS_VERSIE, gewijzigd: new Date().toISOString() };
   if (positieId === "nieuw") {
     const { data: laatste } = await supabase.from("posities").select("nummer").eq("offerte_id", offerte.id).order("nummer", { ascending: false }).limit(1).maybeSingle();
-    const { error } = await supabase.from("posities").insert({ ...rij, tenant_id: project.tenant_id, project_id: projectId, offerte_id: offerte.id, nummer: (laatste?.nummer ?? 0) + 1 });
-    if (error) {
-      console.error("positie insert mislukt:", error.code, error.message);
-      return { fout: `Opslaan lukte niet (${error.code ?? "onbekend"}). Probeer het opnieuw.` };
+    const { data: nieuw, error } = await supabase
+      .from("posities")
+      .insert({ ...rij, tenant_id: project.tenant_id, project_id: projectId, offerte_id: offerte.id, nummer: (laatste?.nummer ?? 0) + 1 })
+      .select("id")
+      .single();
+    if (error || !nieuw) {
+      console.error("positie insert mislukt:", error?.code, error?.message);
+      return { fout: `Opslaan lukte niet (${error?.code ?? "onbekend"}). Probeer het opnieuw.` };
+    }
+    // De positie komt onderaan in de offerte.
+    const { data: lastRegel } = await supabase.from("offerte_regels").select("volgorde").eq("offerte_id", offerte.id).order("volgorde", { ascending: false }).limit(1).maybeSingle();
+    const { error: regelFout } = await supabase.from("offerte_regels").insert({ tenant_id: project.tenant_id, offerte_id: offerte.id, soort: "positie", positie_id: nieuw.id, volgorde: (lastRegel?.volgorde ?? 0) + 1 });
+    if (regelFout) {
+      console.error("offerteregel insert mislukt:", regelFout.code, regelFout.message);
+      await supabase.from("posities").delete().eq("id", nieuw.id);
+      return { fout: `De positie kon niet aan de offerte worden toegevoegd (${regelFout.code ?? "onbekend"}). Probeer het opnieuw.` };
     }
   } else {
     const { error } = await supabase.from("posities").update(rij).eq("id", positieId).eq("project_id", projectId);
@@ -86,4 +98,137 @@ export async function verwijderPositie(formData: FormData) {
     await supabase.from("posities").delete().eq("id", positieId).eq("project_id", projectId);
   }
   redirect(UUID.test(projectId) ? `/projecten/${projectId}` : "/projecten");
+}
+
+// ── Offerte opslaan ──
+
+export type OfferteStatus = { fout?: string };
+
+const SOORTEN = ["positie", "artikel", "kop", "tekst", "korting"] as const;
+type Soort = (typeof SOORTEN)[number];
+type Invoer = { id?: unknown; soort?: unknown; titel?: unknown; tekst?: unknown; aantal?: unknown; prijs?: unknown; modus?: unknown; waarde?: unknown };
+
+function tekstveld(v: unknown, max: number): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim().slice(0, max);
+  return t === "" ? null : t;
+}
+function getal(v: unknown, min: number, max: number, standaard: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, Math.round(n * 100) / 100)) : standaard;
+}
+
+/** Bewaart de volgorde en inhoud van de regels van de offerte. Posities zelf worden in de configurator beheerd. */
+export async function bewaarOfferte(_vorige: OfferteStatus, formData: FormData): Promise<OfferteStatus> {
+  const projectId = String(formData.get("project_id") ?? "");
+  if (!UUID.test(projectId)) return { fout: "Dit project is niet gevonden." };
+
+  let invoer: Invoer[];
+  try {
+    const gelezen = JSON.parse(String(formData.get("regels") ?? "[]"));
+    if (!Array.isArray(gelezen) || gelezen.length > 300) throw new Error();
+    invoer = gelezen;
+  } catch {
+    return { fout: "De regels zijn onleesbaar. Ververs de pagina en probeer het opnieuw." };
+  }
+
+  const supabase = await maakServerClient();
+  const { data: project } = await supabase.from("projecten").select("id, tenant_id").eq("id", projectId).maybeSingle();
+  if (!project) return { fout: "Dit project is niet gevonden." };
+  const { data: offerte } = await supabase.from("offertes").select("id, status").eq("project_id", projectId).order("versie", { ascending: false }).limit(1).maybeSingle();
+  if (!offerte) return { fout: "Dit project heeft nog geen offerte." };
+  if (offerte.status !== "concept") return { fout: "Deze offerte is verstuurd en kan niet meer gewijzigd worden. Maak een nieuwe versie." };
+
+  const { data: bestaand } = await supabase.from("offerte_regels").select("id, soort, positie_id").eq("offerte_id", offerte.id);
+  const bestaandeIds = new Set((bestaand ?? []).map((r) => r.id as string));
+  const positieRegels = new Map((bestaand ?? []).filter((r) => r.soort === "positie").map((r) => [r.id as string, r]));
+
+  const nieuweRijen: Record<string, unknown>[] = [];
+  const bijwerken: Record<string, unknown>[] = [];
+  const bewaardePositieIds = new Set<string>();
+  let volgorde = 0;
+
+  for (const r of invoer) {
+    const soort = r.soort as Soort;
+    if (!SOORTEN.includes(soort)) return { fout: "Een regel heeft een onbekend soort." };
+    volgorde += 1;
+    const id = typeof r.id === "string" && UUID.test(r.id) ? r.id : null;
+
+    if (soort === "positie") {
+      // Een positie kan hier alleen van plaats veranderen; ontbrekende of onbekende posities negeren we.
+      if (!id || !positieRegels.has(id)) continue;
+      bewaardePositieIds.add(id);
+      bijwerken.push({ id, volgorde, gewijzigd: new Date().toISOString() });
+      continue;
+    }
+
+    const rij: Record<string, unknown> = {
+      tenant_id: project.tenant_id,
+      offerte_id: offerte.id,
+      volgorde,
+      soort,
+      titel: tekstveld(r.titel, 160),
+      tekst: tekstveld(r.tekst, 5000),
+      aantal: soort === "artikel" ? getal(r.aantal, 0.01, 9999, 1) : 1,
+      prijs: soort === "artikel" ? getal(r.prijs, 0, 1_000_000, 0) : 0,
+      korting_modus: null,
+      korting_waarde: null,
+      gewijzigd: new Date().toISOString(),
+    };
+    if (soort === "korting") {
+      const modus = r.modus === "bedrag" ? "bedrag" : "percentage";
+      rij.korting_modus = modus;
+      rij.korting_waarde = getal(r.waarde, 0, modus === "percentage" ? 100 : 1_000_000, 0);
+    }
+    if (id && bestaandeIds.has(id) && !positieRegels.has(id)) bijwerken.push({ id, ...rij });
+    else nieuweRijen.push(rij);
+    if (id && bestaandeIds.has(id)) bewaardePositieIds.add(id);
+  }
+
+  // Posities die in de invoer ontbreken (bijvoorbeeld net in een ander tabblad toegevoegd) blijven staan, onderaan.
+  for (const [id] of positieRegels) {
+    if (!bewaardePositieIds.has(id)) bijwerken.push({ id, volgorde: ++volgorde, gewijzigd: new Date().toISOString() });
+  }
+
+  // Regels (geen posities) die niet meer in de invoer staan, verwijderen we.
+  const behouden = new Set(bijwerken.map((r) => r.id as string));
+  const weg = (bestaand ?? []).filter((r) => r.soort !== "positie" && !behouden.has(r.id as string)).map((r) => r.id as string);
+  if (weg.length) {
+    const { error } = await supabase.from("offerte_regels").delete().in("id", weg);
+    if (error) return { fout: `Opslaan lukte niet (${error.code ?? "onbekend"}). Probeer het opnieuw.` };
+  }
+  for (const rij of bijwerken) {
+    const { id, ...velden } = rij;
+    const { error } = await supabase.from("offerte_regels").update(velden).eq("id", id as string);
+    if (error) return { fout: `Opslaan lukte niet (${error.code ?? "onbekend"}). Probeer het opnieuw.` };
+  }
+  if (nieuweRijen.length) {
+    const { error } = await supabase.from("offerte_regels").insert(nieuweRijen);
+    if (error) {
+      console.error("offerteregels insert mislukt:", error.code, error.message);
+      return { fout: `Opslaan lukte niet (${error.code ?? "onbekend"}). Probeer het opnieuw.` };
+    }
+  }
+  await supabase.from("offertes").update({ gewijzigd: new Date().toISOString() }).eq("id", offerte.id);
+  await supabase.from("projecten").update({ gewijzigd: new Date().toISOString() }).eq("id", projectId);
+  redirect(`/projecten/${projectId}?opgeslagen=1`);
+}
+
+/** Verwijdert een project met alle offertes, posities en regels. Een verstuurde of getekende offerte alleen door de directie. */
+export async function verwijderProject(formData: FormData) {
+  const projectId = String(formData.get("project_id") ?? "");
+  if (!UUID.test(projectId)) redirect("/projecten");
+  const supabase = await maakServerClient();
+  const { data: project } = await supabase.from("projecten").select("id, tenant_id, klant_id, offertes(status)").eq("id", projectId).maybeSingle();
+  if (!project) redirect("/projecten");
+
+  const vastgelegd = (project.offertes as { status: string }[]).some((o) => o.status !== "concept");
+  if (vastgelegd) {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: lid } = user ? await supabase.from("tenant_leden").select("rol").eq("tenant_id", project.tenant_id).eq("user_id", user.id).maybeSingle() : { data: null };
+    if (lid?.rol !== "directie") redirect(`/projecten/${projectId}?fout=verwijderen`);
+  }
+  const { error } = await supabase.from("projecten").delete().eq("id", projectId);
+  if (error) redirect(`/projecten/${projectId}?fout=verwijderen`);
+  redirect(`/klanten/${project.klant_id}`);
 }
