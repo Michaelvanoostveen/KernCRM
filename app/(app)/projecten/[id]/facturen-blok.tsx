@@ -66,6 +66,8 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
 
   const { data: hData } = facturen.length ? await supabase.from("factuur_herinneringen").select("factuur_id, niveau, verstuurd_op").in("factuur_id", facturen.map((f) => f.id)).order("niveau") : { data: [] };
   const herinneringen = (hData ?? []) as Herinnering[];
+  const { data: moRij } = await supabase.from("montages").select("status, start_datum, eind_datum, leverdatum").eq("project_id", projectId).neq("status", "geannuleerd").maybeSingle();
+  const montage = moRij as { status: string; start_datum: string; eind_datum: string; leverdatum: string | null } | null;
   const { data: pRij } = await supabase.from("projecten").select("naam").eq("id", projectId).maybeSingle();
   const projectNaam = (pRij as { naam?: string } | null)?.naam ?? "";
   const mag = rol === "directie" || rol === "kantoor";
@@ -103,6 +105,8 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <div className="font-semibold">Termijn {t.nr}: {t.naam} ({t.pct}%)</div>
+                  {montage && t.nr === 2 && <div className="text-xs text-blue-800">Montage start op {datum(montage.start_datum)}{montage.status === "voorlopig" ? " (voorlopig: leverdatum nog niet bekend)" : ""}.</div>}
+                  {montage && t.nr === 3 && <div className="text-xs text-blue-800">{montage.status === "afgerond" ? "De montage is afgerond." : `Montage loopt t/m ${datum(montage.eind_datum)}.`}</div>}
                   <div className="text-sm text-stone-600">{euroTekst(t.bedrag)} incl. btw{t.meerwerk !== 0 ? ` (waarvan meer-/minderwerk ${euroTekst(t.meerwerk)})` : ""}</div>
                 </div>
                 {f && <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS[f.status].kleur}`}>{STATUS[f.status].label}</span>}
