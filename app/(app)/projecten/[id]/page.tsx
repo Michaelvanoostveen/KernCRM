@@ -17,10 +17,12 @@ type PositieRij = { id: string; nummer: number; ruimte: string | null; aantal: n
 type RegelRij = {
   id: string; volgorde: number; soort: EditorRegel["soort"]; positie_id: string | null; titel: string | null; tekst: string | null;
   aantal: number; prijs: number; korting_modus: "percentage" | "bedrag" | null; korting_waarde: number | null; posities: PositieRij | null;
+  artikel_id: string | null; prijs_override: number | null; override_reden: string | null; artikelen: { code: string; eenheid: string } | null;
 };
 
 function maakRegel(r: RegelRij): EditorRegel {
-  const basis: EditorRegel = { id: r.id, soort: r.soort, positieId: r.positie_id, titel: r.titel, tekst: r.tekst, aantal: Number(r.aantal), prijs: Number(r.prijs), modus: r.korting_modus, waarde: r.korting_waarde === null ? null : Number(r.korting_waarde) };
+  const basis: EditorRegel = { id: r.id, soort: r.soort, positieId: r.positie_id, titel: r.titel, tekst: r.tekst, aantal: Number(r.aantal), prijs: Number(r.prijs), modus: r.korting_modus, waarde: r.korting_waarde === null ? null : Number(r.korting_waarde),
+    artikelId: r.artikel_id, prijsOverride: r.prijs_override === null ? null : Number(r.prijs_override), overrideReden: r.override_reden, code: r.artikelen?.code ?? null, eenheid: r.artikelen?.eenheid ?? null };
   if (r.soort !== "positie" || !r.posities) return basis;
   const p = r.posities;
   const regels = haalPrijsregels();
@@ -43,22 +45,25 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const supabase = await maakServerClient();
   const { data: p } = await supabase
     .from("projecten")
-    .select("id, tenant_id, nummer, naam, fase, klanten(id, naam), offertes(id, versie, status, gewijzigd)")
+    .select("id, tenant_id, nummer, naam, fase, klanten(id, naam), offertes(id, versie, status, gewijzigd, totaal_override, totaal_override_reden)")
     .eq("id", id)
     .maybeSingle();
   if (!p) notFound();
 
   const klant = p.klanten as unknown as { id: string; naam: string } | null;
-  const offerte = [...(p.offertes as { id: string; versie: number; status: string; gewijzigd: string }[])].sort((a, b) => b.versie - a.versie)[0];
+  const offerte = [...(p.offertes as { id: string; versie: number; status: string; gewijzigd: string; totaal_override: number | null; totaal_override_reden: string | null }[])].sort((a, b) => b.versie - a.versie)[0];
   const { data: regelData } = offerte
     ? await supabase
         .from("offerte_regels")
-        .select("id, volgorde, soort, positie_id, titel, tekst, aantal, prijs, korting_modus, korting_waarde, posities(id, nummer, ruimte, aantal, prijs, config)")
+        .select("id, volgorde, soort, positie_id, titel, tekst, aantal, prijs, korting_modus, korting_waarde, artikel_id, prijs_override, override_reden, artikelen(code, eenheid), posities(id, nummer, ruimte, aantal, prijs, config)")
         .eq("offerte_id", offerte.id)
         .order("volgorde")
     : { data: [] };
   const regels = ((regelData ?? []) as unknown as RegelRij[]).map(maakRegel);
 
+  const { data: artikelData } = await supabase.from("artikelen").select("id, groep, code, naam, eenheid, verkoopprijs_incl").eq("actief", true).order("groep").order("naam");
+  const artikelen = (artikelData ?? []).map((a) => ({ id: a.id as string, groep: a.groep as string, code: a.code as string, naam: a.naam as string, eenheid: a.eenheid as string, prijsIncl: Number(a.verkoopprijs_incl) }));
+  const { data: magData } = await supabase.rpc("mag_prijzen_aanpassen", { p_tenant: p.tenant_id });
   const { data: { user } } = await supabase.auth.getUser();
   const { data: lid } = user ? await supabase.from("tenant_leden").select("rol").eq("tenant_id", p.tenant_id).eq("user_id", user.id).maybeSingle() : { data: null };
   const nu = faseIndex(p.fase);
@@ -102,6 +107,10 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           versie={offerte.versie}
           statusLabel={STATUS[offerte.status] ?? offerte.status}
           opgeslagen={opgeslagen === "1"}
+          mag={magData === true}
+          artikelen={artikelen}
+          totaalOverride={offerte.totaal_override === null ? null : Number(offerte.totaal_override)}
+          totaalOverrideReden={offerte.totaal_override_reden}
         />
       ) : (
         <p className="mt-6 rounded-lg border border-dashed border-stone-300 bg-white p-8 text-center text-stone-600">Dit project heeft nog geen offerte.</p>

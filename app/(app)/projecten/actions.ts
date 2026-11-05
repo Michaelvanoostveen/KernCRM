@@ -83,8 +83,11 @@ export async function bewaarPositie(_vorige: PositieStatus, formData: FormData):
       return { fout: `De positie kon niet aan de offerte worden toegevoegd (${regelFout.code ?? "onbekend"}). Probeer het opnieuw.` };
     }
   } else {
+    const { data: oud } = await supabase.from("posities").select("prijs").eq("id", positieId).eq("project_id", projectId).maybeSingle();
     const { error } = await supabase.from("posities").update(rij).eq("id", positieId).eq("project_id", projectId);
     if (error) return { fout: `Opslaan lukte niet (${error.code ?? "onbekend"}). Probeer het opnieuw.` };
+    // Verandert de berekende prijs, dan vervalt een handmatige aanpassing: die hoorde bij de oude prijs.
+    if (oud && Number(oud.prijs) !== prijs) await supabase.from("offerte_regels").update({ prijs_override: null }).eq("positie_id", positieId);
   }
   await supabase.from("projecten").update({ gewijzigd: new Date().toISOString(), ...(project.fase === "lead" ? { fase: "offerte" } : {}) }).eq("id", projectId);
   redirect(`/projecten/${projectId}`);
@@ -106,7 +109,20 @@ export type OfferteStatus = { fout?: string };
 
 const SOORTEN = ["positie", "artikel", "kop", "tekst", "korting"] as const;
 type Soort = (typeof SOORTEN)[number];
-type Invoer = { id?: unknown; soort?: unknown; titel?: unknown; tekst?: unknown; aantal?: unknown; prijs?: unknown; modus?: unknown; waarde?: unknown };
+type Invoer = { id?: unknown; soort?: unknown; titel?: unknown; tekst?: unknown; aantal?: unknown; prijs?: unknown; modus?: unknown; waarde?: unknown; artikelId?: unknown; prijsOverride?: unknown; overrideReden?: unknown };
+
+const GEEN_TOESTEMMING = "Je hebt geen toestemming om prijzen handmatig aan te passen of eigen artikelprijzen te gebruiken. Vraag de directie om deze toestemming.";
+const dbFout = (e: { code?: string | null }) => (e.code === "42501" ? GEEN_TOESTEMMING : `Opslaan lukte niet (${e.code ?? "onbekend"}). Probeer het opnieuw.`);
+
+/** Leest een handmatige prijs met reden uit de invoer. `leeg` betekent: geen aanpassing. */
+function leesOverride(prijs: unknown, reden: unknown): { prijs_override: number | null; override_reden: string | null } | { fout: string } {
+  if (prijs === null || prijs === undefined || prijs === "") return { prijs_override: null, override_reden: null };
+  const n = Number(prijs);
+  if (!Number.isFinite(n) || n < 0 || n > 1_000_000) return { fout: "Een handmatige prijs moet tussen 0 en 1.000.000 euro liggen." };
+  const r = tekstveld(reden, 300);
+  if (!r || r.length < 3) return { fout: "Vul bij een handmatige prijs een reden in." };
+  return { prijs_override: Math.round(n * 100) / 100, override_reden: r };
+}
 
 function tekstveld(v: unknown, max: number): string | null {
   if (typeof v !== "string") return null;
@@ -135,11 +151,21 @@ export async function bewaarOfferte(_vorige: OfferteStatus, formData: FormData):
   const supabase = await maakServerClient();
   const { data: project } = await supabase.from("projecten").select("id, tenant_id").eq("id", projectId).maybeSingle();
   if (!project) return { fout: "Dit project is niet gevonden." };
-  const { data: offerte } = await supabase.from("offertes").select("id, status").eq("project_id", projectId).order("versie", { ascending: false }).limit(1).maybeSingle();
+  const { data: offerte } = await supabase.from("offertes").select("id, status, totaal_override").eq("project_id", projectId).order("versie", { ascending: false }).limit(1).maybeSingle();
   if (!offerte) return { fout: "Dit project heeft nog geen offerte." };
   if (offerte.status !== "concept") return { fout: "Deze offerte is verstuurd en kan niet meer gewijzigd worden. Maak een nieuwe versie." };
 
-  const { data: bestaand } = await supabase.from("offerte_regels").select("id, soort, positie_id").eq("offerte_id", offerte.id);
+  const { data: magData } = await supabase.rpc("mag_prijzen_aanpassen", { p_tenant: project.tenant_id });
+  const mag = magData === true;
+
+  // Eigen totaalprijs (optioneel, alleen met toestemming).
+  const totaalRuw = String(formData.get("totaal_override") ?? "").trim();
+  const totaalOv = leesOverride(totaalRuw === "" ? null : totaalRuw.replace(",", "."), formData.get("totaal_override_reden"));
+  if ("fout" in totaalOv) return { fout: totaalOv.fout };
+  const huidigTotaal = offerte.totaal_override === null ? null : Number(offerte.totaal_override);
+  if (totaalOv.prijs_override !== huidigTotaal && totaalOv.prijs_override !== null && !mag) return { fout: GEEN_TOESTEMMING };
+
+  const { data: bestaand } = await supabase.from("offerte_regels").select("id, soort, positie_id, prijs_override").eq("offerte_id", offerte.id);
   const bestaandeIds = new Set((bestaand ?? []).map((r) => r.id as string));
   const positieRegels = new Map((bestaand ?? []).filter((r) => r.soort === "positie").map((r) => [r.id as string, r]));
 
@@ -158,9 +184,16 @@ export async function bewaarOfferte(_vorige: OfferteStatus, formData: FormData):
       // Een positie kan hier alleen van plaats veranderen; ontbrekende of onbekende posities negeren we.
       if (!id || !positieRegels.has(id)) continue;
       bewaardePositieIds.add(id);
-      bijwerken.push({ id, volgorde, gewijzigd: new Date().toISOString() });
+      const ov = leesOverride(r.prijsOverride, r.overrideReden);
+      if ("fout" in ov) return { fout: ov.fout };
+      bijwerken.push({ id, volgorde, ...ov, gewijzigd: new Date().toISOString() });
       continue;
     }
+
+    const ov = soort === "artikel" ? leesOverride(r.prijsOverride, r.overrideReden) : { prijs_override: null, override_reden: null };
+    if ("fout" in ov) return { fout: ov.fout };
+    const artikelId = soort === "artikel" && typeof r.artikelId === "string" && UUID.test(r.artikelId) ? r.artikelId : null;
+    if (soort === "artikel" && !artikelId && !mag && !(id && bestaandeIds.has(id))) return { fout: GEEN_TOESTEMMING };
 
     const rij: Record<string, unknown> = {
       tenant_id: project.tenant_id,
@@ -173,6 +206,8 @@ export async function bewaarOfferte(_vorige: OfferteStatus, formData: FormData):
       prijs: soort === "artikel" ? getal(r.prijs, 0, 1_000_000, 0) : 0,
       korting_modus: null,
       korting_waarde: null,
+      artikel_id: artikelId,
+      ...ov,
       gewijzigd: new Date().toISOString(),
     };
     if (soort === "korting") {
@@ -195,21 +230,22 @@ export async function bewaarOfferte(_vorige: OfferteStatus, formData: FormData):
   const weg = (bestaand ?? []).filter((r) => r.soort !== "positie" && !behouden.has(r.id as string)).map((r) => r.id as string);
   if (weg.length) {
     const { error } = await supabase.from("offerte_regels").delete().in("id", weg);
-    if (error) return { fout: `Opslaan lukte niet (${error.code ?? "onbekend"}). Probeer het opnieuw.` };
+    if (error) return { fout: dbFout(error) };
   }
   for (const rij of bijwerken) {
     const { id, ...velden } = rij;
     const { error } = await supabase.from("offerte_regels").update(velden).eq("id", id as string);
-    if (error) return { fout: `Opslaan lukte niet (${error.code ?? "onbekend"}). Probeer het opnieuw.` };
+    if (error) return { fout: dbFout(error) };
   }
   if (nieuweRijen.length) {
     const { error } = await supabase.from("offerte_regels").insert(nieuweRijen);
     if (error) {
       console.error("offerteregels insert mislukt:", error.code, error.message);
-      return { fout: `Opslaan lukte niet (${error.code ?? "onbekend"}). Probeer het opnieuw.` };
+      return { fout: dbFout(error) };
     }
   }
-  await supabase.from("offertes").update({ gewijzigd: new Date().toISOString() }).eq("id", offerte.id);
+  const { error: offerteFout } = await supabase.from("offertes").update({ gewijzigd: new Date().toISOString(), totaal_override: totaalOv.prijs_override, totaal_override_reden: totaalOv.override_reden }).eq("id", offerte.id);
+  if (offerteFout) return { fout: dbFout(offerteFout) };
   await supabase.from("projecten").update({ gewijzigd: new Date().toISOString() }).eq("id", projectId);
   redirect(`/projecten/${projectId}?opgeslagen=1`);
 }

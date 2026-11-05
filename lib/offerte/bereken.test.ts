@@ -67,3 +67,39 @@ describe("kortingToegestaan", () => {
     expect(kortingToegestaan(60, "directie", inst)).toBe(true);
   });
 });
+
+describe("handmatige prijsaanpassing", () => {
+  const regel = (o: Partial<OfferteRegel>): OfferteRegel => ({ id: "r", soort: "positie", positieId: "x", aantal: 1, prijs: 1000, ...o });
+
+  it("rekent met de overschreven prijs en bewaart de berekende prijs als basis", () => {
+    const b = berekenOfferte([regel({ prijsOverride: 900 })], inst);
+    expect(b.subtotaal).toBe(900);
+    expect(b.basisSubtotaal).toBe(1000);
+    expect(b.verlagingPct).toBeCloseTo(10);
+  });
+  it("telt een prijsverhoging niet mee als verlaging", () => {
+    const b = berekenOfferte([regel({ prijsOverride: 1200 })], inst);
+    expect(b.totaal).toBe(1200);
+    expect(b.verlagingPct).toBe(0);
+  });
+  it("neemt een eigen totaalprijs over en toont het verschil als aanpassing", () => {
+    const b = berekenOfferte([regel({ prijs: 10360 })], inst, { totaalOverride: 10000 });
+    expect(b.totaal).toBe(10000);
+    expect(b.aanpassing).toBe(-360);
+    expect(b.verlagingPct).toBeCloseTo(3.475, 2);
+    expect(Math.round((b.exclBtw + b.btwHoog + b.btwLaag) * 100)).toBe(1000000);
+    expect(b.termijnen.reduce((s, t) => s + t.bedrag, 0)).toBeCloseTo(10000, 2);
+  });
+  it("telt korting, regelprijs en totaalprijs samen mee voor de kortinggrens", () => {
+    const regels = [regel({ prijsOverride: 950 }), { id: "k", soort: "korting", modus: "percentage", waarde: 5, aantal: 1, prijs: 0 } as OfferteRegel];
+    const b = berekenOfferte(regels, inst);
+    expect(b.verlagingPct).toBeCloseTo(9.75, 2);
+    const c = berekenOfferte(regels, inst, { totaalOverride: 850 });
+    expect(c.verlagingPct).toBeCloseTo(15, 5);
+    expect(kortingToegestaan(c.verlagingPct, "verkoop", inst)).toBe(false);
+    expect(kortingToegestaan(c.verlagingPct, "directie", inst)).toBe(true);
+  });
+  it("laat een lege totaalprijs de berekende prijs gebruiken", () => {
+    expect(berekenOfferte([regel({})], inst, { totaalOverride: null }).totaal).toBe(1000);
+  });
+});

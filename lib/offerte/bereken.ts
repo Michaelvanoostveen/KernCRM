@@ -4,9 +4,14 @@ const cent = (euro: number) => Math.round(euro * 100);
 const euro = (c: number) => c / 100;
 
 /** Rekent een offerte door. Alle bedragen zijn op de cent afgerond en de onderdelen tellen exact op tot het totaal. */
-export function berekenOfferte(regels: OfferteRegel[], inst: Instellingen): Berekening {
+export function berekenOfferte(regels: OfferteRegel[], inst: Instellingen, opties: { totaalOverride?: number | null } = {}): Berekening {
   let subC = 0;
-  for (const r of regels) if (r.soort === "positie" || r.soort === "artikel") subC += cent(r.aantal * r.prijs);
+  let basisC = 0;
+  for (const r of regels) {
+    if (r.soort !== "positie" && r.soort !== "artikel") continue;
+    basisC += cent(r.aantal * r.prijs);
+    subC += cent(r.aantal * (r.prijsOverride ?? r.prijs));
+  }
 
   let kortC = 0;
   for (const r of regels) {
@@ -15,7 +20,10 @@ export function berekenOfferte(regels: OfferteRegel[], inst: Instellingen): Bere
   }
   kortC = Math.min(kortC, subC);
 
-  const totC = subC - kortC;
+  const naKortingC = subC - kortC;
+  const eigen = opties.totaalOverride;
+  const totC = eigen !== null && eigen !== undefined && eigen >= 0 ? cent(eigen) : naKortingC;
+  const verlagingC = Math.max(0, basisC - totC);
   // Het totaal is incl. btw: 70% van het bedrag excl. btw valt onder 21%, de rest onder 9%.
   const factor = 1 + inst.btwHoog * inst.deelHoog + inst.btwLaag * (1 - inst.deelHoog);
   const exclC = Math.round(totC / factor);
@@ -31,8 +39,11 @@ export function berekenOfferte(regels: OfferteRegel[], inst: Instellingen): Bere
 
   return {
     subtotaal: euro(subC),
+    basisSubtotaal: euro(basisC),
     korting: euro(kortC),
     kortingPct: subC ? (kortC / subC) * 100 : 0,
+    aanpassing: euro(totC - naKortingC),
+    verlagingPct: basisC ? (verlagingC / basisC) * 100 : 0,
     totaal: euro(totC),
     exclBtw: euro(exclC),
     btwHoog: euro(hoogC),

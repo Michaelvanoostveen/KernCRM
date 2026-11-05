@@ -90,7 +90,9 @@ Dit is het hart van KernCRM: de verkoper stelt elk kozijn in het CRM samen, het 
 
 - De prijslogica van de website-configurator wordt overgenomen (bron: configurator/index.html in de KernKozijnen-map), maar als beheerbare tabellen in het CRM in plaats van vaste waarden in de code
 - Inkoopprijs, marge en verkoopprijs per regel; marge alleen zichtbaar voor verkoop en directie
-- Kortingen per regel of op het totaal, met een minimale marge als grens
+- Kortingen op het totaal van de offerte, met de grens uit de rollen (verkoop maximaal 10%, directie onbeperkt)
+- **Handmatige prijsaanpassing (besluit 2026-11-05):** per gebruiker is een toestemming "mag prijzen handmatig aanpassen" in te stellen door de directie. Wie die toestemming heeft kan de prijs van een positie of artikelregel overschrijven en een eigen totaalprijs invullen. Elke aanpassing heeft een verplichte reden en wordt vastgelegd met de oorspronkelijke prijs, de nieuwe prijs, wie en wanneer. De klant ziet alleen de eindprijs. Een prijsverlaging telt mee voor de kortinggrens: wie het totaal meer dan 10% onder de berekende prijs brengt, heeft de directie nodig. De toestemming wordt in de database afgedwongen, niet alleen in het scherm
+- **Artikelcatalogus:** de 97 artikelen uit Teamleader staan met vaste verkoopprijzen in de catalogus. Zonder toestemming kiest een gebruiker een artikel uit de catalogus met zijn vaste prijs; een artikelregel met een eigen prijs vraagt de toestemming. Artikelen die de configurator al dekt (kozijnen, glas, kleur, beslag) staan inactief in de catalogus
 - **Btw (besluit 2026-11-05):** over het orderbedrag excl. btw geldt 21% over 70% en 9% over 30% (materiaal en arbeid). De offerte toont beide btw-bedragen apart. De verdeling is een instelling per bedrijf. KernKozijnen werkt uitsluitend aan renovatie van woningen ouder dan 2 jaar, dus het verlaagde tarief geldt voor alle opdrachten en het CRM doet geen aparte controle. De boekhouder bevestigt de berekening
 - ISDE-indicatie per regel (glas met de juiste U-waarde)
 

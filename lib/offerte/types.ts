@@ -12,6 +12,10 @@ export interface OfferteRegel {
   prijs: number;
   modus?: KortingModus | null;
   waarde?: number | null;
+  /** Handmatig overschreven prijs per stuk (incl. btw). Vervangt `prijs` in de berekening. */
+  prijsOverride?: number | null;
+  overrideReden?: string | null;
+  artikelId?: string | null;
 }
 
 export interface Termijn {
@@ -31,9 +35,17 @@ export interface Instellingen {
 }
 
 export interface Berekening {
+  /** Subtotaal met de prijzen zoals ze nu op de regels staan (inclusief handmatige regelprijzen). */
   subtotaal: number;
+  /** Subtotaal met de berekende prijzen uit de configurator en de catalogus, zonder handmatige aanpassingen. */
+  basisSubtotaal: number;
   korting: number;
+  /** Korting uit kortingsregels, als percentage van het subtotaal. */
   kortingPct: number;
+  /** Eigen totaalprijs min het totaal na korting; negatief is een verlaging. */
+  aanpassing: number;
+  /** Totale verlaging ten opzichte van de berekende prijs (kortingsregels, regelprijzen en totaalprijs), in procent. Hiervoor geldt de kortinggrens. */
+  verlagingPct: number;
   totaal: number;
   exclBtw: number;
   btwHoog: number;
