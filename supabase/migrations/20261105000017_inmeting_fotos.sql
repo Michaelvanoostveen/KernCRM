@@ -72,6 +72,8 @@ begin
   insert into public.inmeting_fotos (id, tenant_id, inmeting_id, positie_id, pad, gemaakt_door)
     values (p_id, i.tenant_id, i.id, p_positie, v_pad, auth.uid());
   return jsonb_build_object('ok', true);
+exception when unique_violation then
+  return jsonb_build_object('ok', false, 'fout', 'ongeldig');
 end $$;
 revoke all on function public.inmeting_foto_toevoegen(uuid, uuid, uuid, text) from public, anon;
 grant execute on function public.inmeting_foto_toevoegen(uuid, uuid, uuid, text) to authenticated;

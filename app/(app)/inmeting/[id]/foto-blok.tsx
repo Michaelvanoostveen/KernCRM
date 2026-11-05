@@ -31,7 +31,11 @@ export default function FotoBlok({ inmetingId, positieId, fotos, vergrendeld, ti
         const { error } = await supabase.storage.from(FOTO_BUCKET).upload(fotoPad(inmetingId, id), blob, { contentType: "image/jpeg" });
         if (error) { setFout("Uploaden lukte niet. Controleer je verbinding en probeer het opnieuw."); continue; }
         const uitkomst = await registreerFoto(inmetingId, positieId, id);
-        if (uitkomst.fout) setFout(uitkomst.fout);
+        if (uitkomst.fout) {
+          setFout(uitkomst.fout);
+          // Het bestand staat al in de opslag maar is niet vastgelegd: weer weghalen, zodat er niets achterblijft.
+          await supabase.storage.from(FOTO_BUCKET).remove([fotoPad(inmetingId, id)]);
+        }
       }
     } catch {
       setFout("De foto kon niet worden verwerkt. Probeer het opnieuw.");
