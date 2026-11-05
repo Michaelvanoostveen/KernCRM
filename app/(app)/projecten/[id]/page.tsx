@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -7,6 +8,7 @@ import { kozijnSvg } from "@/lib/tekening/tekenen";
 import { FASEN, faseIndex, faseLabel } from "@/lib/projecten/fase";
 import { leesConfiguratie, positieOmschrijving } from "@/lib/projecten/positie";
 import { INSTELLINGEN_KERNKOZIJNEN } from "@/lib/offerte/instellingen";
+import { maakMail } from "@/lib/offerte/mail";
 import OfferteEditor, { type EditorRegel } from "./offerte-editor";
 import { verwijderProject } from "../actions";
 
@@ -38,20 +40,20 @@ function maakRegel(r: RegelRij): EditorRegel {
   return { ...basis, aantal: p.aantal, prijs: Number(p.prijs), nummer: p.nummer, ruimte: p.ruimte, omschrijving, svg };
 }
 
-async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ opgeslagen?: string; fout?: string }> }) {
+async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string }> }) {
   const { id } = await params;
-  const { opgeslagen, fout } = await zoek;
+  const { opgeslagen, fout, verstuurd, ingetrokken } = await zoek;
   if (!UUID.test(id)) notFound();
   const supabase = await maakServerClient();
   const { data: p } = await supabase
     .from("projecten")
-    .select("id, tenant_id, nummer, naam, fase, klanten(id, naam), offertes(id, versie, status, gewijzigd, totaal_override)")
+    .select("id, tenant_id, nummer, naam, fase, klanten(id, naam, aanhef, achternaam), offertes(id, versie, status, gewijzigd, totaal_override, publiek_token, geldig_tot, verstuurd_op)")
     .eq("id", id)
     .maybeSingle();
   if (!p) notFound();
 
-  const klant = p.klanten as unknown as { id: string; naam: string } | null;
-  const offerte = [...(p.offertes as { id: string; versie: number; status: string; gewijzigd: string; totaal_override: number | null }[])].sort((a, b) => b.versie - a.versie)[0];
+  const klant = p.klanten as unknown as { id: string; naam: string; aanhef: string | null; achternaam: string | null } | null;
+  const offerte = [...(p.offertes as { id: string; versie: number; status: string; gewijzigd: string; totaal_override: number | null; publiek_token: string | null; geldig_tot: string | null; verstuurd_op: string | null }[])].sort((a, b) => b.versie - a.versie)[0];
   const { data: regelData } = offerte
     ? await supabase
         .from("offerte_regels")
@@ -74,6 +76,13 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
     if (l.soort === "totaal") totaalReden = l.reden;
     else redenen[sleutel] = l.reden;
   }
+  const { data: gebData } = offerte ? await supabase.from("offerte_gebeurtenissen").select("soort, op, ip").eq("offerte_id", offerte.id).order("op", { ascending: false }).limit(50) : { data: [] };
+  const gebeurtenissen = ((gebData ?? []) as { soort: string; op: string; ip: string | null }[]);
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  const protocol = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const link = offerte?.publiek_token ? `${protocol}://${host}/o/${offerte.publiek_token}` : null;
+  const mail = link && offerte ? maakMail({ aanhef: klant?.aanhef ?? null, achternaam: klant?.achternaam ?? null, klantNaam: klant?.naam ?? "", nummer: p.nummer, versie: offerte.versie, geldigTot: offerte.geldig_tot, adres: p.naam, link, bedrijf: "KernKozijnen" }) : null;
   const { data: artikelData } = await supabase.from("artikelen").select("id, groep, code, naam, eenheid, verkoopprijs_incl").eq("actief", true).order("groep").order("naam");
   const artikelen = (artikelData ?? []).map((a) => ({ id: a.id as string, groep: a.groep as string, code: a.code as string, naam: a.naam as string, eenheid: a.eenheid as string, prijsIncl: Number(a.verkoopprijs_incl) }));
   const { data: magData } = await supabase.rpc("mag_prijzen_aanpassen", { p_tenant: p.tenant_id });
@@ -124,6 +133,12 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           artikelen={artikelen}
           totaalOverride={offerte.totaal_override === null ? null : Number(offerte.totaal_override)}
           isDirectie={lid?.rol === "directie"}
+          statusRuw={offerte.status}
+          link={link}
+          geldigTot={offerte.geldig_tot}
+          gebeurtenissen={gebeurtenissen}
+          mail={mail}
+          melding={verstuurd === "1" ? "verstuurd" : ingetrokken === "1" ? "ingetrokken" : fout ?? null}
           redenen={redenen}
           totaalReden={totaalReden}
         />
@@ -134,7 +149,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   );
 }
 
-export default function ProjectPagina(props: { params: Promise<{ id: string }>; searchParams: Promise<{ opgeslagen?: string; fout?: string }> }) {
+export default function ProjectPagina(props: { params: Promise<{ id: string }>; searchParams: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string }> }) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <Link href="/projecten" className="text-sm text-stone-600 underline">&larr; Alle projecten</Link>
