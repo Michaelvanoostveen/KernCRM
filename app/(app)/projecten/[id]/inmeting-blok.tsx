@@ -4,6 +4,7 @@ import { haalPrijsregels } from "@/lib/prijs";
 import { afwijkingTekst, bepaalAfwijking, indicatieMeerwerk } from "@/lib/inmeting/afwijking";
 import { euroTekst } from "@/lib/offerte/bereken";
 import { leesConfiguratie } from "@/lib/projecten/positie";
+import WijzigingenKantoor from "./wijzigingen-kantoor";
 import { annuleerInmeting, planInmeting } from "../../inmeting/actions";
 
 type Lid = { user_id: string; email: string; rol: string };
@@ -125,6 +126,7 @@ export default async function InmetingBlok({ projectId, melding }: { projectId: 
           <p className="mt-3"><Link href={`/inmeting/${huidige.id}`} className="text-sm underline">Open de inmeetstaat</Link></p>
         </div>
       )}
+      {huidige && <WijzigingenKantoor inmetingId={huidige.id} offerteId={huidige.offerte_id} />}
     </section>
   );
 }
