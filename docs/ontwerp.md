@@ -133,7 +133,13 @@ De bestaande Teamleader-artikelcatalogus (97 artikelen in 15 groepen, o.a. Keral
 
 Na akkoord plant KernCRM de inmeting, legt de definitieve maten vast op de offertetekeningen en plant de montageploeg in zodra de levering bekend is.
 
-**Inmeting**
+**Inmeting (stand 2026-11-05, deel 1)**
+
+- Na het akkoord plant een medewerker de inmeting op de projectpagina: datum en tijd (Nederlandse tijd), inmeter en een notitie. Het project gaat dan naar de fase Inmeting. Per project is er één geplande inmeting tegelijk; annuleren zet het project terug naar Akkoord
+- De inmeter ziet alleen zijn eigen inmetingen en krijgt via een beveiligde functie alleen wat hij nodig heeft: adres, telefoon, bereikbaarheid, woninggegevens, de tekening en de offertemaat per positie. **Nooit prijzen.** Hij heeft geen toegang tot de tabellen zelf. In het menu ziet hij alleen Inmeting, en na het inloggen komt hij op zijn overzicht
+- Per positie vult hij de **bestelmaat** in (breedte en hoogte, verplicht: dit is de maat waarop het kozijn wordt besteld), plus de binnenmaat en de buitenmaat (dagmaten) en bijzonderheden, zodat alles is vastgelegd. Direct op het scherm staat een melding bij een afwijking van meer dan 5 mm met de offertemaat. Afronden kan pas als alle posities zijn ingemeten; daarna is de inmeetstaat vergrendeld
+- Voor medewerkers toont de projectpagina na afronding per positie de afwijking en een indicatie van het meer- of minderwerk (met de prijsmodule, zonder handmatige aanpassingen). Het vastleggen daarvan als meer- of minderwerk dat de klant opnieuw goedkeurt volgt
+- Nog niet gebouwd: foto's, handtekening van de klant op de inmeetstaat, werken zonder bereik, de agenda met reistijd en de koppeling met Outlook
 
 - Inmeetafspraak plannen in een agenda per inmeter, met route en reistijd vanaf Hengelo
 - Mobiele inmeetstaat (tablet of telefoon): per positie de tekening uit de offerte, met velden voor de gemeten maten, stelruimte, dagmaat, sponning, borstwering, bijzonderheden en foto's

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { maakServerClient } from "@/lib/supabase/server";
-import Navigatie from "./navigatie";
+import Menu from "./menu";
 
 async function uitloggen() {
   "use server";
@@ -17,8 +17,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="border-b border-stone-200 bg-[#24332B] text-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
           <Link href="/" className="rounded-md text-lg font-bold tracking-tight hover:text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">KernCRM</Link>
-          <Suspense fallback={<nav aria-label="Hoofdmenu" className="flex gap-1"><Link href="/" className="px-3 py-1.5 text-sm text-white/75">Start</Link><Link href="/klanten" className="px-3 py-1.5 text-sm text-white/75">Klanten</Link><Link href="/projecten" className="px-3 py-1.5 text-sm text-white/75">Projecten</Link><Link href="/instellingen/catalogus" className="px-3 py-1.5 text-sm text-white/75">Catalogus</Link><Link href="/instellingen/gebruikers" className="px-3 py-1.5 text-sm text-white/75">Gebruikers</Link></nav>}>
-            <Navigatie />
+          <Suspense fallback={<nav aria-label="Hoofdmenu" className="flex gap-1"><Link href="/" className="px-3 py-1.5 text-sm text-white/75">Start</Link></nav>}>
+            <Menu />
           </Suspense>
           <form action={uitloggen} className="ml-auto">
             <button className="rounded-md px-3 py-1.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">Uitloggen</button>
