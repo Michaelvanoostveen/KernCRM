@@ -10,7 +10,7 @@ async function inloggen(formData: FormData) {
     password: String(formData.get("wachtwoord") ?? ""),
   });
   if (error) redirect(`/login?fout=${encodeURIComponent(error.code ?? error.name ?? "onbekend")}`);
-  redirect("/klanten");
+  redirect("/");
 }
 
 async function Formulier({ searchParams }: { searchParams: Promise<{ fout?: string }> }) {

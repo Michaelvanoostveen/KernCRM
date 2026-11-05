@@ -8,7 +8,7 @@ import { berekenOfferte, kortingToegestaan } from "@/lib/offerte/bereken";
 import { INSTELLINGEN_KERNKOZIJNEN } from "@/lib/offerte/instellingen";
 import { datumOver } from "@/lib/offerte/handtekening";
 import { maakToken } from "@/lib/offerte/token";
-import type { OfferteRegel } from "@/lib/offerte/types";
+import { regelsUitDb, type RegelRij } from "@/lib/offerte/uit-db";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -280,11 +280,6 @@ export async function verwijderProject(formData: FormData) {
   redirect(`/klanten/${project.klant_id}`);
 }
 
-type RegelMetPositie = {
-  soort: OfferteRegel["soort"]; aantal: number; prijs: number; prijs_override: number | null; korting_modus: "percentage" | "bedrag" | null; korting_waarde: number | null;
-  posities: { prijs: number; aantal: number } | null;
-};
-
 /** Vergrendelt de offerte, maakt de geheime link en legt vast dat de offerte is verstuurd. */
 export async function verstuurOfferte(formData: FormData) {
   const projectId = String(formData.get("project_id") ?? "");
@@ -299,13 +294,7 @@ export async function verstuurOfferte(formData: FormData) {
   if (!offerte || offerte.status !== "concept") terug("verzenden");
 
   const { data: regelData } = await supabase.from("offerte_regels").select("soort, aantal, prijs, prijs_override, korting_modus, korting_waarde, posities(prijs, aantal)").eq("offerte_id", offerte!.id);
-  const regels: OfferteRegel[] = ((regelData ?? []) as unknown as RegelMetPositie[]).map((r, i) => ({
-    id: String(i), soort: r.soort,
-    aantal: r.soort === "positie" ? Number(r.posities?.aantal ?? 1) : Number(r.aantal),
-    prijs: r.soort === "positie" ? Number(r.posities?.prijs ?? 0) : Number(r.prijs),
-    prijsOverride: r.prijs_override === null ? null : Number(r.prijs_override),
-    modus: r.korting_modus, waarde: r.korting_waarde === null ? null : Number(r.korting_waarde),
-  }));
+  const regels = regelsUitDb((regelData ?? []) as unknown as RegelRij[]);
   const b = berekenOfferte(regels, INSTELLINGEN_KERNKOZIJNEN, { totaalOverride: offerte!.totaal_override === null ? null : Number(offerte!.totaal_override) });
   if (!regels.some((r) => r.soort === "positie" || r.soort === "artikel") || b.totaal <= 0) terug("leeg");
 
