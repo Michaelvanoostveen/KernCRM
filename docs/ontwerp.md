@@ -91,7 +91,8 @@ Dit is het hart van KernCRM: de verkoper stelt elk kozijn in het CRM samen, het 
 - De prijslogica van de website-configurator wordt overgenomen (bron: configurator/index.html in de KernKozijnen-map), maar als beheerbare tabellen in het CRM in plaats van vaste waarden in de code
 - Inkoopprijs, marge en verkoopprijs per regel; marge alleen zichtbaar voor verkoop en directie
 - Kortingen per regel of op het totaal, met een minimale marge als grens
-- Btw-tarief per regel instelbaar (standaard 21%; een verlaagd tarief op arbeid alleen als de boekhouder dat bevestigt) en ISDE-indicatie per regel (glas met de juiste U-waarde)
+- **Btw (besluit 2026-11-05):** over het orderbedrag excl. btw geldt 21% over 70% en 9% over 30% (materiaal en arbeid). De offerte toont beide btw-bedragen apart. De verdeling is een instelling per bedrijf. Het verlaagde tarief geldt alleen voor woningen ouder dan 2 jaar; het bouwjaar staat op het projectadres, dus het CRM kan dat controleren. De boekhouder bevestigt de berekening
+- ISDE-indicatie per regel (glas met de juiste U-waarde)
 
 De formule per positie, zoals de configurator nu rekent (bedragen incl. btw, all-in):
 
@@ -115,7 +116,8 @@ De bestaande Teamleader-artikelcatalogus (97 artikelen in 15 groepen, o.a. Keral
 **Offerte**
 
 - Opgebouwd uit secties: inleiding, posities met tekening + specificatie + prijs, totaal, voorwaarden, garantie, planning
-- Huisstijl-PDF en een online offertepagina waar de klant kan bekijken, vragen kan stellen en digitaal akkoord geeft
+- Huisstijl-PDF en een online offertepagina waar de klant kan bekijken, vragen kan stellen en akkoord geeft met een **echte handtekening** (getekend op het scherm). Naam, handtekening, tijdstip, IP-adres en apparaat worden vastgelegd als bewijs en de klant krijgt dat vooraf te zien (AVG: vermelden in het privacybeleid)
+- Opbouw: een offerte is een lijst met regels (positie, artikelregel, kopregel, vrije tekst, tekstblok uit sjabloon, korting) die in volgorde staan. Na versturen is een versie vergrendeld; een wijziging wordt een nieuwe versie
 - Versies (v1, v2...) met vergelijking, en varianten (bijv. Schüco tegenover Aluplast)
 - Sjablonen per type opdracht: complete woning, alleen voordeur, schuifpui
 - Een configuratie van de website wordt als conceptofferte ingeladen, zodat de verkoper niet opnieuw hoeft te beginnen
@@ -153,7 +155,7 @@ Na de inmeting maakt KernCRM met één klik de bestelling aan op basis van de in
 
 **Facturatie**
 
-- Termijnschema per project, bijvoorbeeld een aanbetaling bij akkoord, een deel bij levering en het restant na oplevering (percentages instelbaar)
+- **Termijnschema (besluit 2026-11-05):** 30% bij akkoord, 65% op de eerste dag van de levering en 5% na oplevering. De percentages zijn instelbaar per bedrijf en per project
 - Facturen met een vast nummer, PDF in huisstijl, betaallink (bijv. Mollie of iDEAL) en automatische herinneringen
 - Meer- en minderwerk uit inmeting of montage komt automatisch op de eindfactuur
 - Koppeling met Twinfield: verkoopfacturen en debiteuren gaan automatisch naar Twinfield, betaalstatus komt terug; inkoopfacturen van leveranciers blijven via Basecone binnenkomen en worden aan het project gekoppeld voor nacalculatie
@@ -215,8 +217,8 @@ Vijf rollen dekken het team; marges en inkoopprijzen zijn alleen zichtbaar voor 
 
 | Rol | Ziet | Kan |
 | --- | --- | --- |
-| Directie / beheer | alles, incl. marges en rapportages | instellingen, prijzen, gebruikers, kortingen boven de grens goedkeuren |
-| Verkoop | eigen klanten en projecten, marges | leads, offertes, configurator, kortingen tot de grens |
+| Directie / beheer | alles, incl. marges en rapportages | instellingen, prijzen, gebruikers, kortingen zonder grens (de admin is het account info@kernkozijnen.nl) |
+| Verkoop | eigen klanten en projecten, marges | leads, offertes, configurator, kortingen tot maximaal 10% van het orderbedrag |
 | Kantoor / planning | alle klanten en projecten, geen marges | inmeting en montage plannen, bestellen, factureren, service |
 | Inmeter | toegewezen inmetingen | inmeetstaat invullen, foto's, handtekening klant |
 | Monteur | eigen werkbonnen en montages | checklists, foto's, uren, opleverpunten, handtekening |
@@ -244,7 +246,7 @@ Voorstel: een webapplicatie op Next.js met een PostgreSQL-database via Supabase,
 - Outlook / Microsoft 365 via Microsoft Graph: in- en uitgaande mail op de klanttijdlijn, versturen vanuit het CRM, en inmeet- en montageafspraken in de Outlook-agenda
 - Twinfield (verkoopfacturen, debiteuren, betaalstatus); Basecone blijft de ingang voor inkoopfacturen
 - Betalingen (bijv. Mollie)
-- Digitaal ondertekenen: eigen akkoordflow, of een dienst als Signhost
+- Digitaal ondertekenen: eigen akkoordflow met handtekening en IP-vastlegging (besluit 2026-11-05)
 - SMS/WhatsApp-herinneringen (bijv. via MessageBird of Twilio)
 
 **Privacy en beveiliging:** data in de EU, versleutelde verbindingen, logging van wie wat heeft gewijzigd, en een verwerkersovereenkomst met de hostingpartij (AVG).
@@ -305,7 +307,11 @@ Elke fase wordt afgesloten met een testperiode met echte projecten. De duur per 
 - [x] Doelgroep: eerst KernKozijnen, maar schaalbaar en verkoopbaar aan andere kozijnbedrijven (multi-tenant)
 - [x] Leveranciers: Kozijnbouw Enschede en Eko-Okna (Polen)
 - [x] Boekhouding: Twinfield, met Basecone voor inkoopfacturen
-- [x] Mail: Outlook / Microsoft 365
+- [x] Mail: Outlook / Microsoft 365. De koppeling wordt later ingeregeld; tot dan kopieert de gebruiker de mailtekst en de link en markeert de offerte als verstuurd
+- [x] Btw: 21% over 70% en 9% over 30% van het orderbedrag excl. btw (2026-11-05)
+- [x] Termijnschema: 30% bij akkoord, 65% bij eerste leverdag, 5% na oplevering (2026-11-05)
+- [x] Korting: maximaal 10% voor gewone gebruikers, onbeperkt voor de admin (2026-11-05)
+- [x] Akkoord op een offerte: echte handtekening met IP-registratie (2026-11-05)
 - [x] Inkoopprijzen: worden later handmatig ingevoerd in de catalogus; tot die tijd toont het CRM geen marge
 
 **Nog open**
@@ -313,7 +319,6 @@ Elke fase wordt afgesloten met een testperiode met echte projecten. De duur per 
 - [ ] Welk profielsysteem komt van welke leverancier (Schüco LivIng en Aluplast Ideal 7000 NL bij Kozijnbouw Enschede of Eko-Okna)?
 - [ ] In welk format nemen Kozijnbouw Enschede en Eko-Okna een bestelling aan (PDF, Excel, eigen portaal of tekenpakket)?
 - [ ] Hoeveel gebruikers per rol (verkoop, kantoor, inmeters, monteurs)?
-- [ ] Termijnschema: welke percentages en momenten gebruiken jullie nu?
 - [ ] Moet het klantportaal in fase 1 al mee, of later?
 - [ ] Welke rapportages wil de directie zien (omzet per verkoper, conversie, doorlooptijd, openstaande service)?
 - [ ] Verkoopmodel naar andere bedrijven: abonnement per gebruiker, per bedrijf, of eenmalige licentie?
