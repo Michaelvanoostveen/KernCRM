@@ -5,6 +5,7 @@ import { afwijkingTekst, bepaalAfwijking, indicatieMeerwerk } from "@/lib/inmeti
 import { euroTekst } from "@/lib/offerte/bereken";
 import { leesConfiguratie } from "@/lib/projecten/positie";
 import WijzigingenKantoor from "./wijzigingen-kantoor";
+import DefinitieveOpdracht from "./definitieve-opdracht";
 import { annuleerInmeting, planInmeting } from "../../inmeting/actions";
 
 type Lid = { user_id: string; email: string; rol: string };
@@ -127,6 +128,7 @@ export default async function InmetingBlok({ projectId, melding }: { projectId: 
         </div>
       )}
       {huidige && <WijzigingenKantoor inmetingId={huidige.id} offerteId={huidige.offerte_id} />}
+      {huidige?.status === "uitgevoerd" && <DefinitieveOpdracht inmetingId={huidige.id} offerteId={huidige.offerte_id} />}
     </section>
   );
 }

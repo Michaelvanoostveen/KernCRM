@@ -70,7 +70,6 @@ export default async function WijzigingenKantoor({ inmetingId, offerteId }: { in
       {akkoorden.map((a) => (
         <p key={a.id} className="mt-1 text-xs text-stone-500">Akkoord van {a.naam} op {dagTijd(a.op)} voor {prijs(Number(a.totaal_meerprijs))} incl. btw (handtekening, IP-adres en apparaat zijn vastgelegd).</p>
       ))}
-      <p className="mt-2 text-xs text-stone-500">Het verwerken van deze wijzigingen in de offerte volgt in een volgende stap.</p>
     </div>
   );
 }
