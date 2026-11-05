@@ -124,6 +124,7 @@ const WIJZIGING_FOUTEN: Record<string, string> = {
   naam: "Vul de volledige naam van de klant in.",
   geen_toestemming: "Je hebt geen toestemming om zelf een prijs in te voeren.",
   reden: "Vul bij een eigen prijs een reden in.",
+  korting_te_groot: "Je mag hooguit 10% onder het voorstel zitten. Vraag de directie om een lagere prijs in te voeren.",
   handtekening: "Laat de klant tekenen in het vak.",
   leeg: "Er zijn geen wijzigingen om akkoord op te geven.",
   gewijzigd: "De wijzigingen zijn aangepast sinds de klant ze zag. Controleer ze en laat de klant opnieuw tekenen.",

@@ -67,6 +67,11 @@ begin
     if not public.mag_prijzen_aanpassen(i.tenant_id) then return jsonb_build_object('ok', false, 'fout', 'geen_toestemming'); end if;
     if abs(p_eigen_prijs) > 1000000 then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
     if length(btrim(coalesce(p_reden, ''))) = 0 then return jsonb_build_object('ok', false, 'fout', 'reden'); end if;
+    -- Net als bij offertes: wie geen directie is, mag hooguit 10% onder het voorstel zitten.
+    if not public.heeft_rol(i.tenant_id, array['directie']::public.gebruikersrol[])
+       and v_prijs - round(p_eigen_prijs, 2) > 0.10 * abs(v_prijs) then
+      return jsonb_build_object('ok', false, 'fout', 'korting_te_groot');
+    end if;
   end if;
   update public.inmeting_wijzigingen set status = 'vervallen'
     where inmeting_id = i.id and positie_id = p_positie and soort = 'configuratie' and status = 'voorgesteld';
@@ -113,6 +118,11 @@ begin
     if not public.mag_prijzen_aanpassen(i.tenant_id) then return jsonb_build_object('ok', false, 'fout', 'geen_toestemming'); end if;
     if abs(p_eigen_prijs) > 1000000 then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
     if length(btrim(coalesce(p_reden, ''))) = 0 then return jsonb_build_object('ok', false, 'fout', 'reden'); end if;
+    -- Net als bij offertes: wie geen directie is, mag hooguit 10% onder het voorstel zitten.
+    if not public.heeft_rol(i.tenant_id, array['directie']::public.gebruikersrol[])
+       and v_prijs - round(p_eigen_prijs, 2) > 0.10 * abs(v_prijs) then
+      return jsonb_build_object('ok', false, 'fout', 'korting_te_groot');
+    end if;
   end if;
   insert into public.inmeting_wijzigingen (tenant_id, inmeting_id, positie_id, soort, artikel_id, aantal, omschrijving, meerprijs, voorgesteld_door)
     values (i.tenant_id, i.id, p_positie, 'extra', a.id, p_aantal, a.naam, coalesce(round(p_eigen_prijs, 2), v_prijs), auth.uid())
@@ -125,3 +135,24 @@ begin
 end $$;
 revoke all on function public.inmeting_voeg_extra_toe(uuid, uuid, uuid, integer, numeric, text) from public, anon;
 grant execute on function public.inmeting_voeg_extra_toe(uuid, uuid, uuid, integer, numeric, text) to authenticated;
+
+-- Het logboek is niet te wijzigen of rechtstreeks te beschrijven.
+revoke insert, update, delete on public.inmeting_prijsaanpassingen from authenticated, anon;
+create function public.inmeting_prijsaanpassing_onveranderlijk() returns trigger
+  language plpgsql set search_path = ''
+  as $$
+begin
+  raise exception 'Het logboek van prijsaanpassingen kan niet worden gewijzigd' using errcode = '55000';
+end $$;
+create trigger inmeting_prijsaanpassingen_onveranderlijk before update on public.inmeting_prijsaanpassingen
+  for each row execute function public.inmeting_prijsaanpassing_onveranderlijk();
+
+-- Een inmeting met een prijsaanpassing in het logboek kan niet meer worden verwijderd.
+drop policy inmetingen_verwijderen on public.inmetingen;
+create policy inmetingen_verwijderen on public.inmetingen for delete to authenticated
+  using (
+    public.heeft_rol(tenant_id, array['directie','verkoop','kantoor']::public.gebruikersrol[])
+    and status <> 'uitgevoerd'
+    and not exists (select 1 from public.inmeting_akkoorden a where a.inmeting_id = inmetingen.id)
+    and not exists (select 1 from public.inmeting_prijsaanpassingen l where l.inmeting_id = inmetingen.id)
+  );
