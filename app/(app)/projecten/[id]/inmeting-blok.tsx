@@ -7,7 +7,7 @@ import { leesConfiguratie } from "@/lib/projecten/positie";
 import { annuleerInmeting, planInmeting } from "../../inmeting/actions";
 
 type Lid = { user_id: string; email: string; rol: string };
-type MetenRij = { positie_id: string; breedte_mm: number | null; hoogte_mm: number | null; posities: { nummer: number; ruimte: string | null; aantal: number; config: unknown } | null };
+type MetenRij = { positie_id: string; bestel_breedte_mm: number | null; bestel_hoogte_mm: number | null; posities: { nummer: number; ruimte: string | null; aantal: number; config: unknown } | null };
 
 const dagTijd = (iso: string) => new Intl.DateTimeFormat("nl-NL", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }).format(new Date(iso));
 const veld = "w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm";
@@ -33,21 +33,21 @@ export default async function InmetingBlok({ projectId, melding }: { projectId: 
   let totaal = 0;
   let meten: MetenRij[] = [];
   if (huidige) {
-    const { data } = await supabase.from("inmeting_regels").select("positie_id, breedte_mm, hoogte_mm, posities(nummer, ruimte, aantal, config)").eq("inmeting_id", huidige.id);
+    const { data } = await supabase.from("inmeting_regels").select("positie_id, bestel_breedte_mm, bestel_hoogte_mm, posities(nummer, ruimte, aantal, config)").eq("inmeting_id", huidige.id);
     meten = ((data ?? []) as unknown as MetenRij[]).sort((a, b) => (a.posities?.nummer ?? 0) - (b.posities?.nummer ?? 0));
-    ingevuld = meten.filter((m) => m.breedte_mm !== null && m.hoogte_mm !== null).length;
+    ingevuld = meten.filter((m) => m.bestel_breedte_mm !== null && m.bestel_hoogte_mm !== null).length;
     const { count } = await supabase.from("posities").select("id", { count: "exact", head: true }).eq("offerte_id", huidige.offerte_id);
     totaal = count ?? 0;
   }
 
   const regels = haalPrijsregels();
   const rijen = meten.flatMap((m) => {
-    if (!m.posities || m.breedte_mm === null || m.hoogte_mm === null) return [];
+    if (!m.posities || m.bestel_breedte_mm === null || m.bestel_hoogte_mm === null) return [];
     try {
       const cfg = leesConfiguratie(m.posities.config);
-      const afw = bepaalAfwijking({ w: cfg.w, h: cfg.h }, { breedte: m.breedte_mm, hoogte: m.hoogte_mm });
-      const indicatie = afw?.afwijkend ? indicatieMeerwerk(regels, cfg, { breedte: m.breedte_mm, hoogte: m.hoogte_mm }, m.posities.aantal) : 0;
-      return [{ nummer: m.posities.nummer, ruimte: m.posities.ruimte, offerte: `${cfg.w} × ${cfg.h}`, gemeten: `${m.breedte_mm} × ${m.hoogte_mm}`, afw, indicatie }];
+      const afw = bepaalAfwijking({ w: cfg.w, h: cfg.h }, { breedte: m.bestel_breedte_mm, hoogte: m.bestel_hoogte_mm });
+      const indicatie = afw?.afwijkend ? indicatieMeerwerk(regels, cfg, { breedte: m.bestel_breedte_mm, hoogte: m.bestel_hoogte_mm }, m.posities.aantal) : 0;
+      return [{ nummer: m.posities.nummer, ruimte: m.posities.ruimte, offerte: `${cfg.w} × ${cfg.h}`, gemeten: `${m.bestel_breedte_mm} × ${m.bestel_hoogte_mm}`, afw, indicatie }];
     } catch {
       return [];
     }
@@ -102,7 +102,7 @@ export default async function InmetingBlok({ projectId, melding }: { projectId: 
           <div className="mt-3 overflow-x-auto rounded-md border border-stone-200">
             <table className="w-full min-w-max text-left text-sm">
               <thead className="border-b border-stone-200 bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
-                <tr><th className="px-3 py-2 font-semibold">Positie</th><th className="px-3 py-2 font-semibold">Offerte (mm)</th><th className="px-3 py-2 font-semibold">Gemeten (mm)</th><th className="px-3 py-2 font-semibold">Afwijking</th><th className="px-3 py-2 text-right font-semibold">Indicatie meer-/minderwerk</th></tr>
+                <tr><th className="px-3 py-2 font-semibold">Positie</th><th className="px-3 py-2 font-semibold">Offerte (mm)</th><th className="px-3 py-2 font-semibold">Bestelmaat (mm)</th><th className="px-3 py-2 font-semibold">Afwijking</th><th className="px-3 py-2 text-right font-semibold">Indicatie meer-/minderwerk</th></tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {rijen.map((r) => (

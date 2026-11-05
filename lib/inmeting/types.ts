@@ -17,7 +17,7 @@ export interface InmetingDetail {
     ruimte: string | null;
     aantal: number;
     config: unknown;
-    gemeten: { breedte_mm: number | null; hoogte_mm: number | null; dag_breedte_mm: number | null; dag_hoogte_mm: number | null; opmerking: string | null } | null;
+    gemeten: { bestel_breedte_mm: number | null; bestel_hoogte_mm: number | null; binnen_breedte_mm: number | null; binnen_hoogte_mm: number | null; buiten_breedte_mm: number | null; buiten_hoogte_mm: number | null; opmerking: string | null } | null;
   }[];
 }
 

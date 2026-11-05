@@ -56,18 +56,19 @@ const maat = (v: FormDataEntryValue | null): number | null => {
   return Number.isFinite(n) ? Math.round(n) : NaN;
 };
 
-/** Bewaart de gemeten maten van één positie. Werkt voor de toegewezen inmeter en voor medewerkers; nooit met prijzen. */
+/** Bewaart de bestelmaat, binnenmaat en buitenmaat van één positie. Werkt voor de toegewezen inmeter en voor medewerkers; nooit met prijzen. */
 export async function bewaarInmetingPositie(_vorige: PositieStatus, formData: FormData): Promise<PositieStatus> {
   const inmetingId = String(formData.get("inmeting_id") ?? "");
   const positieId = String(formData.get("positie_id") ?? "");
   if (!UUID.test(inmetingId) || !UUID.test(positieId)) return { fout: "Deze positie is niet gevonden." };
-  const [breedte, hoogte, dagB, dagH] = [maat(formData.get("breedte")), maat(formData.get("hoogte")), maat(formData.get("dag_breedte")), maat(formData.get("dag_hoogte"))];
-  if ([breedte, hoogte, dagB, dagH].some((n) => n !== null && Number.isNaN(n))) return { fout: "Vul de maten in als getallen, in millimeters." };
-  if (breedte === null || hoogte === null) return { fout: "Vul minimaal de gemeten breedte en hoogte in." };
+  const m = Object.fromEntries(["bestel_breedte", "bestel_hoogte", "binnen_breedte", "binnen_hoogte", "buiten_breedte", "buiten_hoogte"].map((k) => [k, maat(formData.get(k))]));
+  if (Object.values(m).some((n) => n !== null && Number.isNaN(n))) return { fout: "Vul de maten in als getallen, in millimeters." };
+  if (m.bestel_breedte === null || m.bestel_hoogte === null) return { fout: "Vul minimaal de bestelmaat in: breedte en hoogte." };
 
   const supabase = await maakServerClient();
   const { data, error } = await supabase.rpc("inmeting_bewaar_positie", {
-    p_inmeting: inmetingId, p_positie: positieId, p_breedte: breedte, p_hoogte: hoogte, p_dag_breedte: dagB, p_dag_hoogte: dagH, p_opmerking: String(formData.get("opmerking") ?? ""),
+    p_inmeting: inmetingId, p_positie: positieId, p_bestel_breedte: m.bestel_breedte, p_bestel_hoogte: m.bestel_hoogte, p_binnen_breedte: m.binnen_breedte, p_binnen_hoogte: m.binnen_hoogte,
+    p_buiten_breedte: m.buiten_breedte, p_buiten_hoogte: m.buiten_hoogte, p_opmerking: String(formData.get("opmerking") ?? ""),
   });
   if (error) {
     console.error("inmeting bewaren mislukt:", error.code, error.message);

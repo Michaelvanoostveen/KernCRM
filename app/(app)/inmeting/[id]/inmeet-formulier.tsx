@@ -11,14 +11,14 @@ const naarGetal = (t: string) => { const n = Number(t.replace(",", ".")); return
 export default function InmeetFormulier({ inmetingId, positieId, nummer, ruimte, omschrijving, aantal, svg, offerteBreedte, offerteHoogte, begin, vergrendeld }: {
   inmetingId: string; positieId: string; nummer: number; ruimte: string | null; omschrijving: string; aantal: number; svg: string | null;
   offerteBreedte: number; offerteHoogte: number; vergrendeld: boolean;
-  begin: { breedte_mm: number | null; hoogte_mm: number | null; dag_breedte_mm: number | null; dag_hoogte_mm: number | null; opmerking: string | null } | null;
+  begin: { bestel_breedte_mm: number | null; bestel_hoogte_mm: number | null; binnen_breedte_mm: number | null; binnen_hoogte_mm: number | null; buiten_breedte_mm: number | null; buiten_hoogte_mm: number | null; opmerking: string | null } | null;
 }) {
   const [status, actie, bezig] = useActionState<PositieStatus, FormData>(bewaarInmetingPositie, {});
-  const [breedte, setBreedte] = useState(getal(begin?.breedte_mm));
-  const [hoogte, setHoogte] = useState(getal(begin?.hoogte_mm));
+  const [breedte, setBreedte] = useState(getal(begin?.bestel_breedte_mm));
+  const [hoogte, setHoogte] = useState(getal(begin?.bestel_hoogte_mm));
   const [wijzig, setWijzig] = useState(false);
   const afw = bepaalAfwijking({ w: offerteBreedte, h: offerteHoogte }, { breedte: naarGetal(breedte), hoogte: naarGetal(hoogte) });
-  const bewaard = !wijzig && (status.opgeslagen || (begin?.breedte_mm != null && begin?.hoogte_mm != null));
+  const bewaard = !wijzig && (status.opgeslagen || (begin?.bestel_breedte_mm != null && begin?.bestel_hoogte_mm != null));
 
   return (
     <form action={actie} onChange={() => setWijzig(true)} className="rounded-xl border border-stone-200 bg-white p-4">
@@ -33,18 +33,31 @@ export default function InmeetFormulier({ inmetingId, positieId, nummer, ruimte,
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <label className="text-sm font-semibold">Breedte (mm)
-          <input name="breedte" inputMode="numeric" value={breedte} onChange={(e) => setBreedte(e.target.value)} disabled={vergrendeld} placeholder={String(offerteBreedte)} className={`${veld} mt-1`} />
+      <div className="mt-4 rounded-lg border-2 border-[#B35B40]/40 bg-[#fbf3ef] p-3">
+        <div className="text-sm font-bold">Bestelmaat (kozijnmaat voor de bestelling)</div>
+        <div className="mt-2 grid grid-cols-2 gap-3">
+          <label className="text-sm font-semibold">Breedte (mm)
+            <input name="bestel_breedte" inputMode="numeric" value={breedte} onChange={(e) => setBreedte(e.target.value)} disabled={vergrendeld} placeholder={String(offerteBreedte)} className={`${veld} mt-1`} />
+          </label>
+          <label className="text-sm font-semibold">Hoogte (mm)
+            <input name="bestel_hoogte" inputMode="numeric" value={hoogte} onChange={(e) => setHoogte(e.target.value)} disabled={vergrendeld} placeholder={String(offerteHoogte)} className={`${veld} mt-1`} />
+          </label>
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="col-span-2 text-sm font-semibold text-stone-700">Binnenmaat (dagmaat binnen)</div>
+        <label className="text-sm text-stone-600">Breedte (mm)
+          <input name="binnen_breedte" inputMode="numeric" defaultValue={getal(begin?.binnen_breedte_mm)} disabled={vergrendeld} className={`${veld} mt-1 text-base`} />
         </label>
-        <label className="text-sm font-semibold">Hoogte (mm)
-          <input name="hoogte" inputMode="numeric" value={hoogte} onChange={(e) => setHoogte(e.target.value)} disabled={vergrendeld} placeholder={String(offerteHoogte)} className={`${veld} mt-1`} />
+        <label className="text-sm text-stone-600">Hoogte (mm)
+          <input name="binnen_hoogte" inputMode="numeric" defaultValue={getal(begin?.binnen_hoogte_mm)} disabled={vergrendeld} className={`${veld} mt-1 text-base`} />
         </label>
-        <label className="text-sm text-stone-600">Dagmaat breedte
-          <input name="dag_breedte" inputMode="numeric" defaultValue={getal(begin?.dag_breedte_mm)} disabled={vergrendeld} className={`${veld} mt-1 text-base`} />
+        <div className="col-span-2 text-sm font-semibold text-stone-700">Buitenmaat (dagmaat buiten)</div>
+        <label className="text-sm text-stone-600">Breedte (mm)
+          <input name="buiten_breedte" inputMode="numeric" defaultValue={getal(begin?.buiten_breedte_mm)} disabled={vergrendeld} className={`${veld} mt-1 text-base`} />
         </label>
-        <label className="text-sm text-stone-600">Dagmaat hoogte
-          <input name="dag_hoogte" inputMode="numeric" defaultValue={getal(begin?.dag_hoogte_mm)} disabled={vergrendeld} className={`${veld} mt-1 text-base`} />
+        <label className="text-sm text-stone-600">Hoogte (mm)
+          <input name="buiten_hoogte" inputMode="numeric" defaultValue={getal(begin?.buiten_hoogte_mm)} disabled={vergrendeld} className={`${veld} mt-1 text-base`} />
         </label>
       </div>
 

@@ -26,10 +26,14 @@ create table public.inmeting_regels (
   tenant_id        uuid not null references public.tenants (id) on delete cascade,
   inmeting_id      uuid not null references public.inmetingen (id) on delete cascade,
   positie_id       uuid not null references public.posities (id) on delete cascade,
-  breedte_mm       integer check (breedte_mm between 100 and 10000),
-  hoogte_mm        integer check (hoogte_mm between 100 and 10000),
-  dag_breedte_mm   integer check (dag_breedte_mm between 100 and 10000),
-  dag_hoogte_mm    integer check (dag_hoogte_mm between 100 and 10000),
+  -- De bestelmaat is de maat waarop het kozijn wordt besteld; die vult de inmeter altijd in.
+  -- Binnenmaat en buitenmaat (dagmaat) legt hij daarnaast vast, zodat alles geborgd is.
+  bestel_breedte_mm  integer check (bestel_breedte_mm between 100 and 10000),
+  bestel_hoogte_mm   integer check (bestel_hoogte_mm between 100 and 10000),
+  binnen_breedte_mm  integer check (binnen_breedte_mm between 100 and 10000),
+  binnen_hoogte_mm   integer check (binnen_hoogte_mm between 100 and 10000),
+  buiten_breedte_mm  integer check (buiten_breedte_mm between 100 and 10000),
+  buiten_hoogte_mm   integer check (buiten_hoogte_mm between 100 and 10000),
   opmerking        text,
   bijgewerkt       timestamptz not null default now(),
   unique (inmeting_id, positie_id)
@@ -98,7 +102,7 @@ create function public.inmeting_overzicht() returns jsonb
     'plaats', (select a.plaats from public.adressen a where a.klant_id = k.id and a.soort = 'project' limit 1),
     'adres', (select a.straat || ' ' || a.huisnummer || coalesce(' ' || a.toevoeging, '') from public.adressen a where a.klant_id = k.id and a.soort = 'project' limit 1),
     'aantal_posities', (select count(*) from public.posities ps where ps.offerte_id = i.offerte_id),
-    'ingevuld', (select count(*) from public.inmeting_regels r where r.inmeting_id = i.id and r.breedte_mm is not null and r.hoogte_mm is not null)
+    'ingevuld', (select count(*) from public.inmeting_regels r where r.inmeting_id = i.id and r.bestel_breedte_mm is not null and r.bestel_hoogte_mm is not null)
   ) order by i.gepland_op), '[]'::jsonb)
   from public.inmetingen i
   join public.projecten p on p.id = i.project_id
@@ -140,7 +144,7 @@ begin
         'ruimte', ps.ruimte,
         'aantal', ps.aantal,
         'config', ps.config,
-        'gemeten', (select jsonb_build_object('breedte_mm', r.breedte_mm, 'hoogte_mm', r.hoogte_mm, 'dag_breedte_mm', r.dag_breedte_mm, 'dag_hoogte_mm', r.dag_hoogte_mm, 'opmerking', r.opmerking)
+        'gemeten', (select jsonb_build_object('bestel_breedte_mm', r.bestel_breedte_mm, 'bestel_hoogte_mm', r.bestel_hoogte_mm, 'binnen_breedte_mm', r.binnen_breedte_mm, 'binnen_hoogte_mm', r.binnen_hoogte_mm, 'buiten_breedte_mm', r.buiten_breedte_mm, 'buiten_hoogte_mm', r.buiten_hoogte_mm, 'opmerking', r.opmerking)
                     from public.inmeting_regels r where r.inmeting_id = i.id and r.positie_id = ps.id)
       ) order by ps.nummer), '[]'::jsonb)
       from public.posities ps where ps.offerte_id = i.offerte_id
@@ -155,9 +159,10 @@ end $$;
 revoke all on function public.inmeting_detail(uuid) from public, anon;
 grant execute on function public.inmeting_detail(uuid) to authenticated;
 
--- Slaat de gemeten maten van één positie op.
+-- Slaat de maten van één positie op: bestelmaat, binnenmaat en buitenmaat.
 create function public.inmeting_bewaar_positie(
-  p_inmeting uuid, p_positie uuid, p_breedte integer, p_hoogte integer, p_dag_breedte integer, p_dag_hoogte integer, p_opmerking text
+  p_inmeting uuid, p_positie uuid, p_bestel_breedte integer, p_bestel_hoogte integer, p_binnen_breedte integer, p_binnen_hoogte integer,
+  p_buiten_breedte integer, p_buiten_hoogte integer, p_opmerking text
 ) returns jsonb
   language plpgsql security definer set search_path = ''
   as $$
@@ -170,20 +175,21 @@ begin
   if not exists (select 1 from public.posities ps where ps.id = p_positie and ps.offerte_id = i.offerte_id) then
     return jsonb_build_object('ok', false, 'fout', 'positie');
   end if;
-  insert into public.inmeting_regels (tenant_id, inmeting_id, positie_id, breedte_mm, hoogte_mm, dag_breedte_mm, dag_hoogte_mm, opmerking)
-    values (i.tenant_id, i.id, p_positie, p_breedte, p_hoogte, p_dag_breedte, p_dag_hoogte, left(nullif(btrim(p_opmerking), ''), 2000))
+  insert into public.inmeting_regels (tenant_id, inmeting_id, positie_id, bestel_breedte_mm, bestel_hoogte_mm, binnen_breedte_mm, binnen_hoogte_mm, buiten_breedte_mm, buiten_hoogte_mm, opmerking)
+    values (i.tenant_id, i.id, p_positie, p_bestel_breedte, p_bestel_hoogte, p_binnen_breedte, p_binnen_hoogte, p_buiten_breedte, p_buiten_hoogte, left(nullif(btrim(p_opmerking), ''), 2000))
   on conflict (inmeting_id, positie_id) do update set
-    breedte_mm = excluded.breedte_mm, hoogte_mm = excluded.hoogte_mm, dag_breedte_mm = excluded.dag_breedte_mm,
-    dag_hoogte_mm = excluded.dag_hoogte_mm, opmerking = excluded.opmerking, bijgewerkt = now();
+    bestel_breedte_mm = excluded.bestel_breedte_mm, bestel_hoogte_mm = excluded.bestel_hoogte_mm,
+    binnen_breedte_mm = excluded.binnen_breedte_mm, binnen_hoogte_mm = excluded.binnen_hoogte_mm,
+    buiten_breedte_mm = excluded.buiten_breedte_mm, buiten_hoogte_mm = excluded.buiten_hoogte_mm, opmerking = excluded.opmerking, bijgewerkt = now();
   update public.inmetingen set gewijzigd = now() where id = i.id;
   return jsonb_build_object('ok', true);
 exception when check_violation then
   return jsonb_build_object('ok', false, 'fout', 'maat');
 end $$;
-revoke all on function public.inmeting_bewaar_positie(uuid, uuid, integer, integer, integer, integer, text) from public, anon;
-grant execute on function public.inmeting_bewaar_positie(uuid, uuid, integer, integer, integer, integer, text) to authenticated;
+revoke all on function public.inmeting_bewaar_positie(uuid, uuid, integer, integer, integer, integer, integer, integer, text) from public, anon;
+grant execute on function public.inmeting_bewaar_positie(uuid, uuid, integer, integer, integer, integer, integer, integer, text) to authenticated;
 
--- Rondt de inmeting af. Kan alleen als bij elke positie een breedte en hoogte is ingevuld.
+-- Rondt de inmeting af. Kan alleen als bij elke positie een bestelmaat (breedte en hoogte) is ingevuld.
 create function public.inmeting_afronden(p_inmeting uuid) returns jsonb
   language plpgsql security definer set search_path = ''
   as $$
@@ -196,7 +202,7 @@ begin
   if i.status <> 'gepland' then return jsonb_build_object('ok', false, 'fout', 'afgerond'); end if;
   select count(*) into v_open from public.posities ps
     where ps.offerte_id = i.offerte_id
-      and not exists (select 1 from public.inmeting_regels r where r.inmeting_id = i.id and r.positie_id = ps.id and r.breedte_mm is not null and r.hoogte_mm is not null);
+      and not exists (select 1 from public.inmeting_regels r where r.inmeting_id = i.id and r.positie_id = ps.id and r.bestel_breedte_mm is not null and r.bestel_hoogte_mm is not null);
   if v_open > 0 then return jsonb_build_object('ok', false, 'fout', 'onvolledig', 'open', v_open); end if;
   update public.inmetingen set status = 'uitgevoerd', uitgevoerd_op = now(), gewijzigd = now() where id = i.id;
   return jsonb_build_object('ok', true);

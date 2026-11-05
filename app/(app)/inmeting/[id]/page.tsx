@@ -23,7 +23,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
 
   const regels = haalPrijsregels();
   const vergrendeld = d.status !== "gepland";
-  const alleIngevuld = d.posities.every((p) => p.gemeten?.breedte_mm != null && p.gemeten?.hoogte_mm != null);
+  const alleIngevuld = d.posities.every((p) => p.gemeten?.bestel_breedte_mm != null && p.gemeten?.bestel_hoogte_mm != null);
   const a = d.adres;
   const tel = d.mobiel || d.telefoon;
 
@@ -53,7 +53,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           try { cfg = leesConfiguratie(p.config); } catch { cfg = null; }
           const svg = cfg ? kozijnSvg(regels, { ...cfg }, `Positie ${p.nummer}`) : null;
           return (
-            <InmeetFormulier key={`${p.positie_id}-${p.gemeten?.breedte_mm ?? ""}-${p.gemeten?.hoogte_mm ?? ""}`}
+            <InmeetFormulier key={`${p.positie_id}-${p.gemeten?.bestel_breedte_mm ?? ""}-${p.gemeten?.bestel_hoogte_mm ?? ""}`}
               inmetingId={d.id} positieId={p.positie_id} nummer={p.nummer} ruimte={p.ruimte} aantal={p.aantal}
               omschrijving={cfg ? positieOmschrijving(regels, cfg) : ""} svg={svg}
               offerteBreedte={cfg?.w ?? 0} offerteHoogte={cfg?.h ?? 0} begin={p.gemeten} vergrendeld={vergrendeld} />
