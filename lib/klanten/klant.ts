@@ -46,3 +46,25 @@ export function splitsHuisnummer(invoer: string): { huisnummer: string; toevoegi
   const m = invoer.trim().match(/^(\d+)\s*[-\s]?\s*(.*)$/);
   return m ? { huisnummer: m[1], toevoeging: m[2].trim() } : { huisnummer: invoer.trim(), toevoeging: "" };
 }
+
+const LANDEN: Record<string, string> = { NL: "Nederland", BE: "België", DE: "Duitsland" };
+
+export type AdresRegel = {
+  straat: string;
+  huisnummer: string;
+  toevoeging?: string | null;
+  postcode: string;
+  plaats: string;
+  land?: string | null;
+};
+
+/** "Vijverlaan 5a, 7547 AB Aadorp" (met landnaam als het niet Nederland is). */
+export function adresTekst(a: AdresRegel): string {
+  const nummer = [a.huisnummer, a.toevoeging].filter(Boolean).join(" ");
+  const basis = `${a.straat} ${nummer}, ${a.postcode} ${a.plaats}`;
+  return a.land && a.land !== "NL" ? `${basis}, ${LANDEN[a.land] ?? a.land}` : basis;
+}
+
+export function typeLabel(type: string): string {
+  return KLANTTYPES.find((t) => t.waarde === type)?.label ?? type;
+}
