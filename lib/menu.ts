@@ -4,6 +4,7 @@ const START = { href: "/", label: "Start" };
 const KLANTEN = { href: "/klanten", label: "Klanten" };
 const PROJECTEN = { href: "/projecten", label: "Projecten" };
 const INMETING = { href: "/inmeting", label: "Inmeting" };
+const MONTAGE = { href: "/montage", label: "Montage" };
 const FACTUREN = { href: "/facturen", label: "Facturen" };
 const CATALOGUS = { href: "/instellingen/catalogus", label: "Catalogus" };
 const GEBRUIKERS = { href: "/instellingen/gebruikers", label: "Gebruikers" };
@@ -15,9 +16,9 @@ const GEBRUIKERS = { href: "/instellingen/gebruikers", label: "Gebruikers" };
  */
 export function menuVoorRol(rol: string | null | undefined): MenuItem[] {
   switch (rol) {
-    case "directie": return [START, KLANTEN, PROJECTEN, INMETING, FACTUREN, CATALOGUS, GEBRUIKERS];
+    case "directie": return [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, FACTUREN, CATALOGUS, GEBRUIKERS];
     case "verkoop":
-    case "kantoor": return [START, KLANTEN, PROJECTEN, INMETING, FACTUREN, CATALOGUS];
+    case "kantoor": return [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, FACTUREN, CATALOGUS];
     case "inmeter": return [INMETING];
     default: return [START];
   }
