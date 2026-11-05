@@ -9,7 +9,7 @@ async function inloggen(formData: FormData) {
     email: String(formData.get("email") ?? ""),
     password: String(formData.get("wachtwoord") ?? ""),
   });
-  if (error) redirect("/login?fout=1");
+  if (error) redirect(`/login?fout=${encodeURIComponent(error.code ?? error.name ?? "onbekend")}`);
   redirect("/klanten");
 }
 
@@ -27,7 +27,11 @@ async function Formulier({ searchParams }: { searchParams: Promise<{ fout?: stri
           Wachtwoord
           <input name="wachtwoord" type="password" required autoComplete="current-password" className="rounded-md border border-stone-300 bg-white px-3 py-2 text-base font-normal" />
         </label>
-        {fout && <p role="alert" className="text-sm text-red-700">E-mailadres of wachtwoord klopt niet.</p>}
+        {fout === "invalid_credentials" && <p role="alert" className="text-sm text-red-700">E-mailadres of wachtwoord klopt niet.</p>}
+        {fout === "email_not_confirmed" && <p role="alert" className="text-sm text-red-700">Dit account is nog niet bevestigd.</p>}
+        {fout && fout !== "invalid_credentials" && fout !== "email_not_confirmed" && (
+          <p role="alert" className="text-sm text-red-700">Inloggen mislukt door een technische fout (code: {fout}). Meld deze code aan de beheerder.</p>
+        )}
         <button className="rounded-md bg-[#B35B40] px-4 py-2 font-semibold text-white hover:brightness-110">Inloggen</button>
       </form>
     </main>
