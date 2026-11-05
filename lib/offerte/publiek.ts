@@ -27,7 +27,7 @@ export interface PubliekeOfferte {
   achternaam: string | null;
   adres: { straat: string; huisnummer: string; toevoeging: string | null; postcode: string; plaats: string } | null;
   eigen_totaal: number | null;
-  akkoord: { naam: string; op: string } | null;
+  akkoord: { naam: string; op: string; handtekening?: string | null } | null;
   regels: PubliekeRegel[];
 }
 
