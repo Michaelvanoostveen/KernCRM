@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export type MenuItem = { href: string; label: string };
+import type { MenuItem } from "@/lib/menu";
+export type { MenuItem };
 
 export default function Navigatie({ items }: { items: MenuItem[] }) {
   const pad = usePathname();

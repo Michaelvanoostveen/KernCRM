@@ -235,6 +235,8 @@ De positie is het belangrijkste detail: dezelfde positie loopt van offerte via i
 
 Vijf rollen dekken het team; marges en inkoopprijzen zijn alleen zichtbaar voor directie en verkoop.
 
+Het hoofdmenu hangt af van de rol (`lib/menu.ts`): directie ziet alles; verkoop en kantoor zien Start, Klanten, Projecten, Inmeting, Facturen en Catalogus (alleen inzien, de directie beheert); de gebruikers beheert alleen de directie; de inmeter ziet alleen Inmeting; een rol zonder eigen schermen, zoals de monteur tot de montage-app er is, ziet alleen Start. De menukeuze is geen beveiliging: de database (RLS) en de pagina's bewaken de toegang zelf.
+
 | Rol | Ziet | Kan |
 | --- | --- | --- |
 | Directie / beheer | alles, incl. marges en rapportages | instellingen, prijzen, gebruikers, kortingen zonder grens (de admin is het account info@kernkozijnen.nl) |
