@@ -13,6 +13,8 @@ import InmeetFormulier from "./inmeet-formulier";
 import WijzigingFormulier from "./wijziging-formulier";
 import ExtraFormulier, { type ExtraArtikel } from "./extra-formulier";
 import KlantAkkoord from "./klant-akkoord";
+import FotoBlok, { type FotoItem } from "./foto-blok";
+import { FOTO_BUCKET } from "@/lib/inmeting/foto";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const dagTijd = (iso: string) => new Intl.DateTimeFormat("nl-NL", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }).format(new Date(iso));
@@ -33,6 +35,11 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
     supabase.rpc("inmeting_mag_prijzen", { p_inmeting: id }),
   ]);
   const magPrijzen = magData === true;
+  const { data: fData } = await supabase.rpc("inmeting_fotos_lijst", { p_inmeting: id });
+  const fotoRijen = (Array.isArray(fData) ? fData : []) as { id: string; positie_id: string | null; pad: string }[];
+  const { data: urlData } = fotoRijen.length ? await supabase.storage.from(FOTO_BUCKET).createSignedUrls(fotoRijen.map((f) => f.pad), 3600) : { data: [] };
+  const fotoUrl = new Map((urlData ?? []).flatMap((u) => (u.path && u.signedUrl ? [[u.path, u.signedUrl] as const] : [])));
+  const fotosVan = (pid: string | null): FotoItem[] => fotoRijen.filter((f) => f.positie_id === pid && fotoUrl.get(f.pad)).map((f) => ({ id: f.id, url: fotoUrl.get(f.pad)! }));
   const wijzigingen = leesWijzigingen(wData);
   const artikelen = (Array.isArray(aData) ? aData : []) as ExtraArtikel[];
   const openstaand = wijzigingen.filter((w) => w.status === "voorgesteld");
@@ -76,6 +83,9 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
               inmetingId={d.id} positieId={p.positie_id} nummer={p.nummer} ruimte={p.ruimte} aantal={p.aantal}
               omschrijving={cfg ? positieOmschrijving(regels, cfg) : ""} svg={svg}
               offerteBreedte={cfg?.w ?? 0} offerteHoogte={cfg?.h ?? 0} begin={p.gemeten} vergrendeld={vergrendeld} />
+            <div className="mt-2 rounded-xl border border-stone-200 bg-white px-4 py-3">
+              <FotoBlok inmetingId={d.id} positieId={p.positie_id} fotos={fotosVan(p.positie_id)} vergrendeld={vergrendeld} titel="Foto's van deze positie" />
+            </div>
             {cfg && !vergrendeld && (
               <details className="mt-2 rounded-xl border border-stone-200 bg-white px-4 py-3">
                 <summary className="cursor-pointer text-sm font-semibold">Indeling, draairichting, kleur of glas aanpassen</summary>
@@ -86,6 +96,12 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           );
         })}
       </div>
+
+      {(!vergrendeld || fotosVan(null).length > 0) && (
+        <section className="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+          <FotoBlok inmetingId={d.id} positieId={null} fotos={fotosVan(null)} vergrendeld={vergrendeld} titel="Algemene foto's (gevel, situatie, bereikbaarheid)" />
+        </section>
+      )}
 
       {(!vergrendeld || wijzigingen.length > 0) && (
         <section className="mt-6 rounded-xl border border-stone-200 bg-white p-4">
