@@ -45,13 +45,13 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const supabase = await maakServerClient();
   const { data: p } = await supabase
     .from("projecten")
-    .select("id, tenant_id, nummer, naam, fase, klanten(id, naam), offertes(id, versie, status, gewijzigd, totaal_override, totaal_override_reden)")
+    .select("id, tenant_id, nummer, naam, fase, klanten(id, naam), offertes(id, versie, status, gewijzigd, totaal_override)")
     .eq("id", id)
     .maybeSingle();
   if (!p) notFound();
 
   const klant = p.klanten as unknown as { id: string; naam: string } | null;
-  const offerte = [...(p.offertes as { id: string; versie: number; status: string; gewijzigd: string; totaal_override: number | null; totaal_override_reden: string | null }[])].sort((a, b) => b.versie - a.versie)[0];
+  const offerte = [...(p.offertes as { id: string; versie: number; status: string; gewijzigd: string; totaal_override: number | null }[])].sort((a, b) => b.versie - a.versie)[0];
   const { data: regelData } = offerte
     ? await supabase
         .from("offerte_regels")
@@ -61,6 +61,19 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
     : { data: [] };
   const regels = ((regelData ?? []) as unknown as RegelRij[]).map(maakRegel);
 
+  // Het logboek met redenen is alleen voor de directie leesbaar; voor anderen levert dit niets op.
+  const { data: logData } = offerte ? await supabase.from("prijsaanpassingen").select("regel_id, soort, nieuw, reden, op").eq("offerte_id", offerte.id).order("op", { ascending: false }) : { data: [] };
+  const redenen: Record<string, string> = {};
+  let totaalReden: string | null = null;
+  const gezien = new Set<string>();
+  for (const l of (logData ?? []) as { regel_id: string | null; soort: string; nieuw: number | null; reden: string }[]) {
+    const sleutel = l.soort === "totaal" ? "totaal" : (l.regel_id ?? "");
+    if (gezien.has(sleutel)) continue;
+    gezien.add(sleutel);
+    if (l.nieuw === null) continue;
+    if (l.soort === "totaal") totaalReden = l.reden;
+    else redenen[sleutel] = l.reden;
+  }
   const { data: artikelData } = await supabase.from("artikelen").select("id, groep, code, naam, eenheid, verkoopprijs_incl").eq("actief", true).order("groep").order("naam");
   const artikelen = (artikelData ?? []).map((a) => ({ id: a.id as string, groep: a.groep as string, code: a.code as string, naam: a.naam as string, eenheid: a.eenheid as string, prijsIncl: Number(a.verkoopprijs_incl) }));
   const { data: magData } = await supabase.rpc("mag_prijzen_aanpassen", { p_tenant: p.tenant_id });
@@ -110,7 +123,9 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           mag={magData === true}
           artikelen={artikelen}
           totaalOverride={offerte.totaal_override === null ? null : Number(offerte.totaal_override)}
-          totaalOverrideReden={offerte.totaal_override_reden}
+          isDirectie={lid?.rol === "directie"}
+          redenen={redenen}
+          totaalReden={totaalReden}
         />
       ) : (
         <p className="mt-6 rounded-lg border border-dashed border-stone-300 bg-white p-8 text-center text-stone-600">Dit project heeft nog geen offerte.</p>

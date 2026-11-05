@@ -114,14 +114,19 @@ type Invoer = { id?: unknown; soort?: unknown; titel?: unknown; tekst?: unknown;
 const GEEN_TOESTEMMING = "Je hebt geen toestemming om prijzen handmatig aan te passen of eigen artikelprijzen te gebruiken. Vraag de directie om deze toestemming.";
 const dbFout = (e: { code?: string | null }) => (e.code === "42501" ? GEEN_TOESTEMMING : `Opslaan lukte niet (${e.code ?? "onbekend"}). Probeer het opnieuw.`);
 
-/** Leest een handmatige prijs met reden uit de invoer. `leeg` betekent: geen aanpassing. */
-function leesOverride(prijs: unknown, reden: unknown): { prijs_override: number | null; override_reden: string | null } | { fout: string } {
+/**
+ * Leest een handmatige prijs uit de invoer. Een reden is alleen nodig als de prijs verandert ten opzichte van wat er al stond:
+ * de reden staat in een logboek dat alleen de directie kan lezen, dus bij een ongewijzigde prijs stuurt het scherm geen reden mee.
+ */
+function leesOverride(prijs: unknown, reden: unknown, huidig: number | null): { prijs_override: number | null; override_reden: string | null } | { fout: string } {
   if (prijs === null || prijs === undefined || prijs === "") return { prijs_override: null, override_reden: null };
   const n = Number(prijs);
   if (!Number.isFinite(n) || n < 0 || n > 1_000_000) return { fout: "Een handmatige prijs moet tussen 0 en 1.000.000 euro liggen." };
+  const nieuw = Math.round(n * 100) / 100;
+  if (huidig !== null && Math.abs(huidig - nieuw) < 0.005) return { prijs_override: huidig, override_reden: null };
   const r = tekstveld(reden, 300);
-  if (!r || r.length < 3) return { fout: "Vul bij een handmatige prijs een reden in." };
-  return { prijs_override: Math.round(n * 100) / 100, override_reden: r };
+  if (!r || r.length < 3) return { fout: "Vul bij een nieuwe handmatige prijs een reden in." };
+  return { prijs_override: nieuw, override_reden: r };
 }
 
 function tekstveld(v: unknown, max: number): string | null {
@@ -160,14 +165,15 @@ export async function bewaarOfferte(_vorige: OfferteStatus, formData: FormData):
 
   // Eigen totaalprijs (optioneel, alleen met toestemming).
   const totaalRuw = String(formData.get("totaal_override") ?? "").trim();
-  const totaalOv = leesOverride(totaalRuw === "" ? null : totaalRuw.replace(",", "."), formData.get("totaal_override_reden"));
-  if ("fout" in totaalOv) return { fout: totaalOv.fout };
   const huidigTotaal = offerte.totaal_override === null ? null : Number(offerte.totaal_override);
+  const totaalOv = leesOverride(totaalRuw === "" ? null : totaalRuw.replace(",", "."), formData.get("totaal_override_reden"), huidigTotaal);
+  if ("fout" in totaalOv) return { fout: totaalOv.fout };
   if (totaalOv.prijs_override !== huidigTotaal && totaalOv.prijs_override !== null && !mag) return { fout: GEEN_TOESTEMMING };
 
   const { data: bestaand } = await supabase.from("offerte_regels").select("id, soort, positie_id, prijs_override").eq("offerte_id", offerte.id);
   const bestaandeIds = new Set((bestaand ?? []).map((r) => r.id as string));
   const positieRegels = new Map((bestaand ?? []).filter((r) => r.soort === "positie").map((r) => [r.id as string, r]));
+  const huidigeOverride = new Map((bestaand ?? []).map((r) => [r.id as string, r.prijs_override === null ? null : Number(r.prijs_override)]));
 
   const nieuweRijen: Record<string, unknown>[] = [];
   const bijwerken: Record<string, unknown>[] = [];
@@ -184,13 +190,13 @@ export async function bewaarOfferte(_vorige: OfferteStatus, formData: FormData):
       // Een positie kan hier alleen van plaats veranderen; ontbrekende of onbekende posities negeren we.
       if (!id || !positieRegels.has(id)) continue;
       bewaardePositieIds.add(id);
-      const ov = leesOverride(r.prijsOverride, r.overrideReden);
+      const ov = leesOverride(r.prijsOverride, r.overrideReden, huidigeOverride.get(id) ?? null);
       if ("fout" in ov) return { fout: ov.fout };
       bijwerken.push({ id, volgorde, ...ov, gewijzigd: new Date().toISOString() });
       continue;
     }
 
-    const ov = soort === "artikel" ? leesOverride(r.prijsOverride, r.overrideReden) : { prijs_override: null, override_reden: null };
+    const ov = soort === "artikel" ? leesOverride(r.prijsOverride, r.overrideReden, id ? huidigeOverride.get(id) ?? null : null) : { prijs_override: null, override_reden: null };
     if ("fout" in ov) return { fout: ov.fout };
     const artikelId = soort === "artikel" && typeof r.artikelId === "string" && UUID.test(r.artikelId) ? r.artikelId : null;
     if (soort === "artikel" && !artikelId && !mag && !(id && bestaandeIds.has(id))) return { fout: GEEN_TOESTEMMING };

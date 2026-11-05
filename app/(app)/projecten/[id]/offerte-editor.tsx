@@ -16,7 +16,7 @@ const knop = "rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm fo
 const soortLabel = (s: string) => ({ positie: "Positie", artikel: "Artikelregel", kop: "Kopregel", tekst: "Tekst", korting: "Korting" })[s] ?? s;
 const getalOfNull = (t: string) => { const n = Number(t.replace(",", ".")); return t.trim() !== "" && Number.isFinite(n) && n >= 0 ? n : null; };
 
-export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld, versie, statusLabel, opgeslagen, mag, artikelen, totaalOverride, totaalOverrideReden }: {
+export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld, versie, statusLabel, opgeslagen, mag, artikelen, totaalOverride, isDirectie, redenen, totaalReden: bewaardeTotaalReden }: {
   projectId: string;
   begin: EditorRegel[];
   rol: string | null;
@@ -28,7 +28,10 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
   mag: boolean;
   artikelen: ArtikelOptie[];
   totaalOverride: number | null;
-  totaalOverrideReden: string | null;
+  /** Alleen de directie ziet de redenen van prijsaanpassingen. */
+  isDirectie: boolean;
+  redenen: Record<string, string>;
+  totaalReden: string | null;
 }) {
   const [regels, setRegels] = useState<EditorRegel[]>(begin);
   const [vuil, setVuil] = useState(false);
@@ -39,7 +42,9 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [melding, setMelding] = useState("");
   const [totaalTekst, setTotaalTekst] = useState(totaalOverride === null ? "" : String(totaalOverride).replace(".", ","));
-  const [totaalReden, setTotaalReden] = useState(totaalOverrideReden ?? "");
+  const [totaalReden, setTotaalReden] = useState("");
+  const [tafel, setTafel] = useState(false);
+  const intern = !tafel;
   const [totaalOpen, setTotaalOpen] = useState(totaalOverride !== null);
   const teller = useRef(0);
   const [status, actie, bezig] = useActionState<OfferteStatus, FormData>(bewaarOfferte, {});
@@ -99,24 +104,25 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
       <div className="min-w-[8rem] text-right tabular-nums">
         <div className="font-semibold">{eur0(r.aantal * effectief)}</div>
         {r.aantal !== 1 && <div className="text-xs text-stone-500">{r.aantal} × {eur0(effectief)}</div>}
-        {aangepast && <div className="mt-0.5 text-xs text-stone-500"><span className="line-through">{eur0(r.aantal * r.prijs)}</span> <span className="rounded bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-900">aangepast</span></div>}
+        {aangepast && intern && <div className="mt-0.5 text-xs text-stone-500"><span className="line-through">{eur0(r.aantal * r.prijs)}</span> <span className="rounded bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-900">aangepast</span></div>}
       </div>
     );
   };
   const aanpasPaneel = (r: EditorRegel) => {
     const aangepast = r.prijsOverride !== null && r.prijsOverride !== undefined;
-    if (!aangepast && !mag) return null;
+    if (!intern || (!aangepast && !mag)) return null;
+    const bewaardeReden = redenen[r.id];
     return (
       <div className="mt-2">
-        {aangepast && <p className="text-xs text-stone-600">Handmatige prijs: {eur0(r.prijsOverride!)} per stuk in plaats van {eur0(r.prijs)}. Reden: {r.overrideReden || "—"}</p>}
+        {aangepast && <p className="text-xs text-stone-600">Handmatige prijs: {eur0(r.prijsOverride!)} per stuk in plaats van {eur0(r.prijs)}.{isDirectie && bewaardeReden ? ` Reden: ${bewaardeReden}` : ""}</p>}
         {mag && !vergrendeld && (
           open[r.id] || aangepast ? (
             <div className="mt-2 grid gap-2 rounded-md bg-stone-50 p-3 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:items-end">
               <label className="text-xs text-stone-500">Nieuwe prijs per stuk, incl. btw
                 <input type="number" min={0} step="any" value={r.prijsOverride ?? ""} placeholder={String(r.prijs)} onChange={(e) => wijzig(r.id, { prijsOverride: e.target.value === "" ? null : Math.max(0, e.target.valueAsNumber || 0) })} className={veld} />
               </label>
-              <label className="text-xs text-stone-500">Reden (verplicht)
-                <input value={r.overrideReden ?? ""} onChange={(e) => wijzig(r.id, { overrideReden: e.target.value })} placeholder="Bijvoorbeeld: bestaande relatie" className={veld} />
+              <label className="text-xs text-stone-500">Reden (verplicht bij een nieuwe prijs, alleen de directie ziet die)
+                <input value={r.overrideReden ?? ""} onChange={(e) => wijzig(r.id, { overrideReden: e.target.value })} placeholder={bewaardeReden || aangepast ? "Alleen invullen als je de prijs wijzigt" : "Bijvoorbeeld: bestaande relatie"} className={veld} />
               </label>
               <button type="button" onClick={() => { wijzig(r.id, { prijsOverride: null, overrideReden: null }); setOpen((o) => ({ ...o, [r.id]: false })); }} className={knop}>Terugzetten</button>
             </div>
@@ -136,6 +142,13 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
       <input type="hidden" name="totaal_override_reden" value={eigenTotaal === null ? "" : totaalReden} />
 
       <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-4 py-3">
+          <div className="min-w-0 text-sm">
+            <b>{tafel ? "Tafelmodus aan" : "Tafelmodus"}</b>
+            <span className="ml-2 text-stone-600">{tafel ? "Interne informatie is verborgen: je kunt het scherm aan de klant laten zien." : "Verbergt aanpassingen, redenen en waarschuwingen als je het scherm aan de klant laat zien."}</span>
+          </div>
+          <button type="button" role="switch" aria-checked={tafel} onClick={() => setTafel((t) => !t)} className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${tafel ? "border-[#24332B] bg-[#24332B] text-white" : "border-stone-300 bg-white hover:bg-stone-50"}`}>{tafel ? "Uitzetten" : "Aanzetten"}</button>
+        </div>
         {opgeslagen && !vuil && <p role="status" className="rounded-md bg-green-50 px-4 py-2.5 text-sm text-green-800">De offerte is opgeslagen.</p>}
         {vergrendeld && <p role="status" className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900"><b>Deze versie is verstuurd en vergrendeld.</b> Maak een nieuwe versie om iets te wijzigen.</p>}
         {regels.length === 0 && (
@@ -209,7 +222,7 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
                     <label className="text-xs text-stone-500">{r.modus === "bedrag" ? "Bedrag" : "Procent"}<input type="number" min={0} step="any" value={r.waarde ?? 0} onChange={(e) => wijzig(r.id, { waarde: Math.max(0, e.target.valueAsNumber || 0) })} disabled={vergrendeld} className={veld} /></label>
                     <div className="py-2 text-right font-semibold tabular-nums text-green-700">− {eur0(r.modus === "bedrag" ? r.waarde ?? 0 : (b.subtotaal * (r.waarde ?? 0)) / 100)}</div>
                   </div>
-                  <p className="mt-1.5 text-xs text-stone-500">{rol === "directie" ? "Directie: geen grens." : `Korting en prijsaanpassingen samen: maximaal ${inst.maxKortingGebruiker}% onder de berekende prijs. Daarboven is de directie nodig.`}</p>
+                  {intern && <p className="mt-1.5 text-xs text-stone-500">{rol === "directie" ? "Directie: geen grens." : `Korting en prijsaanpassingen samen: maximaal ${inst.maxKortingGebruiker}% onder de berekende prijs. Daarboven is de directie nodig.`}</p>}
                 </div>
               )}
 
@@ -272,29 +285,30 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
         <div className="rounded-lg border border-stone-200 bg-white p-5">
           <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-stone-500"><span>Totaal</span><span className="rounded-full bg-stone-100 px-2.5 py-0.5 normal-case tracking-normal text-stone-700">v{versie} · {statusLabel}</span></div>
           <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-sm">
-            <dt className="text-stone-500">Subtotaal</dt><dd className="text-right tabular-nums">{euroTekst(b.subtotaal)}</dd>
-            {b.korting > 0 && (<><dt className="text-stone-500">Korting</dt><dd className="text-right tabular-nums text-green-700">− {euroTekst(b.korting)}</dd></>)}
-            {eigenTotaal !== null && b.aanpassing !== 0 && (<><dt className="text-stone-500">Aanpassing totaalprijs</dt><dd className={`text-right tabular-nums ${b.aanpassing < 0 ? "text-green-700" : ""}`}>{b.aanpassing < 0 ? "−" : "+"} {euroTekst(Math.abs(b.aanpassing))}</dd></>)}
+            {(intern || eigenTotaal === null) && (<><dt className="text-stone-500">Subtotaal</dt><dd className="text-right tabular-nums">{euroTekst(b.subtotaal)}</dd></>)}
+            {b.korting > 0 && (intern || eigenTotaal === null) && (<><dt className="text-stone-500">Korting</dt><dd className="text-right tabular-nums text-green-700">− {euroTekst(b.korting)}</dd></>)}
+            {intern && eigenTotaal !== null && b.aanpassing !== 0 && (<><dt className="text-stone-500">Aanpassing totaalprijs</dt><dd className={`text-right tabular-nums ${b.aanpassing < 0 ? "text-green-700" : ""}`}>{b.aanpassing < 0 ? "−" : "+"} {euroTekst(Math.abs(b.aanpassing))}</dd></>)}
             <dt className="text-stone-500">Totaal excl. btw</dt><dd className="text-right tabular-nums">{euroTekst(b.exclBtw)}</dd>
             <dt className="text-stone-500">Btw {Math.round(inst.btwHoog * 100)}% over {Math.round(inst.deelHoog * 100)}%</dt><dd className="text-right tabular-nums">{euroTekst(b.btwHoog)}</dd>
             <dt className="text-stone-500">Btw {Math.round(inst.btwLaag * 100)}% over {Math.round((1 - inst.deelHoog) * 100)}%</dt><dd className="text-right tabular-nums">{euroTekst(b.btwLaag)}</dd>
             <dt className="mt-1 self-end border-t border-stone-200 pt-2 text-[15px] font-bold">Totaal incl. btw</dt><dd className="mt-1 border-t border-stone-200 pt-2 text-right text-xl font-bold tabular-nums">{euroTekst(b.totaal)}</dd>
           </dl>
-          {boven && (
+          {boven && intern && (
             <p role="status" className={`mt-3 rounded-md px-3 py-2 text-sm ${toegestaan ? "bg-blue-50 text-blue-900" : "bg-amber-50 text-amber-900"}`}>
               {toegestaan ? `Totale verlaging ${pctTekst}%: boven ${inst.maxKortingGebruiker}%, toegestaan voor de directie.` : <><b>De prijs ligt {pctTekst}% onder de berekende prijs.</b> De grens is {inst.maxKortingGebruiker}%. Opslaan kan, maar versturen vraagt goedkeuring van de directie.</>}
             </p>
           )}
-          {(mag || eigenTotaal !== null) && !vergrendeld && (
+          {intern && (mag || eigenTotaal !== null) && !vergrendeld && (
             <div className="mt-4 border-t border-stone-100 pt-3">
               {totaalOpen ? (
                 <div className="grid gap-2">
                   <label className="text-xs text-stone-500">Eigen totaalprijs, incl. btw
                     <input inputMode="decimal" value={totaalTekst} onChange={(e) => { setTotaalTekst(e.target.value); setVuil(true); }} disabled={!mag} placeholder={String(b.totaal).replace(".", ",")} className={veld} />
                   </label>
-                  <label className="text-xs text-stone-500">Reden (verplicht)
-                    <input value={totaalReden} onChange={(e) => { setTotaalReden(e.target.value); setVuil(true); }} disabled={!mag} placeholder="Bijvoorbeeld: afronden" className={veld} />
+                  <label className="text-xs text-stone-500">Reden (verplicht bij een nieuw bedrag, alleen de directie ziet die)
+                    <input value={totaalReden} onChange={(e) => { setTotaalReden(e.target.value); setVuil(true); }} disabled={!mag} placeholder={bewaardeTotaalReden ? "Alleen invullen als je het bedrag wijzigt" : "Bijvoorbeeld: afronden"} className={veld} />
                   </label>
+                  {isDirectie && bewaardeTotaalReden && <p className="text-xs text-stone-600">Bewaarde reden: {bewaardeTotaalReden}</p>}
                   <button type="button" onClick={() => { setTotaalTekst(""); setTotaalReden(""); setTotaalOpen(false); setVuil(true); }} className={knop}>Terugzetten</button>
                 </div>
               ) : (
@@ -302,7 +316,6 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
               )}
             </div>
           )}
-          {eigenTotaal !== null && totaalReden && vergrendeld && <p className="mt-3 text-xs text-stone-600">Totaalprijs handmatig aangepast. Reden: {totaalReden}</p>}
         </div>
 
         <div className="rounded-lg border border-stone-200 bg-white p-5">
