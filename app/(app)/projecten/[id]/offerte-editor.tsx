@@ -5,7 +5,7 @@ import { useActionState, useEffect, useMemo, useRef, useState, useTransition } f
 import { berekenOfferte, euroTekst, kortingToegestaan } from "@/lib/offerte/bereken";
 import { SJABLONEN, type SjabloonSleutel } from "@/lib/offerte/instellingen";
 import type { Instellingen, OfferteRegel } from "@/lib/offerte/types";
-import { bewaarOfferte, verwijderPositie, type OfferteStatus } from "../actions";
+import { bewaarOfferte, trekOfferteIn, verstuurOfferte, verwijderPositie, type OfferteStatus } from "../actions";
 
 export type EditorRegel = OfferteRegel & { nummer?: number; ruimte?: string | null; omschrijving?: string; svg?: string | null; code?: string | null; eenheid?: string | null };
 export type ArtikelOptie = { id: string; groep: string; code: string; naam: string; eenheid: string; prijsIncl: number };
@@ -16,7 +16,7 @@ const knop = "rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm fo
 const soortLabel = (s: string) => ({ positie: "Positie", artikel: "Artikelregel", kop: "Kopregel", tekst: "Tekst", korting: "Korting" })[s] ?? s;
 const getalOfNull = (t: string) => { const n = Number(t.replace(",", ".")); return t.trim() !== "" && Number.isFinite(n) && n >= 0 ? n : null; };
 
-export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld, versie, statusLabel, opgeslagen, mag, artikelen, totaalOverride, isDirectie, redenen, totaalReden: bewaardeTotaalReden }: {
+export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld, versie, statusLabel, opgeslagen, mag, artikelen, totaalOverride, isDirectie, redenen, totaalReden: bewaardeTotaalReden, statusRuw, link, geldigTot, gebeurtenissen, mail, melding: serverMelding }: {
   projectId: string;
   begin: EditorRegel[];
   rol: string | null;
@@ -32,6 +32,12 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
   isDirectie: boolean;
   redenen: Record<string, string>;
   totaalReden: string | null;
+  statusRuw: string;
+  link: string | null;
+  geldigTot: string | null;
+  gebeurtenissen: { soort: string; op: string; ip: string | null }[];
+  mail: { onderwerp: string; tekst: string } | null;
+  melding: string | null;
 }) {
   const [regels, setRegels] = useState<EditorRegel[]>(begin);
   const [vuil, setVuil] = useState(false);
@@ -44,6 +50,11 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
   const [totaalTekst, setTotaalTekst] = useState(totaalOverride === null ? "" : String(totaalOverride).replace(".", ","));
   const [totaalReden, setTotaalReden] = useState("");
   const [tafel, setTafel] = useState(false);
+  const [verstuurBevestig, setVerstuurBevestig] = useState(false);
+  const [intrekBevestig, setIntrekBevestig] = useState(false);
+  const [gekopieerd, setGekopieerd] = useState("");
+  const linkVeld = useRef<HTMLInputElement>(null);
+  const mailVeld = useRef<HTMLTextAreaElement>(null);
   const intern = !tafel;
   const [totaalOpen, setTotaalOpen] = useState(totaalOverride !== null);
   const teller = useRef(0);
@@ -93,6 +104,22 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
     fd.set("positie_id", positieId);
     start(() => { void verwijderPositie(fd); });
   };
+
+  const zendProject = (actieFn: (fd: FormData) => Promise<void>) => {
+    const fd = new FormData();
+    fd.set("project_id", projectId);
+    start(() => { void actieFn(fd); });
+  };
+  const kopieer = (tekst: string, veldRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>, naam: string) => {
+    (navigator.clipboard ? navigator.clipboard.writeText(tekst) : Promise.reject(new Error("geen klembord")))
+      .then(() => setGekopieerd(naam))
+      .catch(() => { veldRef.current?.select(); setGekopieerd(`${naam}-handmatig`); });
+  };
+  const heeftRegels = regels.some((r) => r.soort === "positie" || r.soort === "artikel");
+  const magVersturen = toegestaan && heeftRegels && b.totaal > 0;
+  const geopend = gebeurtenissen.filter((g) => g.soort === "geopend");
+  const akkoord = gebeurtenissen.find((g) => g.soort === "akkoord");
+  const datumTijd = (iso: string) => new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
   const regelsJson = JSON.stringify(regels.map((r) => ({ id: r.id, soort: r.soort, titel: r.titel ?? null, tekst: r.tekst ?? null, aantal: r.aantal, prijs: r.prijs, modus: r.modus ?? null, waarde: r.waarde ?? null, artikelId: r.artikelId ?? null, prijsOverride: r.prijsOverride ?? null, overrideReden: r.overrideReden ?? null })));
 
@@ -149,8 +176,13 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
           </div>
           <button type="button" role="switch" aria-checked={tafel} onClick={() => setTafel((t) => !t)} className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${tafel ? "border-[#24332B] bg-[#24332B] text-white" : "border-stone-300 bg-white hover:bg-stone-50"}`}>{tafel ? "Uitzetten" : "Aanzetten"}</button>
         </div>
+        {serverMelding === "verstuurd" && <p role="status" className="rounded-md bg-green-50 px-4 py-2.5 text-sm text-green-800"><b>De offerte is verstuurd en vergrendeld.</b> Kopieer de link of de mailtekst hieronder en stuur die naar de klant.</p>}
+        {serverMelding === "ingetrokken" && <p role="status" className="rounded-md bg-amber-50 px-4 py-2.5 text-sm text-amber-900">De offerte is ingetrokken en staat weer als concept. De oude link werkt niet meer.</p>}
+        {serverMelding === "korting" && <p role="alert" className="rounded-md bg-red-50 px-4 py-2.5 text-sm text-red-800">Versturen niet gelukt: de prijs ligt meer dan {inst.maxKortingGebruiker}% onder de berekende prijs. Dat kan alleen de directie versturen.</p>}
+        {serverMelding === "leeg" && <p role="alert" className="rounded-md bg-red-50 px-4 py-2.5 text-sm text-red-800">Versturen niet gelukt: de offerte heeft nog geen positie of artikel, of een totaal van € 0.</p>}
+        {(serverMelding === "verzenden" || serverMelding === "intrekken") && <p role="alert" className="rounded-md bg-red-50 px-4 py-2.5 text-sm text-red-800">{serverMelding === "intrekken" ? "Intrekken niet gelukt. Alleen de directie kan een verstuurde offerte intrekken, en alleen zolang de klant niet heeft getekend." : "Versturen niet gelukt. Ververs de pagina en probeer het opnieuw."}</p>}
         {opgeslagen && !vuil && <p role="status" className="rounded-md bg-green-50 px-4 py-2.5 text-sm text-green-800">De offerte is opgeslagen.</p>}
-        {vergrendeld && <p role="status" className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900"><b>Deze versie is verstuurd en vergrendeld.</b> Maak een nieuwe versie om iets te wijzigen.</p>}
+        {vergrendeld && <p role="status" className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900"><b>Deze offerte is {statusRuw === "akkoord" ? "getekend door de klant" : "verstuurd"} en vergrendeld.</b> {statusRuw === "verstuurd" ? "Alleen de directie kan hem intrekken om iets te wijzigen." : "Er kan niets meer aan worden gewijzigd."}</p>}
         {regels.length === 0 && (
           <p className="rounded-lg border border-dashed border-stone-300 bg-white p-8 text-center text-stone-600">De offerte is nog leeg. Voeg een positie of een tekstregel toe met &ldquo;+ Toevoegen&rdquo;.</p>
         )}
@@ -332,9 +364,75 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
           {status.fout && <p role="alert" className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{status.fout}</p>}
           <button disabled={vergrendeld || bezig || !vuil} className="w-full rounded-md bg-[#B35B40] px-4 py-2.5 font-semibold text-white hover:brightness-110 disabled:opacity-50">{bezig ? "Opslaan…" : vuil ? "Offerte opslaan" : "Alles is opgeslagen"}</button>
           {vuil && <p className="mt-2 text-xs text-amber-800">Je hebt niet-opgeslagen wijzigingen.</p>}
-          <button type="button" disabled className="mt-3 w-full rounded-md border border-stone-300 bg-white px-4 py-2.5 font-semibold disabled:opacity-60" title="Volgt in een volgende stap">Versturen (volgt)</button>
-          <p className="mt-2 text-xs text-stone-500">Versturen, de online offerte met handtekening en de PDF volgen in de volgende stappen.</p>
+          {statusRuw === "concept" && (
+            <div className="mt-3 border-t border-stone-100 pt-3">
+              {!verstuurBevestig ? (
+                <button type="button" onClick={() => setVerstuurBevestig(true)} disabled={vuil || !magVersturen} className="w-full rounded-md border border-[#24332B] bg-[#24332B] px-4 py-2.5 font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">Offerte versturen…</button>
+              ) : (
+                <div className="rounded-md bg-stone-50 p-3 text-sm">
+                  <p><b>Na versturen is de offerte vergrendeld.</b> De klant krijgt een eigen link die 14 dagen geldig is, waar hij de offerte ziet en kan tekenen.</p>
+                  <div className="mt-3 flex gap-2">
+                    <button type="button" onClick={() => zendProject(verstuurOfferte)} className="rounded-md bg-[#B35B40] px-4 py-2 font-semibold text-white hover:brightness-110">Ja, versturen</button>
+                    <button type="button" onClick={() => setVerstuurBevestig(false)} className={knop}>Annuleren</button>
+                  </div>
+                </div>
+              )}
+              {vuil && <p className="mt-2 text-xs text-stone-500">Sla de offerte eerst op voordat je hem verstuurt.</p>}
+              {!vuil && !heeftRegels && <p className="mt-2 text-xs text-stone-500">Voeg eerst een positie of artikel toe.</p>}
+              {!vuil && heeftRegels && !toegestaan && <p className="mt-2 text-xs text-amber-800">De prijs ligt meer dan {inst.maxKortingGebruiker}% onder de berekende prijs. Alleen de directie kan deze offerte versturen.</p>}
+            </div>
+          )}
         </div>
+
+        {statusRuw !== "concept" && link && (
+          <div className="rounded-lg border border-stone-200 bg-white p-5">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-stone-500">Online offerte</div>
+            <div className="flex gap-2">
+              <input ref={linkVeld} readOnly value={link} onFocus={(e) => e.currentTarget.select()} aria-label="Link naar de offerte" className={`${veld} min-w-0 flex-1 font-mono text-xs`} />
+              <button type="button" onClick={() => kopieer(link, linkVeld, "link")} className={knop}>Kopieer</button>
+            </div>
+            {gekopieerd === "link" && <p role="status" className="mt-1 text-xs text-green-700">Link gekopieerd.</p>}
+            {gekopieerd === "link-handmatig" && <p role="status" className="mt-1 text-xs text-amber-800">Selecteer de link en kopieer met Ctrl+C.</p>}
+            {geldigTot && <p className="mt-2 text-xs text-stone-500">Geldig tot {new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric" }).format(new Date(geldigTot))}.</p>}
+
+            {mail && (
+              <div className="mt-4">
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-stone-500">Mailtekst</div>
+                <input readOnly value={mail.onderwerp} aria-label="Onderwerp" className={`${veld} mb-2`} />
+                <textarea ref={mailVeld} readOnly rows={9} value={mail.tekst} aria-label="Mailtekst" className={`${veld} text-xs leading-relaxed`} />
+                <button type="button" onClick={() => kopieer(`${mail.onderwerp}\n\n${mail.tekst}`, mailVeld, "mail")} className={`${knop} mt-2`}>Kopieer onderwerp en tekst</button>
+                {gekopieerd === "mail" && <span role="status" className="ml-2 text-xs text-green-700">Gekopieerd.</span>}
+                {gekopieerd === "mail-handmatig" && <span role="status" className="ml-2 text-xs text-amber-800">Selecteer de tekst en kopieer met Ctrl+C.</span>}
+                <p className="mt-2 text-xs text-stone-500">Mailen vanuit het CRM via Microsoft 365 volgt later. Plak dit tot dan in je eigen mail.</p>
+              </div>
+            )}
+
+            <div className="mt-4 border-t border-stone-100 pt-3">
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-stone-500">Verloop</div>
+              <ul className="space-y-1 text-sm">
+                {akkoord && <li className="font-semibold text-green-700">Getekend door de klant · {datumTijd(akkoord.op)}{akkoord.ip ? ` · IP ${akkoord.ip}` : ""}</li>}
+                <li>{geopend.length === 0 ? "De klant heeft de offerte nog niet geopend." : `Geopend door de klant: ${geopend.length}× · laatst ${datumTijd(geopend[0].op)}`}</li>
+                {gebeurtenissen.filter((g) => g.soort === "verstuurd").slice(0, 1).map((g) => <li key={g.op} className="text-stone-600">Verstuurd · {datumTijd(g.op)}</li>)}
+              </ul>
+            </div>
+
+            {isDirectie && statusRuw === "verstuurd" && (
+              <div className="mt-4 border-t border-stone-100 pt-3">
+                {!intrekBevestig ? (
+                  <button type="button" onClick={() => setIntrekBevestig(true)} className="text-xs text-[#9C4B32] underline">Intrekken en weer bewerken</button>
+                ) : (
+                  <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+                    <p>De link werkt dan niet meer en de offerte wordt weer een concept. Weet je het zeker?</p>
+                    <div className="mt-2 flex gap-2">
+                      <button type="button" onClick={() => zendProject(trekOfferteIn)} className="rounded-md bg-red-700 px-3 py-1.5 text-sm font-semibold text-white">Ja, intrekken</button>
+                      <button type="button" onClick={() => setIntrekBevestig(false)} className={knop}>Annuleren</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </aside>
     </form>
   );

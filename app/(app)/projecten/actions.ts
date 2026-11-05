@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 import { maakServerClient } from "@/lib/supabase/server";
 import { haalPrijsregels, PRIJSREGELS_VERSIE, PrijsFout, berekenPrijs } from "@/lib/prijs";
 import { leesConfiguratie } from "@/lib/projecten/positie";
+import { berekenOfferte, kortingToegestaan } from "@/lib/offerte/bereken";
+import { INSTELLINGEN_KERNKOZIJNEN } from "@/lib/offerte/instellingen";
+import { datumOver } from "@/lib/offerte/handtekening";
+import { maakToken } from "@/lib/offerte/token";
+import type { OfferteRegel } from "@/lib/offerte/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -273,4 +278,68 @@ export async function verwijderProject(formData: FormData) {
   const { error } = await supabase.from("projecten").delete().eq("id", projectId);
   if (error) redirect(`/projecten/${projectId}?fout=verwijderen`);
   redirect(`/klanten/${project.klant_id}`);
+}
+
+type RegelMetPositie = {
+  soort: OfferteRegel["soort"]; aantal: number; prijs: number; prijs_override: number | null; korting_modus: "percentage" | "bedrag" | null; korting_waarde: number | null;
+  posities: { prijs: number; aantal: number } | null;
+};
+
+/** Vergrendelt de offerte, maakt de geheime link en legt vast dat de offerte is verstuurd. */
+export async function verstuurOfferte(formData: FormData) {
+  const projectId = String(formData.get("project_id") ?? "");
+  if (!UUID.test(projectId)) redirect("/projecten");
+  const terug = (fout: string) => redirect(`/projecten/${projectId}?fout=${fout}`);
+
+  const supabase = await maakServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: project } = await supabase.from("projecten").select("id, tenant_id").eq("id", projectId).maybeSingle();
+  if (!project || !user) redirect("/projecten");
+  const { data: offerte } = await supabase.from("offertes").select("id, status, totaal_override").eq("project_id", projectId).order("versie", { ascending: false }).limit(1).maybeSingle();
+  if (!offerte || offerte.status !== "concept") terug("verzenden");
+
+  const { data: regelData } = await supabase.from("offerte_regels").select("soort, aantal, prijs, prijs_override, korting_modus, korting_waarde, posities(prijs, aantal)").eq("offerte_id", offerte!.id);
+  const regels: OfferteRegel[] = ((regelData ?? []) as unknown as RegelMetPositie[]).map((r, i) => ({
+    id: String(i), soort: r.soort,
+    aantal: r.soort === "positie" ? Number(r.posities?.aantal ?? 1) : Number(r.aantal),
+    prijs: r.soort === "positie" ? Number(r.posities?.prijs ?? 0) : Number(r.prijs),
+    prijsOverride: r.prijs_override === null ? null : Number(r.prijs_override),
+    modus: r.korting_modus, waarde: r.korting_waarde === null ? null : Number(r.korting_waarde),
+  }));
+  const b = berekenOfferte(regels, INSTELLINGEN_KERNKOZIJNEN, { totaalOverride: offerte!.totaal_override === null ? null : Number(offerte!.totaal_override) });
+  if (!regels.some((r) => r.soort === "positie" || r.soort === "artikel") || b.totaal <= 0) terug("leeg");
+
+  const { data: lid } = await supabase.from("tenant_leden").select("rol").eq("tenant_id", project.tenant_id).eq("user_id", user.id).maybeSingle();
+  if (!kortingToegestaan(b.verlagingPct, lid?.rol, INSTELLINGEN_KERNKOZIJNEN)) terug("korting");
+
+  const { data: bijgewerkt, error } = await supabase
+    .from("offertes")
+    .update({ status: "verstuurd", publiek_token: maakToken(), verstuurd_op: new Date().toISOString(), verstuurd_door: user.id, geldig_tot: datumOver(14) })
+    .eq("id", offerte!.id)
+    .eq("status", "concept")
+    .select("id");
+  if (error || !bijgewerkt?.length) {
+    console.error("versturen mislukt:", error?.code, error?.message);
+    terug("verzenden");
+  }
+  await supabase.from("offerte_gebeurtenissen").insert({ tenant_id: project.tenant_id, offerte_id: offerte!.id, soort: "verstuurd" });
+  redirect(`/projecten/${projectId}?verstuurd=1`);
+}
+
+/** Haalt een verstuurde, nog niet getekende offerte terug naar concept. De oude link werkt dan niet meer. Alleen de directie. */
+export async function trekOfferteIn(formData: FormData) {
+  const projectId = String(formData.get("project_id") ?? "");
+  if (!UUID.test(projectId)) redirect("/projecten");
+  const supabase = await maakServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: project } = await supabase.from("projecten").select("id, tenant_id").eq("id", projectId).maybeSingle();
+  if (!project || !user) redirect("/projecten");
+  const { data: lid } = await supabase.from("tenant_leden").select("rol").eq("tenant_id", project.tenant_id).eq("user_id", user.id).maybeSingle();
+  if (lid?.rol !== "directie") redirect(`/projecten/${projectId}?fout=intrekken`);
+  const { data: offerte } = await supabase.from("offertes").select("id").eq("project_id", projectId).eq("status", "verstuurd").order("versie", { ascending: false }).limit(1).maybeSingle();
+  if (!offerte) redirect(`/projecten/${projectId}?fout=intrekken`);
+  const { data: bijgewerkt } = await supabase.from("offertes").update({ status: "concept", publiek_token: null, verstuurd_op: null, geldig_tot: null }).eq("id", offerte.id).eq("status", "verstuurd").select("id");
+  if (!bijgewerkt?.length) redirect(`/projecten/${projectId}?fout=intrekken`);
+  await supabase.from("offerte_gebeurtenissen").insert({ tenant_id: project.tenant_id, offerte_id: offerte.id, soort: "ingetrokken" });
+  redirect(`/projecten/${projectId}?ingetrokken=1`);
 }
