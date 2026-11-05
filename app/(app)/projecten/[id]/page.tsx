@@ -10,6 +10,7 @@ import { leesConfiguratie, positieOmschrijving } from "@/lib/projecten/positie";
 import { INSTELLINGEN_KERNKOZIJNEN } from "@/lib/offerte/instellingen";
 import { maakMail } from "@/lib/offerte/mail";
 import OfferteEditor, { type EditorRegel } from "./offerte-editor";
+import InmetingBlok from "./inmeting-blok";
 import { verwijderProject } from "../actions";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -40,9 +41,9 @@ function maakRegel(r: RegelRij): EditorRegel {
   return { ...basis, aantal: p.aantal, prijs: Number(p.prijs), nummer: p.nummer, ruimte: p.ruimte, omschrijving, svg };
 }
 
-async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string; nieuweversie?: string }> }) {
+async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string; nieuweversie?: string; inmeting?: string }> }) {
   const { id } = await params;
-  const { opgeslagen, fout, verstuurd, ingetrokken, nieuweversie } = await zoek;
+  const { opgeslagen, fout, verstuurd, ingetrokken, nieuweversie, inmeting } = await zoek;
   if (!UUID.test(id)) notFound();
   const supabase = await maakServerClient();
   const { data: p } = await supabase
@@ -118,6 +119,10 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
         ))}
       </ol>
 
+      {offerte?.status === "akkoord" && (
+        <Suspense fallback={null}><InmetingBlok projectId={p.id} melding={inmeting ?? (["datum", "inmeter", "inmeting"].includes(fout ?? "") ? fout ?? null : null)} /></Suspense>
+      )}
+
       {offerte ? (
         <OfferteEditor
           key={`${offerte.id}-${offerte.gewijzigd}-${regels.length}`}
@@ -150,7 +155,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   );
 }
 
-export default function ProjectPagina(props: { params: Promise<{ id: string }>; searchParams: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string; nieuweversie?: string }> }) {
+export default function ProjectPagina(props: { params: Promise<{ id: string }>; searchParams: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string; nieuweversie?: string; inmeting?: string }> }) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <Link href="/projecten" className="text-sm text-stone-600 underline">&larr; Alle projecten</Link>
