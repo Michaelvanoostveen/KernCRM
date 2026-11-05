@@ -13,6 +13,8 @@ const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   geannuleerd: { tekst: "De montage is geannuleerd.", fout: false },
   geen_akkoord: { tekst: "De montage kan pas worden gepland nadat de klant akkoord heeft gegeven op de offerte.", fout: true },
   inmeting_open: { tekst: "Rond eerst de inmeting af: de maten moeten definitief zijn voordat je de montage plant.", fout: true },
+  fase: { tekst: "Dit project staat niet in een fase waarin de montage kan worden gepland.", fout: true },
+  al_afgerond: { tekst: "Voor dit project is de montage al afgerond. Nawerk loopt via service.", fout: true },
   ploeg: { tekst: "Kies een ploeg die in dienst is.", fout: true },
   ploeg_bezet: { tekst: "Deze ploeg is in die periode al ingepland. Kies een andere ploeg of andere dagen.", fout: true },
   bestaat_al: { tekst: "Dit project heeft al een lopende montage.", fout: true },

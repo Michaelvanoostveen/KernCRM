@@ -26,6 +26,7 @@ create table public.montages (
   hulpmiddel    text not null default 'geen' check (hulpmiddel in ('geen', 'steiger', 'hoogwerker', 'beide')),
   status        text not null default 'voorlopig' check (status in ('voorlopig', 'definitief', 'bezig', 'afgerond', 'geannuleerd')),
   notitie       text,
+  vorige_fase   public.projectfase,                      -- de fase van het project vóór het plannen, om bij annuleren naar terug te keren
   annulering_reden text,
   afgerond_op   timestamptz,
   gepland_door  uuid default auth.uid() references auth.users (id) on delete set null,
@@ -43,6 +44,22 @@ create index montages_offerte_idx on public.montages (offerte_id);
 create unique index montages_een_lopend_per_project on public.montages (project_id) where status in ('voorlopig', 'definitief', 'bezig');
 
 alter table public.montageploegen enable row level security;
+
+-- De tenant van een ploeg staat vast, en een ploeg gaat niet uit dienst zolang er lopende montages aan hangen.
+create function public.montageploegen_bewaken() returns trigger
+  language plpgsql set search_path = ''
+  as $$
+begin
+  if new.tenant_id is distinct from old.tenant_id then
+    raise exception 'Een ploeg kan niet naar een ander bedrijf verhuizen' using errcode = '55000';
+  end if;
+  if old.actief and not new.actief and exists (select 1 from public.montages m where m.ploeg_id = old.id and m.status in ('voorlopig', 'definitief', 'bezig')) then
+    raise exception 'Deze ploeg heeft nog lopende montages. Verplaats of annuleer die eerst.' using errcode = '55000';
+  end if;
+  return new;
+end $$;
+create trigger montageploegen_bewaken before update on public.montageploegen
+  for each row execute function public.montageploegen_bewaken();
 alter table public.montages enable row level security;
 
 create policy montageploegen_lezen on public.montageploegen for select to authenticated
@@ -108,8 +125,13 @@ begin
   end if;
   select * into o from public.offertes where project_id = p.id order by versie desc limit 1 for update;
   if not found or o.status <> 'akkoord' then return jsonb_build_object('ok', false, 'fout', 'geen_akkoord'); end if;
-  if not exists (select 1 from public.inmetingen i where i.offerte_id = o.id and i.status = 'uitgevoerd') then
+  if p.fase not in ('akkoord', 'inmeting', 'bestelling') then return jsonb_build_object('ok', false, 'fout', 'fase'); end if;
+  if not exists (select 1 from public.inmetingen i where i.offerte_id = o.id and i.status = 'uitgevoerd')
+     or exists (select 1 from public.inmetingen i where i.offerte_id = o.id and i.status = 'gepland') then
     return jsonb_build_object('ok', false, 'fout', 'inmeting_open');
+  end if;
+  if exists (select 1 from public.montages m where m.project_id = p.id and m.status = 'afgerond') then
+    return jsonb_build_object('ok', false, 'fout', 'al_afgerond');
   end if;
   select * into pl from public.montageploegen where id = p_ploeg and tenant_id = p.tenant_id and actief for update;
   if not found then return jsonb_build_object('ok', false, 'fout', 'ploeg'); end if;
@@ -122,11 +144,11 @@ begin
   end if;
   v_eind := public.werkdag_eind(p_start, p_werkdagen);
   if public.ploeg_bezet(pl.id, p_start, v_eind, null) then return jsonb_build_object('ok', false, 'fout', 'ploeg_bezet'); end if;
-  insert into public.montages (tenant_id, project_id, offerte_id, ploeg_id, start_datum, werkdagen, eind_datum, leverdatum, hulpmiddel, status, notitie)
+  insert into public.montages (tenant_id, project_id, offerte_id, ploeg_id, start_datum, werkdagen, eind_datum, leverdatum, hulpmiddel, status, notitie, vorige_fase)
     values (p.tenant_id, p.id, o.id, pl.id, p_start, p_werkdagen, v_eind, p_leverdatum, coalesce(p_hulpmiddel, 'geen'),
-            case when p_leverdatum is null then 'voorlopig' else 'definitief' end, left(nullif(btrim(p_notitie), ''), 1000))
+            case when p_leverdatum is null then 'voorlopig' else 'definitief' end, left(nullif(btrim(p_notitie), ''), 1000), p.fase)
     returning id into v_id;
-  update public.projecten set fase = 'montage', gewijzigd = now() where id = p.id and fase in ('akkoord', 'inmeting', 'bestelling');
+  update public.projecten set fase = 'montage', gewijzigd = now() where id = p.id;
   return jsonb_build_object('ok', true, 'id', v_id);
 exception when unique_violation then
   return jsonb_build_object('ok', false, 'fout', 'bestaat_al');
@@ -151,9 +173,9 @@ begin
     return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
   end if;
   if m.status not in ('voorlopig', 'definitief') then return jsonb_build_object('ok', false, 'fout', 'niet_te_wijzigen'); end if;
-  select * into pl from public.montageploegen where id = p_ploeg and tenant_id = m.tenant_id and actief for update;
+  select * into pl from public.montageploegen where id = p_ploeg and tenant_id = m.tenant_id and (actief or id = m.ploeg_id) for update;
   if not found then return jsonb_build_object('ok', false, 'fout', 'ploeg'); end if;
-  if p_start is null or p_start < v_vandaag or extract(isodow from p_start) >= 6 or p_werkdagen is null or p_werkdagen < 1 or p_werkdagen > 30
+  if p_start is null or (p_start < v_vandaag and p_start is distinct from m.start_datum) or extract(isodow from p_start) >= 6 or p_werkdagen is null or p_werkdagen < 1 or p_werkdagen > 30
      or (p_leverdatum is not null and p_leverdatum > p_start) or coalesce(p_hulpmiddel, 'geen') not in ('geen', 'steiger', 'hoogwerker', 'beide') then
     return jsonb_build_object('ok', false, 'fout', 'ongeldig');
   end if;
@@ -207,7 +229,7 @@ end $$;
 revoke all on function public.rond_montage_af(uuid) from public, anon;
 grant execute on function public.rond_montage_af(uuid) to authenticated;
 
--- Annuleert een montage die nog niet is afgerond, met een reden. Het project gaat terug naar de fase Inmeting.
+-- Annuleert een montage die nog niet is afgerond, met een reden. Het project gaat terug naar de fase van vóór het plannen.
 create function public.annuleer_montage(p_montage uuid, p_reden text) returns jsonb
   language plpgsql security definer set search_path = ''
   as $$
@@ -221,7 +243,7 @@ begin
   if m.status not in ('voorlopig', 'definitief', 'bezig') then return jsonb_build_object('ok', false, 'fout', 'niet_te_annuleren'); end if;
   if length(btrim(coalesce(p_reden, ''))) = 0 then return jsonb_build_object('ok', false, 'fout', 'reden'); end if;
   update public.montages set status = 'geannuleerd', annulering_reden = left(btrim(p_reden), 500), gewijzigd = now() where id = m.id;
-  update public.projecten set fase = 'inmeting', gewijzigd = now() where id = m.project_id and fase = 'montage';
+  update public.projecten set fase = coalesce(m.vorige_fase, 'inmeting'), gewijzigd = now() where id = m.project_id and fase = 'montage';
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.annuleer_montage(uuid, text) from public, anon;
