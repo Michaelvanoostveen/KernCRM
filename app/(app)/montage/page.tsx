@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { maakServerClient } from "@/lib/supabase/server";
 import { montageOpDag, plusDagen, vandaagIso, weekNummer, weekStart, werkweek, type PlanbordMontage } from "@/lib/montage/week";
 import { haalRol } from "../start-gegevens";
-import { maakPloeg, zetPloegActief } from "./actions";
+import PloegenBeheer from "./ploegen-beheer";
 
 type Ploeg = { id: string; naam: string; actief: boolean };
 type Rij = PlanbordMontage & { projectId: string; projectNaam: string; klantNaam: string; leverdatum: string | null; hulpmiddel: string };
@@ -17,6 +17,10 @@ const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   naam: { tekst: "Vul een naam in voor de ploeg.", fout: true },
   bestaat: { tekst: "Er bestaat al een ploeg met die naam.", fout: true },
   rechten: { tekst: "Alleen directie en kantoor beheren de ploegen.", fout: true },
+  monteur_toegevoegd: { tekst: "De monteur is toegevoegd.", fout: false },
+  gekoppeld: { tekst: "Het inlogaccount is bijgewerkt.", fout: false },
+  opstelling_geladen: { tekst: "De startopstelling is geladen. Pas namen en samenstelling aan waar nodig.", fout: false },
+  niet_toegestaan: { tekst: "Dat kan niet: een ploeg met lopende montages gaat niet uit dienst en een account moet de rol monteur hebben.", fout: true },
   mislukt: { tekst: "Het lukte niet. Probeer het opnieuw.", fout: true },
 };
 const KLEUR: Record<string, string> = {
@@ -120,26 +124,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ week?: string; ploeg?: string 
         <p className="mt-2 text-xs text-stone-500">Alleen projecten waarvan de inmeting is afgerond kunnen worden ingepland; de projectpagina laat dat zien.</p>
       </section>
 
-      {mag && (
-        <section className="mt-8" aria-label="Ploegen">
-          <h2 className="text-lg font-semibold">Ploegen</h2>
-          <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-            {ploegen.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-2 rounded-md border border-stone-200 bg-white px-4 py-2.5 text-sm">
-                <span className={p.actief ? "font-semibold" : "text-stone-500 line-through"}>{p.naam}</span>
-                <form action={zetPloegActief}>
-                  <input type="hidden" name="ploeg_id" value={p.id} /><input type="hidden" name="actief" value={p.actief ? "uit" : "aan"} />
-                  <button className="rounded-md border border-stone-300 bg-white px-3 py-1 text-xs font-semibold hover:bg-stone-50">{p.actief ? "Uit dienst" : "Weer in dienst"}</button>
-                </form>
-              </li>
-            ))}
-          </ul>
-          <form action={maakPloeg} className="mt-3 flex flex-wrap items-end gap-2">
-            <label className="text-xs font-semibold">Nieuwe ploeg<input name="naam" required maxLength={60} placeholder="Bijvoorbeeld: Ploeg Jan en Kees" className="mt-1 w-72 max-w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
-            <button className="rounded-md bg-[#24332B] px-4 py-2 text-sm font-semibold text-white">Toevoegen</button>
-          </form>
-        </section>
-      )}
+      {mag && <PloegenBeheer />}
     </>
   );
 }

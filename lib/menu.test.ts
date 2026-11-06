@@ -18,8 +18,10 @@ describe("menu per rol", () => {
   it("laat de inmeter alleen de inmetingen zien", () => {
     expect(labels("inmeter")).toEqual(["Inmeting"]);
   });
-  it("geeft een rol zonder schermen, een onbekende rol of niemand alleen Start", () => {
-    expect(labels("monteur")).toEqual(["Start"]);
+  it("laat de monteur alleen zijn eigen montages zien", () => {
+    expect(labels("monteur")).toEqual(["Mijn montages"]);
+  });
+  it("geeft een onbekende rol of niemand alleen Start", () => {
     expect(labels("onbekend")).toEqual(["Start"]);
     expect(labels(null)).toEqual(["Start"]);
   });

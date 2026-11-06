@@ -3,6 +3,7 @@ export type MenuItem = { href: string; label: string };
 const START = { href: "/", label: "Start" };
 const KLANTEN = { href: "/klanten", label: "Klanten" };
 const PROJECTEN = { href: "/projecten", label: "Projecten" };
+const MIJN_MONTAGES = { href: "/monteur", label: "Mijn montages" };
 const INMETING = { href: "/inmeting", label: "Inmeting" };
 const MONTAGE = { href: "/montage", label: "Montage" };
 const FACTUREN = { href: "/facturen", label: "Facturen" };
@@ -12,7 +13,7 @@ const GEBRUIKERS = { href: "/instellingen/gebruikers", label: "Gebruikers" };
 /**
  * Het hoofdmenu per rol. Een inmeter ziet alleen zijn inmetingen. Facturen zijn voor directie, kantoor en verkoop.
  * De catalogus mogen directie, verkoop en kantoor inzien (alleen de directie beheert hem); de gebruikers beheert alleen de directie.
- * Een rol zonder eigen schermen (bijvoorbeeld de monteur, tot de montage-app er is) ziet alleen Start.
+ * De monteur ziet alleen zijn eigen montages. Een onbekende rol ziet alleen Start.
  */
 export function menuVoorRol(rol: string | null | undefined): MenuItem[] {
   switch (rol) {
@@ -20,6 +21,7 @@ export function menuVoorRol(rol: string | null | undefined): MenuItem[] {
     case "verkoop":
     case "kantoor": return [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, FACTUREN, CATALOGUS];
     case "inmeter": return [INMETING];
+    case "monteur": return [MIJN_MONTAGES];
     default: return [START];
   }
 }
