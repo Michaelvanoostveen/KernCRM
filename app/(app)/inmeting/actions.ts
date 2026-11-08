@@ -84,7 +84,10 @@ export async function bewaarInmetingPositie(_vorige: PositieStatus, formData: Fo
     return { fout: "Opslaan lukte niet. Probeer het opnieuw." };
   }
   const uitkomst = data as { ok?: boolean; fout?: string } | null;
-  if (uitkomst?.ok) return { opgeslagen: true };
+  if (uitkomst?.ok) {
+    revalidatePath(`/inmeting/${inmetingId}`);
+    return { opgeslagen: true };
+  }
   const fouten: Record<string, string> = {
     maat: "Een maat moet tussen 100 en 10.000 mm liggen.",
     afgerond: "Deze inmeting is al afgerond.",
