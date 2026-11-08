@@ -22,7 +22,8 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getUser();
   const opLogin = request.nextUrl.pathname.startsWith("/login");
   // De online offerte voor de klant is bereikbaar met de geheime link, zonder inloggen.
-  const openbaar = request.nextUrl.pathname.startsWith("/o/");
+  // De link uit een herstelmail komt langs /auth/herstel, nog zonder sessie.
+  const openbaar = request.nextUrl.pathname.startsWith("/o/") || request.nextUrl.pathname.startsWith("/auth/");
 
   if (!data.user && !opLogin && !openbaar) {
     return NextResponse.redirect(new URL("/login", request.url));

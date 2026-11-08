@@ -10,6 +10,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ weergave?: string }> }) {
   // Een verkoper ziet standaard de eigen projecten; directie en kantoor ziet alles. Iedereen kan wisselen.
   const rol = await haalRol();
   if (rol === "inmeter") redirect("/inmeting");
+  if (rol === "monteur") redirect("/monteur");
   const standaard = rol === "verkoop" ? "mijn" : "alle";
   const weergave = gekozen === "mijn" || gekozen === "alle" ? gekozen : standaard;
   const nu = new Date();
