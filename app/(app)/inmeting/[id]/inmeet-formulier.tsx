@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { AFWIJKING_DREMPEL_MM, afwijkingTekst, bepaalAfwijking } from "@/lib/inmeting/afwijking";
 import { bewaarInmetingPositie, type PositieStatus } from "../actions";
 
@@ -13,10 +13,15 @@ export default function InmeetFormulier({ inmetingId, positieId, nummer, ruimte,
   offerteBreedte: number; offerteHoogte: number; vergrendeld: boolean;
   begin: { bestel_breedte_mm: number | null; bestel_hoogte_mm: number | null; binnen_breedte_mm: number | null; binnen_hoogte_mm: number | null; buiten_breedte_mm: number | null; buiten_hoogte_mm: number | null; opmerking: string | null } | null;
 }) {
-  const [status, actie, bezig] = useActionState<PositieStatus, FormData>(bewaarInmetingPositie, {});
+  const [wijzig, setWijzig] = useState(false);
+  const [status, actie, bezig] = useActionState<PositieStatus, FormData>(async (vorige, formData) => {
+    const uitkomst = await bewaarInmetingPositie(vorige, formData);
+    // Gelukt: er is niets meer dat nog niet is opgeslagen. Mislukt: de wijziging blijft als "nog niet opgeslagen" staan.
+    if (uitkomst.opgeslagen) startTransition(() => setWijzig(false));
+    return uitkomst;
+  }, {});
   const [breedte, setBreedte] = useState(getal(begin?.bestel_breedte_mm));
   const [hoogte, setHoogte] = useState(getal(begin?.bestel_hoogte_mm));
-  const [wijzig, setWijzig] = useState(false);
   const afw = bepaalAfwijking({ w: offerteBreedte, h: offerteHoogte }, { breedte: naarGetal(breedte), hoogte: naarGetal(hoogte) });
   const bewaard = !wijzig && (status.opgeslagen || (begin?.bestel_breedte_mm != null && begin?.bestel_hoogte_mm != null));
 
