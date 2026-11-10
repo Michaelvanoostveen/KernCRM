@@ -47,7 +47,7 @@ export async function wijzigMontage(formData: FormData) {
   return terug(projectId, code(data as Uitkomst, "gewijzigd"));
 }
 
-async function eenvoudig(formData: FormData, rpc: "start_montage" | "rond_montage_af", goed: string) {
+async function eenvoudig(formData: FormData, rpc: "start_montage", goed: string) {
   const projectId = String(formData.get("project_id") ?? "");
   const montageId = String(formData.get("montage_id") ?? "");
   if (!UUID.test(projectId)) redirect("/projecten");
@@ -60,8 +60,6 @@ async function eenvoudig(formData: FormData, rpc: "start_montage" | "rond_montag
 /** De montage begint (kan pas op of na de startdag en als de leverdatum bekend is). */
 export async function startMontage(formData: FormData) { return eenvoudig(formData, "start_montage", "gestart"); }
 
-/** De montage is klaar; het project gaat naar de fase Oplevering. */
-export async function rondMontageAf(formData: FormData) { return eenvoudig(formData, "rond_montage_af", "afgerond"); }
 
 export async function annuleerMontage(formData: FormData) {
   const projectId = String(formData.get("project_id") ?? "");

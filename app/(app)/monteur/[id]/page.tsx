@@ -6,14 +6,21 @@ import { haalPrijsregels } from "@/lib/prijs";
 import { kozijnSvg } from "@/lib/tekening/tekenen";
 import { leesConfiguratie, positieOmschrijving } from "@/lib/projecten/positie";
 import { dagLabel, leesMonteurDetail } from "@/lib/montage/monteur";
+import { leesWerkbon, onvolledigeKozijnen, openPunten, FOTO_BUCKET_WERKBON } from "@/lib/montage/werkbon";
 import { vandaagIso } from "@/lib/montage/week";
+import { haalRol } from "../../start-gegevens";
+import { startWerkbon } from "../actions";
+import WerkbonKozijn from "./werkbon-kozijn";
+import { WerkbonAlgemeen, WerkbonOpleveren, WerkbonPunten, WerkbonUrenBlok } from "./werkbon-onderdelen";
+import type { WerkbonFotoItem } from "./werkbon-foto-blok";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const HULP: Record<string, string> = { geen: "Geen", steiger: "Steiger", hoogwerker: "Hoogwerker", beide: "Steiger en hoogwerker" };
 const mm = (b: number | null | undefined, h: number | null | undefined) => (b != null && h != null ? `${b} × ${h} mm` : null);
 
-async function Inhoud({ params }: { params: Promise<{ id: string }> }) {
+async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ fout?: string }> }) {
   const { id } = await params;
+  const { fout } = await zoek;
   if (!UUID.test(id)) notFound();
   const supabase = await maakServerClient();
   const { data } = await supabase.rpc("monteur_detail", { p_montage: id });
@@ -22,6 +29,21 @@ async function Inhoud({ params }: { params: Promise<{ id: string }> }) {
 
   const regels = haalPrijsregels();
   const vandaag = vandaagIso(new Date());
+  const rol = await haalRol();
+  const kantoor = rol === "directie" || rol === "kantoor";
+
+  // De werkbon van deze montage, met tijdelijke links naar de foto's.
+  const { data: wData } = await supabase.rpc("werkbon_laad", { p_montage: id });
+  const werkbon = leesWerkbon(wData);
+  const { data: urlData } = werkbon && werkbon.fotos.length ? await supabase.storage.from(FOTO_BUCKET_WERKBON).createSignedUrls(werkbon.fotos.map((f) => f.pad), 3600) : { data: [] };
+  const fotoUrl = new Map((urlData ?? []).flatMap((u) => (u.path && u.signedUrl ? [[u.path, u.signedUrl] as const] : [])));
+  const fotosVan = (pid: string | null, soort: string): WerkbonFotoItem[] => (werkbon?.fotos ?? []).filter((f) => f.positie_id === pid && f.soort === soort && fotoUrl.get(f.pad)).map((f) => ({ id: f.id, url: fotoUrl.get(f.pad)! }));
+  const schrijfbaar = !!werkbon && werkbon.status === "open" && d.status === "bezig";
+  const kanStarten = !werkbon && d.status === "definitief";
+  const startToegestaan = d.start_datum <= vandaag;
+  const onvolledig = werkbon ? onvolledigeKozijnen(werkbon.regels, werkbon.punten) : 0;
+  const posLijst = d.posities.map((p) => ({ id: p.positie_id, label: `Pos. ${p.nummer}${p.ruimte ? ` · ${p.ruimte}` : ""}` }));
+  const FOUTEN: Record<string, string> = { te_vroeg: "Je kunt pas beginnen op of na de startdatum van de montage.", voorlopig: "Deze montage is nog voorlopig: kantoor moet eerst de leverdatum invullen.", geen_toegang: "Je hebt geen toegang tot deze montage.", niet_te_starten: "Deze montage kan niet meer worden gestart.", mislukt: "Het lukte niet. Probeer het opnieuw." };
   const a = d.adres;
   const tel = d.mobiel || d.telefoon;
   const adresTekst = a ? `${a.straat} ${a.huisnummer}${a.toevoeging ? ` ${a.toevoeging}` : ""}, ${a.postcode} ${a.plaats}` : d.project_naam;
@@ -46,6 +68,20 @@ async function Inhoud({ params }: { params: Promise<{ id: string }> }) {
         {d.notitie && <div className="sm:col-span-2"><span className="text-stone-500">Notitie van kantoor</span><br /><b>{d.notitie}</b></div>}
       </div>
 
+      {fout && <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{FOUTEN[fout] ?? FOUTEN.mislukt}</p>}
+      {kanStarten && (
+        <form action={startWerkbon} className="mt-4 rounded-xl border-2 border-[#B35B40] bg-white p-4">
+          <input type="hidden" name="montage_id" value={d.id} />
+          <p className="text-sm text-stone-700">{startToegestaan ? "Aan de slag? Met starten maak je de werkbon aan: de checklist per kozijn, foto's, uren en de oplevering." : `Je kunt starten op ${dagLabel(d.start_datum, vandaag).toLowerCase()}.`}</p>
+          <button disabled={!startToegestaan} className="mt-3 w-full rounded-lg bg-[#B35B40] px-6 py-4 text-base font-bold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">Montage starten</button>
+        </form>
+      )}
+      {werkbon?.status === "opgeleverd" && werkbon.akkoord && (
+        <p role="status" className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+          Opgeleverd{werkbon.opgeleverd_op ? ` op ${new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }).format(new Date(werkbon.opgeleverd_op))}` : ""}, getekend door {werkbon.akkoord.naam}{werkbon.akkoord.met_voorbehoud ? ` (met voorbehoud: ${werkbon.akkoord.aantal_open_punten} ${werkbon.akkoord.aantal_open_punten === 1 ? "opleverpunt" : "opleverpunten"})` : ""}.
+        </p>
+      )}
+
       <h2 className="mt-6 text-sm font-semibold uppercase tracking-wide text-stone-500">Kozijnen ({d.posities.length})</h2>
       <ul className="mt-2 grid gap-3">
         {d.posities.map((p) => {
@@ -54,7 +90,7 @@ async function Inhoud({ params }: { params: Promise<{ id: string }> }) {
           const svg = cfg ? kozijnSvg(regels, { ...cfg }, `Positie ${p.nummer}`) : null;
           const g = p.gemeten;
           return (
-            <li key={p.positie_id} className="flex gap-4 rounded-xl border border-stone-200 bg-white p-4">
+            <li key={p.positie_id} className="flex flex-wrap gap-4 rounded-xl border border-stone-200 bg-white p-4">
               {svg ? <div className="w-28 shrink-0 rounded-lg bg-[#efebe3] p-1.5" dangerouslySetInnerHTML={{ __html: svg }} /> : <div className="h-28 w-28 shrink-0 rounded-lg bg-stone-100" />}
               <div className="min-w-0 text-sm">
                 <div className="text-lg font-bold">Pos. {p.nummer}{p.ruimte ? ` · ${p.ruimte}` : ""}{p.aantal > 1 ? ` · ${p.aantal}×` : ""}</div>
@@ -69,6 +105,12 @@ async function Inhoud({ params }: { params: Promise<{ id: string }> }) {
                 )}
                 {g?.opmerking && <div className="mt-1 text-stone-700">Let op: {g.opmerking}</div>}
               </div>
+              {werkbon && (
+                <div className="basis-full">
+                  <WerkbonKozijn montageId={d.id} positieId={p.positie_id} regel={werkbon.regels.find((x) => x.positie_id === p.positie_id) ?? null}
+                    voor={fotosVan(p.positie_id, "voor")} na={fotosVan(p.positie_id, "na")} vergrendeld={!schrijfbaar} />
+                </div>
+              )}
             </li>
           );
         })}
@@ -84,15 +126,22 @@ async function Inhoud({ params }: { params: Promise<{ id: string }> }) {
           </ul>
         </>
       )}
-      <p className="mt-6 text-xs text-stone-500">Werkbon, checklist, foto&apos;s, uren en de handtekening van de klant bij de oplevering volgen in een volgende versie van deze app.</p>
+      {werkbon && (
+        <>
+          <WerkbonUrenBlok montageId={d.id} uren={werkbon.uren} startDatum={d.start_datum} vandaag={vandaag} vergrendeld={!schrijfbaar} />
+          <WerkbonAlgemeen montageId={d.id} bijzonderheden={werkbon.bijzonderheden} kantoorActie={werkbon.kantoor_actie} opgeruimd={werkbon.opgeruimd} vergrendeld={!schrijfbaar} />
+          <WerkbonPunten montageId={d.id} punten={werkbon.punten} posities={posLijst} fotos={fotosVan(null, "punt")} vergrendeld={!schrijfbaar} kantoor={kantoor} />
+          {schrijfbaar && <WerkbonOpleveren montageId={d.id} klantNaam={d.klant_naam} onvolledig={onvolledig} openPunten={openPunten(werkbon.punten)} />}
+        </>
+      )}
     </>
   );
 }
 
-export default function MonteurDetailPagina(props: { params: Promise<{ id: string }> }) {
+export default function MonteurDetailPagina(props: { params: Promise<{ id: string }>; searchParams: Promise<{ fout?: string }> }) {
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <Suspense fallback={<p className="text-stone-500">Montage laden…</p>}><Inhoud params={props.params} /></Suspense>
+      <Suspense fallback={<p className="text-stone-500">Montage laden…</p>}><Inhoud params={props.params} zoek={props.searchParams} /></Suspense>
     </main>
   );
 }

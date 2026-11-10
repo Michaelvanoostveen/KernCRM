@@ -25,9 +25,18 @@ export default async function FacturenActies({ rol }: { rol: string | null }) {
     ((fData ?? []) as { project_id: string; termijn: number; status: string }[]).map((f) => ({ projectId: f.project_id, termijn: f.termijn, status: f.status })),
     vandaag,
   );
+  // Meldingen van monteurs: "kantoor moet reageren" en openstaande opleverpunten.
+  const [{ data: wData }, { data: pData }] = await Promise.all([
+    supabase.from("werkbonnen").select("id, bijzonderheden, montages(project_id, projecten(naam, klanten(naam)))").eq("kantoor_actie", true).is("kantoor_gezien_op", null).limit(20),
+    supabase.from("opleverpunten").select("id, omschrijving, werkbonnen(montages(project_id, projecten(naam, klanten(naam))))").eq("status", "open").limit(20),
+  ]);
+  type Herkomst = { project_id: string; projecten: { naam: string; klanten: { naam: string } | null } | null } | null;
+  const meldingen = ((wData ?? []) as unknown as { id: string; bijzonderheden: string | null; montages: Herkomst }[]).map((w) => ({ sleutel: `w-${w.id}`, soort: "Monteur meldt", kleur: "bg-amber-100 text-amber-900", herkomst: w.montages, tekst: w.bijzonderheden ?? "Kantoor moet reageren." }));
+  const punten = ((pData ?? []) as unknown as { id: string; omschrijving: string; werkbonnen: { montages: Herkomst } | null }[]).map((p) => ({ sleutel: `p-${p.id}`, soort: "Opleverpunt", kleur: "bg-red-100 text-red-800", herkomst: p.werkbonnen?.montages ?? null, tekst: p.omschrijving }));
+  const montageMeldingen = [...meldingen, ...punten].filter((x) => x.herkomst);
   const teLaat = rijen.filter((r) => isTeLaat(r.status, r.vervaldatum, vandaag));
   const onverzonden = rijen.filter((r) => !r.verzonden_op);
-  if (teLaat.length === 0 && onverzonden.length === 0 && hints.length === 0) return null;
+  if (teLaat.length === 0 && onverzonden.length === 0 && hints.length === 0 && montageMeldingen.length === 0) return null;
 
   const rij = (r: Rij, tekst: string, kleur: string) => (
     <li key={`${tekst}-${r.id}`}>
@@ -39,12 +48,20 @@ export default async function FacturenActies({ rol }: { rol: string | null }) {
   );
 
   return (
-    <section aria-label="Facturen die aandacht vragen" className="mx-auto max-w-6xl px-4 pt-8">
+    <section aria-label="Facturen en montage die aandacht vragen" className="mx-auto max-w-6xl px-4 pt-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Facturen</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Aandacht</h2>
         <Link href="/facturen" className="text-sm underline">Alle facturen</Link>
       </div>
       <ul className="mt-2 grid gap-2">
+        {montageMeldingen.slice(0, 6).map((x) => (
+          <li key={x.sleutel}>
+            <Link href={`/projecten/${x.herkomst!.project_id}#montage`} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-stone-200 bg-white px-4 py-2.5 text-sm hover:bg-stone-50">
+              <span><span className={`mr-2 rounded-full px-2.5 py-0.5 text-xs font-semibold ${x.kleur}`}>{x.soort}</span><b>{x.herkomst!.projecten?.klanten?.naam ?? ""}</b> · {x.herkomst!.projecten?.naam}</span>
+              <span className="max-w-md truncate text-stone-600">{x.tekst}</span>
+            </Link>
+          </li>
+        ))}
         {hints.slice(0, 5).map((h) => {
           const m = montages.find((x) => x.project_id === h.projectId);
           return (
