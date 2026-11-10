@@ -66,8 +66,17 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
 
   const { data: hData } = facturen.length ? await supabase.from("factuur_herinneringen").select("factuur_id, niveau, verstuurd_op").in("factuur_id", facturen.map((f) => f.id)).order("niveau") : { data: [] };
   const herinneringen = (hData ?? []) as Herinnering[];
-  const { data: moRij } = await supabase.from("montages").select("status, start_datum, eind_datum, leverdatum").eq("project_id", projectId).neq("status", "geannuleerd").maybeSingle();
-  const montage = moRij as { status: string; start_datum: string; eind_datum: string; leverdatum: string | null } | null;
+  const { data: moRij } = await supabase.from("montages").select("id, status, start_datum, eind_datum, leverdatum").eq("project_id", projectId).neq("status", "geannuleerd").maybeSingle();
+  const montage = moRij as { id: string; status: string; start_datum: string; eind_datum: string; leverdatum: string | null } | null;
+  // Openstaande opleverpunten kunnen de eindfactuur tegenhouden: kantoor beslist.
+  let openOpleverpunten = 0;
+  if (montage) {
+    const { data: wb } = await supabase.from("werkbonnen").select("id").eq("montage_id", montage.id).maybeSingle();
+    if (wb) {
+      const { count } = await supabase.from("opleverpunten").select("id", { count: "exact", head: true }).eq("werkbon_id", wb.id).eq("status", "open");
+      openOpleverpunten = count ?? 0;
+    }
+  }
   const { data: pRij } = await supabase.from("projecten").select("naam").eq("id", projectId).maybeSingle();
   const projectNaam = (pRij as { naam?: string } | null)?.naam ?? "";
   const mag = rol === "directie" || rol === "kantoor";
@@ -106,6 +115,7 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
                 <div>
                   <div className="font-semibold">Termijn {t.nr}: {t.naam} ({t.pct}%)</div>
                   {montage && t.nr === 2 && <div className="text-xs text-blue-800">Montage start op {datum(montage.start_datum)}{montage.status === "voorlopig" ? " (voorlopig: leverdatum nog niet bekend)" : ""}.</div>}
+                  {t.nr === 3 && openOpleverpunten > 0 && <div className="mt-1 rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-900">Let op: er {openOpleverpunten === 1 ? "staat nog 1 opleverpunt" : `staan nog ${openOpleverpunten} opleverpunten`} open. Overweeg de eindfactuur te laten wachten tot ze zijn opgelost.</div>}
                   {montage && t.nr === 3 && <div className="text-xs text-blue-800">{montage.status === "afgerond" ? "De montage is afgerond." : `Montage loopt t/m ${datum(montage.eind_datum)}.`}</div>}
                   <div className="text-sm text-stone-600">{euroTekst(t.bedrag)} incl. btw{t.meerwerk !== 0 ? ` (waarvan meer-/minderwerk ${euroTekst(t.meerwerk)})` : ""}</div>
                 </div>

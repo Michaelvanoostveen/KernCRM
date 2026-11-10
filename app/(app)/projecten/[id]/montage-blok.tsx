@@ -1,5 +1,7 @@
 import { maakServerClient } from "@/lib/supabase/server";
 import { eersteWerkdag, vandaagIso } from "@/lib/montage/week";
+import { leesWerkbon, onvolledigeKozijnen, openPunten, regelKlaar, urenOverzicht, urenTekst } from "@/lib/montage/werkbon";
+import { werkbonGezien, zetPuntOpgelost } from "../../monteur/actions";
 import { annuleerMontage, planMontage, rondMontageAf, startMontage, wijzigMontage } from "../../montage/actions";
 
 type Ploeg = { id: string; naam: string };
@@ -19,10 +21,13 @@ const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   ploeg_bezet: { tekst: "Deze ploeg is in die periode al ingepland. Kies een andere ploeg of andere dagen.", fout: true },
   bestaat_al: { tekst: "Dit project heeft al een lopende montage.", fout: true },
   ongeldig: { tekst: "Controleer de gegevens: de startdag is een werkdag vanaf vandaag en de leverdatum ligt niet na de startdag.", fout: true },
+  punt_bijgewerkt: { tekst: "Het opleverpunt is bijgewerkt.", fout: false },
+  gezien: { tekst: "De melding van de monteur is als gezien gemarkeerd.", fout: false },
   voorlopig: { tekst: "Vul eerst de leverdatum van de kozijnen in: pas dan is de montage definitief.", fout: true },
   te_vroeg: { tekst: "De montage kan pas starten op of na de startdatum.", fout: true },
   niet_te_starten: { tekst: "Deze montage kan niet meer worden gestart.", fout: true },
   niet_bezig: { tekst: "Alleen een montage die bezig is, kan worden afgerond.", fout: true },
+  werkbon_open: { tekst: "De werkbon staat nog open: de monteur levert op met de handtekening van de klant.", fout: true },
   niet_te_wijzigen: { tekst: "Deze montage kan niet meer worden aangepast.", fout: true },
   niet_te_annuleren: { tekst: "Deze montage kan niet meer worden geannuleerd.", fout: true },
   reden: { tekst: "Vul een reden in om de montage te annuleren.", fout: true },
@@ -84,6 +89,10 @@ export default async function MontageBlok({ projectId, offerteId, rol, melding }
   const huidige = montages.find((m) => m.status !== "geannuleerd");
   const geannuleerd = montages.filter((m) => m.status === "geannuleerd");
   const m = melding ? MELDINGEN[melding] : null;
+  // De werkbon van de lopende of afgeronde montage, zoals de monteur hem invult.
+  const { data: wData } = huidige ? await supabase.rpc("werkbon_laad", { p_montage: huidige.id }) : { data: null };
+  const werkbon = leesWerkbon(wData);
+  const werkbonUren = werkbon ? urenOverzicht(werkbon.uren) : null;
   const vandaag = vandaagIso(new Date());
 
   if (!huidige && !inmetingKlaar && !m) return null;
@@ -117,6 +126,52 @@ export default async function MontageBlok({ projectId, offerteId, rol, melding }
           <div className="mt-1 text-stone-600">
             {huidige.leverdatum ? `Kozijnen geleverd op ${datum(huidige.leverdatum)}.` : "Leverdatum van de kozijnen nog niet bekend."} Hulpmiddel: {HULP[huidige.hulpmiddel] ?? huidige.hulpmiddel}.{huidige.notitie ? ` Notitie: ${huidige.notitie}` : ""}
           </div>
+          {werkbon && (
+            <div className="mt-3 rounded-lg border border-stone-200 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="font-semibold">Werkbon · {werkbon.status === "opgeleverd" ? "opgeleverd" : "wordt ingevuld"}</div>
+                <a href={`/monteur/${huidige.id}`} className="text-sm underline">Open de werkbon</a>
+              </div>
+              <div className="mt-1 text-sm text-stone-700">
+                {werkbon.regels.filter(regelKlaar).length} van {werkbon.regels.length} kozijnen helemaal af
+                {werkbonUren && werkbonUren.totaal > 0 ? ` · ${urenTekst(werkbonUren.totaal)} gewerkt (${werkbonUren.perMonteur.map((x) => `${x.monteur} ${urenTekst(x.uren)}`).join(", ")})` : ""}
+                {werkbon.status === "open" && werkbon.regels.length > 0 ? ` · ${onvolledigeKozijnen(werkbon.regels, werkbon.punten)} kozijn(en) nog niet klaar voor oplevering` : ""}
+                {werkbon.opgeruimd ? " · opgeruimd" : ""}
+              </div>
+              {werkbon.bijzonderheden && (
+                <div className={`mt-2 rounded-md px-3 py-2 text-sm ${werkbon.kantoor_actie && !werkbon.kantoor_gezien_op ? "border border-amber-300 bg-amber-50 text-amber-950" : "bg-stone-50 text-stone-800"}`}>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-stone-500">Bijzonderheden van de monteur{werkbon.kantoor_actie ? " · kantoor moet reageren" : ""}</div>
+                  <div className="mt-1 whitespace-pre-line">{werkbon.bijzonderheden}</div>
+                  {werkbon.kantoor_actie && !werkbon.kantoor_gezien_op && mag && (
+                    <form action={werkbonGezien} className="mt-2">
+                      <input type="hidden" name="montage_id" value={huidige.id} /><input type="hidden" name="project_id" value={projectId} />
+                      <button className="rounded-md bg-[#24332B] px-3 py-1.5 text-xs font-semibold text-white">Gezien en opgepakt</button>
+                    </form>
+                  )}
+                  {werkbon.kantoor_actie && werkbon.kantoor_gezien_op && <div className="mt-1 text-xs text-stone-500">Door kantoor gezien.</div>}
+                </div>
+              )}
+              {werkbon.punten.length > 0 && (
+                <ul className="mt-2 divide-y divide-stone-100 text-sm">
+                  {werkbon.punten.map((pt) => (
+                    <li key={pt.id} className="flex items-start justify-between gap-3 py-1.5">
+                      <span className={pt.status === "opgelost" ? "text-stone-500 line-through" : "font-semibold text-red-800"}>Opleverpunt: {pt.omschrijving}</span>
+                      {mag && (
+                        <form action={zetPuntOpgelost}>
+                          <input type="hidden" name="montage_id" value={huidige.id} /><input type="hidden" name="punt_id" value={pt.id} /><input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="terug" value="project" />
+                          <input type="hidden" name="opgelost" value={pt.status === "open" ? "ja" : "nee"} />
+                          <button className="rounded-md border border-stone-300 bg-white px-3 py-1 text-xs font-semibold hover:bg-stone-50">{pt.status === "open" ? "Opgelost" : "Weer open"}</button>
+                        </form>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {werkbon.status === "opgeleverd" && werkbon.akkoord && (
+                <div className="mt-2 text-xs text-stone-600">Opgeleverd en getekend door {werkbon.akkoord.naam}{werkbon.akkoord.met_voorbehoud ? ` met voorbehoud (${openPunten(werkbon.punten)} opleverpunt(en) nu nog open)` : ""}. Handtekening, tijdstip, IP-adres en apparaat zijn vastgelegd.</div>
+              )}
+            </div>
+          )}
           {huidige.status === "voorlopig" && <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Voorlopig: vul de leverdatum in zodra die bekend is. Pas dan is de montage definitief en kan hij starten.</p>}
           {(huidige.status === "definitief" || huidige.status === "bezig") && huidige.start_datum <= vandaag && (
             <p className="mt-2 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-900">De eerste montagedag is aangebroken: de factuur voor de levering (65%) hoort klaar te staan. <a href={`/projecten/${projectId}#facturen`} className="underline">Naar de facturen</a></p>
@@ -131,7 +186,7 @@ export default async function MontageBlok({ projectId, offerteId, rol, melding }
                     <button disabled={huidige.start_datum > vandaag} className="rounded-md bg-[#24332B] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">Montage starten</button>
                   </form>
                 )}
-                {huidige.status === "bezig" && (
+                {huidige.status === "bezig" && !werkbon && (
                   <form action={rondMontageAf}>
                     <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="montage_id" value={huidige.id} />
                     <button className="rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white">Montage afgerond</button>
