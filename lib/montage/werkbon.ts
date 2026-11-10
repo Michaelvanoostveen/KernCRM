@@ -62,3 +62,16 @@ export function urenOverzicht(uren: WerkbonUren[]): { totaal: number; perMonteur
 /** De uren in stappen van een kwartier tot 16 uur, voor de keuzelijst. */
 export const URENSTAPPEN: number[] = Array.from({ length: 16 * 4 }, (_, i) => (i + 1) / 4);
 export const urenTekst = (u: number) => `${u.toLocaleString("nl-NL", { maximumFractionDigits: 2 })} u`;
+
+/**
+ * Welke foto's gaan mee in de PDF? Per kozijn hooguit drie foto's van na de montage en in totaal hooguit zes foto's bij opleverpunten:
+ * zo blijft het bestand klein en leesbaar. De rest staat in het CRM.
+ */
+export function kiesPdfFotos(fotos: WerkbonFoto[], kozijnIds: string[]): { perKozijn: Map<string, WerkbonFoto[]>; punten: WerkbonFoto[] } {
+  const perKozijn = new Map<string, WerkbonFoto[]>();
+  for (const id of kozijnIds) perKozijn.set(id, fotos.filter((f) => f.soort === "na" && f.positie_id === id).slice(0, 3));
+  return { perKozijn, punten: fotos.filter((f) => f.soort === "punt").slice(0, 6) };
+}
+
+/** Naam van het PDF-bestand, zonder tekens die in een bestandsnaam niet kunnen. */
+export const werkbonBestandsnaam = (projectNummer: string) => `Werkbon-${projectNummer}.pdf`.replace(/[^A-Za-z0-9._-]/g, "-");

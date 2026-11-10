@@ -131,7 +131,10 @@ export default async function MontageBlok({ projectId, offerteId, rol, melding }
             <div className="mt-3 rounded-lg border border-stone-200 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="font-semibold">Werkbon · {werkbon.status === "opgeleverd" ? "opgeleverd" : "wordt ingevuld"}</div>
-                <a href={`/monteur/${huidige.id}`} className="text-sm underline">Open de werkbon</a>
+                <span className="flex gap-3 text-sm">
+                  <a href={`/montage/${huidige.id}/pdf`} target="_blank" rel="noreferrer" className="underline">PDF</a>
+                  <a href={`/monteur/${huidige.id}`} className="underline">Open de werkbon</a>
+                </span>
               </div>
               <div className="mt-1 text-sm text-stone-700">
                 {werkbon.regels.filter(regelKlaar).length} van {werkbon.regels.length} kozijnen helemaal af
