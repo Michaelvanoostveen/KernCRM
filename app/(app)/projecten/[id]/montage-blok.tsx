@@ -2,7 +2,7 @@ import { maakServerClient } from "@/lib/supabase/server";
 import { eersteWerkdag, vandaagIso } from "@/lib/montage/week";
 import { leesWerkbon, onvolledigeKozijnen, openPunten, regelKlaar, urenOverzicht, urenTekst } from "@/lib/montage/werkbon";
 import { werkbonGezien, zetPuntOpgelost } from "../../monteur/actions";
-import { annuleerMontage, planMontage, rondMontageAf, startMontage, wijzigMontage } from "../../montage/actions";
+import { annuleerMontage, planMontage, startMontage, wijzigMontage } from "../../montage/actions";
 
 type Ploeg = { id: string; naam: string };
 type Montage = { id: string; ploeg_id: string; start_datum: string; werkdagen: number; eind_datum: string; leverdatum: string | null; hulpmiddel: string; status: string; notitie: string | null; annulering_reden: string | null };
@@ -27,6 +27,7 @@ const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   te_vroeg: { tekst: "De montage kan pas starten op of na de startdatum.", fout: true },
   niet_te_starten: { tekst: "Deze montage kan niet meer worden gestart.", fout: true },
   niet_bezig: { tekst: "Alleen een montage die bezig is, kan worden afgerond.", fout: true },
+  via_werkbon: { tekst: "Een montage ronden we af door op te leveren: de monteur laat de klant tekenen op de werkbon. Start zo nodig de werkbon via de montageafspraak.", fout: true },
   werkbon_open: { tekst: "De werkbon staat nog open: de monteur levert op met de handtekening van de klant.", fout: true },
   niet_te_wijzigen: { tekst: "Deze montage kan niet meer worden aangepast.", fout: true },
   niet_te_annuleren: { tekst: "Deze montage kan niet meer worden geannuleerd.", fout: true },
@@ -187,10 +188,7 @@ export default async function MontageBlok({ projectId, offerteId, rol, melding }
                   </form>
                 )}
                 {huidige.status === "bezig" && !werkbon && (
-                  <form action={rondMontageAf}>
-                    <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="montage_id" value={huidige.id} />
-                    <button className="rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white">Montage afgerond</button>
-                  </form>
+                  <a href={`/monteur/${huidige.id}`} className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-stone-50">Werkbon starten en opleveren</a>
                 )}
               </div>
               {(huidige.status === "voorlopig" || huidige.status === "definitief") && (

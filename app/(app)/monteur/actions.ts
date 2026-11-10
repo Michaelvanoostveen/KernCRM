@@ -30,6 +30,8 @@ const FOUTEN: Record<string, string> = {
   handtekening: "Laat de klant tekenen in het vak.",
   opgeleverd: "Na de oplevering kan alleen kantoor een opleverpunt als opgelost markeren.",
   onbekend: "Dit onderdeel bestaat niet meer.",
+  alleen_monteur: "Alleen een monteur of de directie kan opleveren, met de handtekening van de klant.",
+  niets_te_doen: "Er was niets om als gezien te markeren.",
 };
 const foutTekst = (code?: string) => FOUTEN[code ?? ""] ?? "Opslaan lukte niet. Probeer het opnieuw.";
 const ververs = (montageId: string) => revalidatePath(`/monteur/${montageId}`);

@@ -73,6 +73,10 @@ create table public.opleverpunten (
 );
 create index opleverpunten_tenant_idx on public.opleverpunten (tenant_id);
 create index opleverpunten_werkbon_idx on public.opleverpunten (werkbon_id);
+create index opleverpunten_positie_idx on public.opleverpunten (positie_id);
+create index werkbon_regels_positie_idx on public.werkbon_regels (positie_id);
+create index werkbon_fotos_positie_idx on public.werkbon_fotos (positie_id);
+create index werkbon_uren_monteur_idx on public.werkbon_uren (monteur_id);
 
 -- Het akkoord van de klant bij de oplevering: bewijs, niet meer te wijzigen.
 create table public.werkbon_akkoorden (
@@ -103,7 +107,7 @@ create policy werkbon_regels_lezen on public.werkbon_regels for select to authen
 create policy werkbon_uren_lezen on public.werkbon_uren for select to authenticated
   using (public.heeft_rol(tenant_id, array['directie','kantoor','verkoop']::public.gebruikersrol[]));
 create policy werkbon_fotos_lezen on public.werkbon_fotos for select to authenticated
-  using (public.heeft_rol(tenant_id, array['directie','kantoor','verkoop']::public.gebruikersrol[]));
+  using (public.heeft_rol(tenant_id, array['directie','kantoor']::public.gebruikersrol[]));
 create policy opleverpunten_lezen on public.opleverpunten for select to authenticated
   using (public.heeft_rol(tenant_id, array['directie','kantoor','verkoop']::public.gebruikersrol[]));
 create policy werkbon_akkoorden_lezen on public.werkbon_akkoorden for select to authenticated
@@ -119,13 +123,48 @@ begin
     raise exception 'Het akkoord van de klant kan niet worden gewijzigd of verwijderd' using errcode = '55000';
   end if;
   -- Na de oplevering staat alles vast; alleen kantoor kan nog markeren dat de melding is gezien.
+  -- (Verdwijnt het account van wie heeft opgeleverd, dan wordt opgeleverd_door leeg; dat is toegestaan.)
   if old.status = 'opgeleverd'
-     and (tg_op = 'DELETE' or (to_jsonb(new) - 'kantoor_gezien_op' - 'gewijzigd') is distinct from (to_jsonb(old) - 'kantoor_gezien_op' - 'gewijzigd')) then
+     and (tg_op = 'DELETE'
+          or (to_jsonb(new) - 'kantoor_gezien_op' - 'gewijzigd' - 'opgeleverd_door') is distinct from (to_jsonb(old) - 'kantoor_gezien_op' - 'gewijzigd' - 'opgeleverd_door')
+          or (new.opgeleverd_door is distinct from old.opgeleverd_door and new.opgeleverd_door is not null)) then
     raise exception 'Een opgeleverde werkbon kan niet meer worden gewijzigd of verwijderd' using errcode = '55000';
   end if;
   if tg_op = 'DELETE' then return old; end if;
   return new;
 end $$;
+create function public.werkbon_kinderen_vergrendelen() returns trigger
+  language plpgsql security definer set search_path = ''
+  as $$
+declare
+  v_status text;
+begin
+  select w.status into v_status from public.werkbonnen w where w.id = coalesce(new.werkbon_id, old.werkbon_id);
+  -- Bestaat de werkbon niet meer (hij wordt zelf verwijderd), dan is er niets meer te beschermen.
+  if v_status = 'opgeleverd' then
+    -- Verdwijnt een account uit het systeem, dan worden de verwijzingen naar die gebruiker leeg (wie meldde, loste op of nam de foto). Dat is toegestaan.
+    if tg_op = 'UPDATE'
+       and (to_jsonb(new) - 'gemeld_door' - 'opgelost_door' - 'door') = (to_jsonb(old) - 'gemeld_door' - 'opgelost_door' - 'door')
+       and ((to_jsonb(new) ->> 'gemeld_door') is null or (to_jsonb(new) ->> 'gemeld_door') = (to_jsonb(old) ->> 'gemeld_door'))
+       and ((to_jsonb(new) ->> 'opgelost_door') is null or (to_jsonb(new) ->> 'opgelost_door') = (to_jsonb(old) ->> 'opgelost_door'))
+       and ((to_jsonb(new) ->> 'door') is null or (to_jsonb(new) ->> 'door') = (to_jsonb(old) ->> 'door')) then
+      return new;
+    end if;
+    -- Na de oplevering kan kantoor een opleverpunt nog als opgelost markeren, maar niet weer openzetten of aanpassen.
+    if tg_table_name = 'opleverpunten' and tg_op = 'UPDATE' and old.status = 'open' and new.status = 'opgelost'
+       and (to_jsonb(new) - 'status' - 'opgelost_op' - 'opgelost_door') = (to_jsonb(old) - 'status' - 'opgelost_op' - 'opgelost_door') then
+      return new;
+    end if;
+    raise exception 'Een opgeleverde werkbon kan niet meer worden gewijzigd' using errcode = '55000';
+  end if;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end $$;
+create trigger werkbon_regels_vergrendelen before insert or update or delete on public.werkbon_regels for each row execute function public.werkbon_kinderen_vergrendelen();
+create trigger werkbon_uren_vergrendelen before insert or update or delete on public.werkbon_uren for each row execute function public.werkbon_kinderen_vergrendelen();
+create trigger werkbon_fotos_vergrendelen before insert or update or delete on public.werkbon_fotos for each row execute function public.werkbon_kinderen_vergrendelen();
+create trigger opleverpunten_vergrendelen before insert or update or delete on public.opleverpunten for each row execute function public.werkbon_kinderen_vergrendelen();
+
 create trigger werkbonnen_vergrendelen before update or delete on public.werkbonnen
   for each row execute function public.werkbon_vergrendelen();
 create trigger werkbon_akkoorden_vergrendelen before update or delete on public.werkbon_akkoorden
@@ -135,16 +174,23 @@ create trigger werkbon_akkoorden_vergrendelen before update or delete on public.
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('werkbon-fotos', 'werkbon-fotos', false, 8388608, array['image/jpeg', 'image/png', 'image/webp'])
-on conflict (id) do nothing;
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
 create function public.werkbon_pad_montage(p_pad text) returns uuid
   language sql immutable set search_path = ''
   as $$
   select case
-    when p_pad ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp)$'
+    when p_pad ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$'
     then split_part(p_pad, '/', 1)::uuid
   end
 $$;
+
+-- Staat dit bestand al in de lijst met foto's van een werkbon? Zo ja, dan haal je het weg via de werkbon en niet rechtstreeks uit de opslag.
+create function public.werkbon_foto_geregistreerd(p_pad text) returns boolean
+  language sql stable security definer set search_path = ''
+  as $$ select exists (select 1 from public.werkbon_fotos f where f.pad = p_pad) $$;
+revoke all on function public.werkbon_foto_geregistreerd(text) from public, anon;
+grant execute on function public.werkbon_foto_geregistreerd(text) to authenticated;
 
 -- Mag de ingelogde gebruiker op deze montage schrijven (werkbon invullen, foto's toevoegen)? Alleen bij een lopende of komende montage zonder opgeleverde werkbon.
 create function public.werkbon_schrijven(p_montage uuid) returns boolean
@@ -163,7 +209,7 @@ create policy werkbon_fotos_lezen_opslag on storage.objects for select to authen
 create policy werkbon_fotos_uploaden on storage.objects for insert to authenticated
   with check (bucket_id = 'werkbon-fotos' and public.werkbon_schrijven(public.werkbon_pad_montage(name)));
 create policy werkbon_fotos_verwijderen on storage.objects for delete to authenticated
-  using (bucket_id = 'werkbon-fotos' and public.werkbon_schrijven(public.werkbon_pad_montage(name)));
+  using (bucket_id = 'werkbon-fotos' and public.werkbon_schrijven(public.werkbon_pad_montage(name)) and not public.werkbon_foto_geregistreerd(name));
 
 -- ---- Functies ----
 
@@ -175,8 +221,9 @@ declare
   m public.montages;
   v_werkbon uuid;
 begin
+  if not public.monteur_toegang(p_montage) then return jsonb_build_object('ok', false, 'fout', 'geen_toegang'); end if;
   select * into m from public.montages where id = p_montage for update;
-  if not found or not public.monteur_toegang(p_montage) then return jsonb_build_object('ok', false, 'fout', 'geen_toegang'); end if;
+  if not found then return jsonb_build_object('ok', false, 'fout', 'geen_toegang'); end if;
   if m.status = 'voorlopig' then return jsonb_build_object('ok', false, 'fout', 'voorlopig'); end if;
   if m.status not in ('definitief', 'bezig') then return jsonb_build_object('ok', false, 'fout', 'niet_te_starten'); end if;
   if m.start_datum > (now() at time zone 'Europe/Amsterdam')::date then return jsonb_build_object('ok', false, 'fout', 'te_vroeg'); end if;
@@ -199,6 +246,9 @@ declare
   w public.werkbonnen;
 begin
   if not public.werkbon_schrijven(p_montage) then return null; end if;
+  -- Altijd eerst de montage vergrendelen en dan de werkbon, zodat gelijktijdige acties elkaar niet in de weg zitten en een montage die net is geannuleerd niet meer wordt aangepast.
+  perform 1 from public.montages m where m.id = p_montage and m.status in ('definitief', 'bezig') for update;
+  if not found then return null; end if;
   select * into w from public.werkbonnen where montage_id = p_montage and status = 'open' for update;
   return w;
 end $$;
@@ -234,7 +284,8 @@ begin
   if w.id is null then return jsonb_build_object('ok', false, 'fout', 'niet_beschikbaar'); end if;
   update public.werkbonnen set bijzonderheden = left(nullif(btrim(p_bijzonderheden), ''), 4000), kantoor_actie = coalesce(p_kantoor_actie, false),
          opgeruimd = coalesce(p_opgeruimd, false), gewijzigd = now(),
-         kantoor_gezien_op = case when bijzonderheden is distinct from left(nullif(btrim(p_bijzonderheden), ''), 4000) then null else kantoor_gezien_op end
+         kantoor_gezien_op = case when bijzonderheden is distinct from left(nullif(btrim(p_bijzonderheden), ''), 4000) or (coalesce(p_kantoor_actie, false) and not kantoor_actie)
+                                  then null else kantoor_gezien_op end
     where id = w.id;
   return jsonb_build_object('ok', true);
 end $$;
@@ -255,7 +306,10 @@ begin
   if w.id is null then return jsonb_build_object('ok', false, 'fout', 'niet_beschikbaar'); end if;
   select * into m from public.montages where id = p_montage;
   v_monteur := coalesce(public.mijn_monteur(), p_monteur);
-  if v_monteur is null or not exists (select 1 from public.monteurs x where x.id = v_monteur and x.tenant_id = m.tenant_id) then
+  if v_monteur is null or not exists (
+       select 1 from public.monteurs x join public.ploeg_leden pl on pl.monteur_id = x.id and pl.tenant_id = x.tenant_id
+       where x.id = v_monteur and x.tenant_id = m.tenant_id and x.actief and pl.ploeg_id = m.ploeg_id
+     ) then
     return jsonb_build_object('ok', false, 'fout', 'monteur');
   end if;
   if p_datum is null or p_datum < m.start_datum or p_datum > v_vandaag or p_uren is null or p_uren < 0 or p_uren > 16 or (p_uren * 4) <> round(p_uren * 4) then
@@ -286,7 +340,7 @@ begin
   w := public.werkbon_open(p_montage);
   if w.id is null then return jsonb_build_object('ok', false, 'fout', 'niet_beschikbaar'); end if;
   select * into m from public.montages where id = p_montage;
-  if p_id is null or p_soort not in ('voor', 'na', 'punt', 'overig') then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
+  if p_id is null or p_soort not in ('voor', 'na', 'punt', 'overig') or (p_soort in ('voor', 'na') and p_positie is null) then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
   if p_positie is not null and not exists (select 1 from public.posities ps where ps.id = p_positie and ps.offerte_id = m.offerte_id and ps.tenant_id = m.tenant_id) then
     return jsonb_build_object('ok', false, 'fout', 'positie');
   end if;
@@ -352,12 +406,12 @@ begin
   if not found or not public.monteur_toegang(p_montage) then return jsonb_build_object('ok', false, 'fout', 'geen_toegang'); end if;
   select * into w from public.werkbonnen where montage_id = p_montage for update;
   if not found then return jsonb_build_object('ok', false, 'fout', 'niet_beschikbaar'); end if;
-  if w.status = 'opgeleverd' and not public.heeft_rol(m.tenant_id, array['directie','kantoor']::public.gebruikersrol[]) then
+  if w.status = 'opgeleverd' and (not p_opgelost or not public.heeft_rol(m.tenant_id, array['directie','kantoor']::public.gebruikersrol[])) then
     return jsonb_build_object('ok', false, 'fout', 'opgeleverd');
   end if;
   update public.opleverpunten set status = case when p_opgelost then 'opgelost' else 'open' end,
          opgelost_op = case when p_opgelost then now() end, opgelost_door = case when p_opgelost then auth.uid() end
-    where id = p_punt and werkbon_id = w.id;
+    where id = p_punt and werkbon_id = w.id and status = case when p_opgelost then 'open' else 'opgelost' end;
   if not found then return jsonb_build_object('ok', false, 'fout', 'onbekend'); end if;
   return jsonb_build_object('ok', true);
 end $$;
@@ -375,13 +429,23 @@ declare
   v_onvolledig integer;
   v_open integer;
 begin
+  -- Alleen een monteur (of de directie) levert op: de handtekening van de klant is het bewijs, kantoor tekent niet namens de klant.
+  if public.mijn_monteur() is null and not exists (select 1 from public.montages mm where mm.id = p_montage and public.heeft_rol(mm.tenant_id, array['directie']::public.gebruikersrol[])) then
+    return jsonb_build_object('ok', false, 'fout', 'alleen_monteur');
+  end if;
   w := public.werkbon_open(p_montage);
   if w.id is null then return jsonb_build_object('ok', false, 'fout', 'niet_beschikbaar'); end if;
-  select * into m from public.montages where id = p_montage for update;
+  select * into m from public.montages where id = p_montage;
   if m.status <> 'bezig' then return jsonb_build_object('ok', false, 'fout', 'niet_bezig'); end if;
   if length(btrim(coalesce(p_naam, ''))) < 3 or length(p_naam) > 120 then return jsonb_build_object('ok', false, 'fout', 'naam'); end if;
-  if p_handtekening is null or p_handtekening not like 'data:image/png;base64,%' or length(p_handtekening) < 200 or length(p_handtekening) > 400000 then
+  if p_handtekening is null or p_handtekening !~ '^data:image/png;base64,[A-Za-z0-9+/]+={0,2}$' or length(p_handtekening) < 200 or length(p_handtekening) > 400000 then
     return jsonb_build_object('ok', false, 'fout', 'handtekening');
+  end if;
+  -- Elk kozijn van de offerte moet een checklistregel hebben en er moet minstens één kozijn zijn.
+  if not exists (select 1 from public.posities ps where ps.offerte_id = m.offerte_id and ps.tenant_id = m.tenant_id)
+     or exists (select 1 from public.posities ps where ps.offerte_id = m.offerte_id and ps.tenant_id = m.tenant_id
+                and not exists (select 1 from public.werkbon_regels r where r.werkbon_id = w.id and r.positie_id = ps.id)) then
+    return jsonb_build_object('ok', false, 'fout', 'checklist_onvolledig', 'aantal', (select count(*) from public.posities ps where ps.offerte_id = m.offerte_id and ps.tenant_id = m.tenant_id and not exists (select 1 from public.werkbon_regels r where r.werkbon_id = w.id and r.positie_id = ps.id)));
   end if;
   select count(*) into v_onvolledig from public.werkbon_regels r
     where r.werkbon_id = w.id
@@ -412,6 +476,7 @@ begin
     return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
   end if;
   update public.werkbonnen set kantoor_gezien_op = now() where montage_id = p_montage and kantoor_actie and kantoor_gezien_op is null;
+  if not found then return jsonb_build_object('ok', false, 'fout', 'niets_te_doen'); end if;
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.werkbon_gezien(uuid) from public, anon;
@@ -444,22 +509,19 @@ end $$;
 revoke all on function public.werkbon_laad(uuid) from public, anon;
 grant execute on function public.werkbon_laad(uuid) to authenticated;
 
--- Kantoor kan een montage niet meer afronden terwijl de werkbon nog openstaat: de oplevering gaat met de handtekening van de klant.
+-- Een montage rond je af door op te leveren: de monteur laat de klant tekenen op de werkbon. Kantoor kan hem niet meer zelf afronden,
+-- ook niet als er nog geen werkbon is (dan start een monteur of de directie de werkbon via de montageafspraak).
 create or replace function public.rond_montage_af(p_montage uuid) returns jsonb
   language plpgsql security definer set search_path = ''
   as $$
 declare
   m public.montages;
 begin
-  select * into m from public.montages where id = p_montage for update;
+  select * into m from public.montages where id = p_montage;
   if not found or not public.heeft_rol(m.tenant_id, array['directie','kantoor']::public.gebruikersrol[]) then
     return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
   end if;
-  if m.status <> 'bezig' then return jsonb_build_object('ok', false, 'fout', 'niet_bezig'); end if;
-  if exists (select 1 from public.werkbonnen w where w.montage_id = m.id and w.status = 'open') then
-    return jsonb_build_object('ok', false, 'fout', 'werkbon_open');
-  end if;
-  update public.montages set status = 'afgerond', afgerond_op = now(), gewijzigd = now() where id = m.id;
-  update public.projecten set fase = 'oplevering', gewijzigd = now() where id = m.project_id and fase = 'montage';
-  return jsonb_build_object('ok', true);
+  return jsonb_build_object('ok', false, 'fout', 'via_werkbon');
 end $$;
+revoke all on function public.rond_montage_af(uuid) from public, anon;
+grant execute on function public.rond_montage_af(uuid) to authenticated;
