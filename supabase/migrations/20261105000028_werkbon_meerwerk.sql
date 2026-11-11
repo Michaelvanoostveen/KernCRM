@@ -52,7 +52,10 @@ begin
     raise exception 'Het akkoord van de klant kan niet worden gewijzigd of verwijderd' using errcode = '55000';
   end if;
   if old.status = 'akkoord' then
-    if tg_op = 'UPDATE' and new.voorgesteld_door is null and (to_jsonb(new) - 'voorgesteld_door') = (to_jsonb(old) - 'voorgesteld_door') then
+    -- Verdwijnt een gebruiker of een artikel uit het systeem, dan worden die verwijzingen leeg; omschrijving en prijs staan al in de rij.
+    if tg_op = 'UPDATE' and (to_jsonb(new) - 'voorgesteld_door' - 'artikel_id') = (to_jsonb(old) - 'voorgesteld_door' - 'artikel_id')
+       and (new.voorgesteld_door is null or new.voorgesteld_door = old.voorgesteld_door)
+       and (new.artikel_id is null or new.artikel_id = old.artikel_id) then
       return new;
     end if;
     raise exception 'Goedgekeurd meerwerk kan niet meer worden gewijzigd of verwijderd' using errcode = '55000';
@@ -108,6 +111,8 @@ begin
   w := public.werkbon_open(p_montage);
   if w.id is null then return jsonb_build_object('ok', false, 'fout', 'niet_beschikbaar'); end if;
   select * into m from public.montages where id = p_montage;
+  -- Zelfde volgorde van vergrendelen als elders (montage, werkbon, offerte), zodat er geen meerwerk bijkomt terwijl de eindfactuur wordt gemaakt.
+  perform 1 from public.offertes where id = m.offerte_id for update;
   if p_aantal is null or p_aantal < 1 or p_aantal > 100 then return jsonb_build_object('ok', false, 'fout', 'aantal'); end if;
   if (select count(*) from public.werkbon_meerwerk x where x.werkbon_id = w.id and x.status <> 'vervallen') >= 20 then
     return jsonb_build_object('ok', false, 'fout', 'te_veel');
@@ -163,6 +168,7 @@ begin
   w := public.werkbon_open(p_montage);
   if w.id is null then return jsonb_build_object('ok', false, 'fout', 'niet_beschikbaar'); end if;
   select * into m from public.montages where id = p_montage;
+  perform 1 from public.offertes where id = m.offerte_id for update;
   if length(btrim(coalesce(p_naam, ''))) < 3 or length(p_naam) > 120 then return jsonb_build_object('ok', false, 'fout', 'naam'); end if;
   if p_handtekening is null or p_handtekening !~ '^data:image/png;base64,[A-Za-z0-9+/]+={0,2}$' or length(p_handtekening) < 200 or length(p_handtekening) > 400000 then
     return jsonb_build_object('ok', false, 'fout', 'handtekening');
@@ -171,6 +177,10 @@ begin
   if v_totaal = 0 then return jsonb_build_object('ok', false, 'fout', 'leeg'); end if;
   -- De klant tekent voor het bedrag dat hij zag. Is er sindsdien iets veranderd, dan moet hij opnieuw kijken.
   if p_verwacht_totaal is null or round(p_verwacht_totaal, 2) <> v_totaal then return jsonb_build_object('ok', false, 'fout', 'gewijzigd'); end if;
+  -- Is intussen alles gefactureerd, dan zou het meerwerk op geen enkele factuur meer komen.
+  if (select coalesce(sum(f.termijn_pct), 0) from public.facturen f where f.offerte_id = m.offerte_id and f.status not in ('geannuleerd', 'gecrediteerd')) >= 99.99 then
+    return jsonb_build_object('ok', false, 'fout', 'eindfactuur');
+  end if;
   insert into public.werkbon_meerwerk_akkoorden (tenant_id, werkbon_id, naam, handtekening, ip, user_agent, totaal)
     values (m.tenant_id, w.id, btrim(p_naam), p_handtekening, left(p_ip, 80), left(p_user_agent, 300), v_totaal)
     returning id into v_akkoord;
@@ -195,6 +205,7 @@ create trigger montages_meerwerk_opruimen after update on public.montages
   for each row execute function public.werkbon_meerwerk_montage_geannuleerd();
 
 -- De werkbon bevat nu ook het meerwerk, en opleveren kan niet met meerwerk zonder akkoord.
+-- Let op: dit is de enige uitzondering op "geen prijzen voor de monteur": de monteur ziet de prijs van het meerwerk dat hij voorstelt, omdat de klant het bedrag moet zien.
 create or replace function public.werkbon_laad(p_montage uuid) returns jsonb
   language plpgsql stable security definer set search_path = ''
   as $$
