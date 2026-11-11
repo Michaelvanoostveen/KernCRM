@@ -5,13 +5,14 @@ const labels = (rol: string | null) => menuVoorRol(rol).map((i) => i.label);
 
 describe("menu per rol", () => {
   it("geeft de directie alles", () => {
-    expect(labels("directie")).toEqual(["Start", "Klanten", "Projecten", "Inmeting", "Montage", "Werkbonnen", "Facturen", "Catalogus", "Gebruikers"]);
+    expect(labels("directie")).toEqual(["Start", "Klanten", "Projecten", "Inmeting", "Montage", "Werkbonnen", "Facturen", "Boekhouding", "Catalogus", "Gebruikers"]);
   });
   it("laat verkoop en kantoor facturen en catalogus zien maar niet de gebruikers", () => {
     for (const rol of ["verkoop", "kantoor"]) {
       expect(labels(rol)).toContain("Facturen");
       expect(labels(rol)).toContain("Montage");
       expect(labels(rol)).toContain("Werkbonnen");
+      expect(labels(rol).includes("Boekhouding")).toBe(rol === "kantoor");
       expect(labels(rol)).toContain("Catalogus");
       expect(labels(rol)).not.toContain("Gebruikers");
     }
@@ -29,6 +30,7 @@ describe("menu per rol", () => {
   it("noemt nooit klantgegevens of facturen aan wie ze niet mag zien", () => {
     for (const rol of ["inmeter", "monteur"]) {
       expect(labels(rol)).not.toContain("Werkbonnen");
+      expect(labels(rol)).not.toContain("Boekhouding");
       expect(labels(rol)).not.toContain("Facturen");
       expect(labels(rol)).not.toContain("Klanten");
     }
