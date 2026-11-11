@@ -30,7 +30,7 @@ export async function GET(verzoek: Request) {
     const [{ data: kRij }, { data: fData }, { data: cData }] = await Promise.all([
       supabase.from("boekhoud_koppelingen").select("instellingen").maybeSingle(),
       supabase.from("facturen").select("nummer, factuurdatum, vervaldatum, omschrijving, bedrag_excl, btw_hoog, btw_laag, totaal_incl, debiteur, projecten(nummer)").not("verzonden_op", "is", null).neq("status", "geannuleerd").gte("factuurdatum", van).lte("factuurdatum", tot).order("factuurdatum").limit(5000),
-      supabase.from("creditnotas").select("nummer, datum, omschrijving, bedrag_excl, btw_hoog, btw_laag, totaal_incl, debiteur, projecten(nummer), facturen(nummer)").gte("datum", van).lte("datum", tot).order("datum").limit(5000),
+      supabase.from("creditnotas").select("nummer, datum, omschrijving, bedrag_excl, btw_hoog, btw_laag, totaal_incl, debiteur, projecten(nummer), facturen(nummer)").not("verzonden_op", "is", null).gte("datum", van).lte("datum", tot).order("datum").limit(5000),
     ]);
     const instellingen = leesInstellingen((kRij as { instellingen: unknown } | null)?.instellingen);
     const bronnen: FactuurBron[] = [

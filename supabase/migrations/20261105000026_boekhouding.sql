@@ -50,7 +50,7 @@ begin
   if p_tenant is null or not public.heeft_rol(p_tenant, array['directie']::public.gebruikersrol[]) then
     return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
   end if;
-  if p_provider not in ('geen', 'twinfield') or p_instellingen is null or jsonb_typeof(p_instellingen) <> 'object' then
+  if p_provider is null or p_provider not in ('geen', 'twinfield') or p_instellingen is null or jsonb_typeof(p_instellingen) <> 'object' then
     return jsonb_build_object('ok', false, 'fout', 'ongeldig');
   end if;
   for v_sleutel in select jsonb_object_keys(p_instellingen) loop
@@ -67,7 +67,7 @@ end $$;
 revoke all on function public.boekhoud_koppeling_bewaar(uuid, text, boolean, jsonb) from public, anon;
 grant execute on function public.boekhoud_koppeling_bewaar(uuid, text, boolean, jsonb) to authenticated;
 
--- Zet een verzonden factuur of een creditnota in de wachtrij, als de aansluiting van het bedrijf actief is.
+-- Zet een verzonden factuur of een verstuurde creditnota in de wachtrij, als de aansluiting van het bedrijf actief is.
 create function public.boekhoud_wachtrij_zetten() returns trigger
   language plpgsql security definer set search_path = ''
   as $$
@@ -85,8 +85,10 @@ end $$;
 create trigger facturen_naar_boekhouding after update of verzonden_op on public.facturen
   for each row when (old.verzonden_op is null and new.verzonden_op is not null)
   execute function public.boekhoud_wachtrij_zetten();
-create trigger creditnotas_naar_boekhouding after insert on public.creditnotas
-  for each row execute function public.boekhoud_wachtrij_zetten();
+-- Een creditnota gaat, net als een factuur, pas de wachtrij in als hij naar de klant is verstuurd.
+create trigger creditnotas_naar_boekhouding after update of verzonden_op on public.creditnotas
+  for each row when (old.verzonden_op is null and new.verzonden_op is not null)
+  execute function public.boekhoud_wachtrij_zetten();
 
 -- Wordt een factuur geannuleerd nadat hij in de wachtrij kwam, dan hoort hij niet meer geboekt te worden (of, als hij al is geboekt, moet er handmatig gecorrigeerd worden).
 create function public.boekhoud_factuur_geannuleerd() returns trigger
@@ -103,7 +105,7 @@ create trigger facturen_geannuleerd_boekhouding after update of status on public
   for each row when (new.status = 'geannuleerd' and old.status is distinct from new.status)
   execute function public.boekhoud_factuur_geannuleerd();
 
--- Zet alle al verzonden facturen en alle creditnota's van het bedrijf die nog niet in de wachtrij staan erin (bij het activeren van de aansluiting).
+-- Zet alle al verzonden facturen en verstuurde creditnota's van het bedrijf die nog niet in de wachtrij staan erin (bij het activeren van de aansluiting).
 create function public.boekhoud_wachtrij_aanvullen(p_tenant uuid) returns jsonb
   language plpgsql security definer set search_path = ''
   as $$
@@ -122,7 +124,7 @@ begin
     on conflict do nothing;
   get diagnostics v_f = row_count;
   insert into public.boekhoud_wachtrij (tenant_id, soort, creditnota_id)
-    select c.tenant_id, 'creditnota', c.id from public.creditnotas c where c.tenant_id = p_tenant
+    select c.tenant_id, 'creditnota', c.id from public.creditnotas c where c.tenant_id = p_tenant and c.verzonden_op is not null
     on conflict do nothing;
   get diagnostics v_c = row_count;
   return jsonb_build_object('ok', true, 'facturen', v_f, 'creditnotas', v_c);
@@ -142,7 +144,7 @@ begin
   if not found or not public.heeft_rol(w.tenant_id, array['directie','kantoor']::public.gebruikersrol[]) then
     return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
   end if;
-  if p_status not in ('verwerkt', 'overgeslagen', 'mislukt') then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
+  if p_status is null or p_status not in ('verwerkt', 'overgeslagen', 'mislukt') then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
   if w.status = 'verwerkt' then return jsonb_build_object('ok', false, 'fout', 'al_verwerkt'); end if;
   update public.boekhoud_wachtrij set
     status = p_status, extern_ref = left(nullif(btrim(p_extern_ref), ''), 100), fout = case when p_status = 'verwerkt' then null else left(nullif(btrim(p_fout), ''), 1000) end,
