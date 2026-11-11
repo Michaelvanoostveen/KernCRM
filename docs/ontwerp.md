@@ -192,7 +192,8 @@ Na de inmeting maakt KernCRM met één klik de bestelling aan op basis van de in
 
 - Per project een subsidiedossier: welke posities in aanmerking komen (isolerend glas, panelen, deuren), m² en U-waarden
 - Automatisch de stukken die de klant nodig heeft: factuur met specificatie, betaalbewijs, foto's na plaatsing
-- Status: niet van toepassing / klaargezet / aangevraagd door klant / toegekend
+- Status: niet van toepassing / klaargezet / aangevraagd door klant / toegekend (of afgewezen)
+- **Stand (gebouwd, voorbereiding):** op de projectpagina staat het blok ISDE-subsidie (na akkoord op de offerte). Per positie legt directie of kantoor vast of ze meetelt, de U-waarde van het glas (volgens de leverancier) en de m² glas (standaard geschat uit de maten); het blok toont de indicatie per positie en voor het project, de checklist met stukken (factuur, betaalbewijs, foto's na plaatsing, getekende oplevering, glasspecificatie; het systeem ziet zelf wat er al is) en de status met datum van aanvraag en referentie van RVO. Verkoop kan meekijken. De klant vraagt de subsidie zelf aan; de bedragen zijn indicatief en komen uit de prijsregels, de voorwaarden van RVO zijn niet ingebouwd. Nog niet gebouwd: de stukken als één pakket downloaden en de ISDE-begeleiding als artikel op de offerte.
 
 ## Module 5: Service, opleverpunten en werkbonnen
 
