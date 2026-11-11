@@ -9,7 +9,7 @@ import { FACTUUR_MELDINGEN as MELDINGEN } from "@/lib/facturatie/meldingen";
 import { annuleerFactuur, maakFactuur, markeerVerzonden, registreerBetaling, registreerHerinnering, wijzigFactuur } from "../../facturen/actions";
 import { laadFactuurplan } from "../../facturen/plan";
 
-type Factuur = { id: string; tenant_id: string; toelichting: string | null; verzonden_op: string | null; debiteur: { aanhef?: string | null; achternaam?: string | null; naam?: string } | null; nummer: string; termijn: number; omschrijving: string; factuurdatum: string; vervaldatum: string; totaal_incl: number | string; meerwerk: number | string; status: FactuurStatus; annulering_reden: string | null };
+type Factuur = { id: string; tenant_id: string; toelichting: string | null; verzonden_op: string | null; gecrediteerd: number | string; debiteur: { aanhef?: string | null; achternaam?: string | null; naam?: string } | null; nummer: string; termijn: number; omschrijving: string; factuurdatum: string; vervaldatum: string; totaal_incl: number | string; meerwerk: number | string; status: FactuurStatus; annulering_reden: string | null };
 type Wijziging = { factuur_id: string; oud: Record<string, unknown>; nieuw: Record<string, unknown>; reden: string; door: string | null; op: string };
 type Herinnering = { factuur_id: string; niveau: number; verstuurd_op: string };
 type Betaling = { factuur_id: string; bedrag: number | string; betaald_op: string; notitie: string | null };
@@ -20,6 +20,7 @@ const STATUS: Record<FactuurStatus, { label: string; kleur: string }> = {
   open: { label: "Open", kleur: "bg-amber-100 text-amber-900" },
   betaald: { label: "Betaald", kleur: "bg-green-100 text-green-800" },
   geannuleerd: { label: "Geannuleerd", kleur: "bg-stone-200 text-stone-700" },
+  gecrediteerd: { label: "Gecrediteerd", kleur: "bg-stone-200 text-stone-700" },
 };
 
 /** Termijnfacturen van een project: het plan uit de getekende offerte, de facturen en de betalingen. */
@@ -28,7 +29,7 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
   const plan = await laadFactuurplan(supabase, projectId);
   if (!plan || plan.offerteStatus !== "akkoord") return null;
 
-  const { data: fData } = await supabase.from("facturen").select("id, tenant_id, toelichting, verzonden_op, debiteur, nummer, termijn, omschrijving, factuurdatum, vervaldatum, totaal_incl, meerwerk, status, annulering_reden").eq("project_id", projectId).order("termijn").order("aangemaakt");
+  const { data: fData } = await supabase.from("facturen").select("id, tenant_id, toelichting, verzonden_op, gecrediteerd, debiteur, nummer, termijn, omschrijving, factuurdatum, vervaldatum, totaal_incl, meerwerk, status, annulering_reden").eq("project_id", projectId).order("termijn").order("aangemaakt");
   const facturen = (fData ?? []) as Factuur[];
   const { data: bData } = facturen.length ? await supabase.from("factuur_betalingen").select("factuur_id, bedrag, betaald_op, notitie").in("factuur_id", facturen.map((f) => f.id)).order("betaald_op") : { data: [] };
   const betalingen = (bData ?? []) as Betaling[];
@@ -57,9 +58,9 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
   const { data: ledenData } = wijzigingen.length ? await supabase.rpc("leden_voor_planning") : { data: [] };
   const leden = (ledenData ?? []) as { user_id: string; email: string }[];
   const vandaag = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date());
-  const lopend = (nr: number) => facturen.find((f) => f.termijn === nr && f.status !== "geannuleerd");
+  const lopend = (nr: number) => facturen.find((f) => f.termijn === nr && f.status !== "geannuleerd" && f.status !== "gecrediteerd");
   const m = melding ? MELDINGEN[melding] : null;
-  const totaalGefactureerd = facturen.filter((f) => f.status !== "geannuleerd").reduce((s, f) => s + Number(f.totaal_incl), 0);
+  const totaalGefactureerd = facturen.filter((f) => f.status !== "geannuleerd").reduce((s, f) => s + Number(f.totaal_incl) - Number(f.gecrediteerd), 0);
   const totaalOpdracht = plan.offerteTotaal + plan.meerwerk;
 
   return (
@@ -76,7 +77,7 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
           const f = lopend(t.nr);
           const vorige = t.nr === 1 || lopend(t.nr - 1);
           const gedaan = betalingen.filter((b) => b.factuur_id === f?.id).map((b) => Number(b.bedrag));
-          const open = f ? openstaand(Number(f.totaal_incl), gedaan) : 0;
+          const open = f ? openstaand(Number(f.totaal_incl), gedaan, Number(f.gecrediteerd)) : 0;
           const teLaat = f ? isTeLaat(f.status, f.vervaldatum, vandaag) : false;
           return (
             <li key={t.nr} className="rounded-lg border border-stone-200 p-4">
@@ -110,6 +111,7 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
                     <a href={`/facturen/${f.id}/pdf`} target="_blank" rel="noreferrer" className="underline">PDF</a>
                   </div>
                   {f.status === "open" && <div className="mt-1 font-semibold">Openstaand {euroTekst(open)}</div>}
+                  {Number(f.gecrediteerd) > 0 && <div className="text-stone-600">Gecrediteerd {euroTekst(Number(f.gecrediteerd))}</div>}
                   {betalingen.filter((b) => b.factuur_id === f.id).map((b, i) => (
                     <div key={i} className="text-stone-600">Betaald {euroTekst(Number(b.bedrag))} op {datum(b.betaald_op)}{b.notitie ? ` · ${b.notitie}` : ""}</div>
                   ))}
@@ -122,6 +124,7 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
                           const delen: string[] = [];
                           if (n.status === "geannuleerd") delen.push("geannuleerd");
                           if (n.verzonden === true) delen.push("als verzonden gemarkeerd");
+                          if (typeof n.creditnota === "string") delen.push(`creditnota ${n.creditnota}`);
                           if (o.totaal_incl !== undefined && n.totaal_incl !== undefined && Number(o.totaal_incl) !== Number(n.totaal_incl)) delen.push(`bedrag ${euroTekst(Number(o.totaal_incl))} → ${euroTekst(Number(n.totaal_incl))}`);
                           if (o.vervaldatum !== undefined && o.vervaldatum !== n.vervaldatum) delen.push(`vervaldatum ${String(o.vervaldatum)} → ${String(n.vervaldatum)}`);
                           if (o.omschrijving !== undefined && o.omschrijving !== n.omschrijving) delen.push("omschrijving");
@@ -223,6 +226,9 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
         })}
       </ul>
 
+      {facturen.some((f) => f.status === "gecrediteerd") && (
+        <div className="mt-4 text-xs text-stone-500">Gecrediteerd: {facturen.filter((f) => f.status === "gecrediteerd").map((f) => `${f.nummer} (termijn ${f.termijn})`).join("; ")}</div>
+      )}
       {facturen.some((f) => f.status === "geannuleerd") && (
         <div className="mt-4 text-xs text-stone-500">
           Geannuleerd: {facturen.filter((f) => f.status === "geannuleerd").map((f) => `${f.nummer} (termijn ${f.termijn}${f.annulering_reden ? `, ${f.annulering_reden}` : ""})`).join("; ")}

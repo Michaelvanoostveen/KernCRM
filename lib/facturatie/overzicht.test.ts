@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { filterFacturen, samenvatting, sorteerOpVervaldatum, teLaatTekst, type OverzichtFactuur } from "./overzicht";
 
-const f = (o: Partial<OverzichtFactuur>): OverzichtFactuur => ({ id: "x", nummer: "2026-0001", projectId: "p", projectNaam: "P", klantNaam: "K", termijn: 1, totaal: 1000, vervaldatum: "2026-11-10", factuurdatum: "2026-11-05", status: "open", verzonden: true, betaald: 0, ...o });
+const f = (o: Partial<OverzichtFactuur>): OverzichtFactuur => ({ id: "x", nummer: "2026-0001", projectId: "p", projectNaam: "P", klantNaam: "K", termijn: 1, totaal: 1000, vervaldatum: "2026-11-10", factuurdatum: "2026-11-05", status: "open", verzonden: true, betaald: 0, gecrediteerd: 0, ...o });
 const lijst = [
   f({ id: "a", nummer: "2026-0001", vervaldatum: "2026-11-06" }),                                     // te laat
   f({ id: "b", nummer: "2026-0002", vervaldatum: "2026-11-20", verzonden: false, totaal: 2000 }),      // open, niet verzonden

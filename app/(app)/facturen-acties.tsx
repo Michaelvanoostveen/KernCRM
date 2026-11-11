@@ -5,13 +5,13 @@ import { isTeLaat, type FactuurStatus } from "@/lib/facturatie/bereken";
 import { dagenTeLaat } from "@/lib/facturatie/mail";
 import { factuurActies } from "@/lib/montage/factuurhint";
 
-type Rij = { id: string; nummer: string; totaal_incl: number | string; vervaldatum: string; status: FactuurStatus; verzonden_op: string | null; debiteur: { naam?: string } | null; projecten: { id: string; naam: string } | null };
+type Rij = { id: string; nummer: string; totaal_incl: number | string; gecrediteerd: number | string; vervaldatum: string; status: FactuurStatus; verzonden_op: string | null; debiteur: { naam?: string } | null; projecten: { id: string; naam: string } | null };
 
 /** Facturen die aandacht vragen: te laat betaald, of nog niet naar de klant gestuurd. Alleen voor directie en kantoor. */
 export default async function FacturenActies({ rol }: { rol: string | null }) {
   if (rol !== "directie" && rol !== "kantoor") return null;
   const supabase = await maakServerClient();
-  const { data } = await supabase.from("facturen").select("id, nummer, totaal_incl, vervaldatum, status, verzonden_op, debiteur, projecten(id, naam)").eq("status", "open").order("vervaldatum").limit(200);
+  const { data } = await supabase.from("facturen").select("id, nummer, totaal_incl, gecrediteerd, vervaldatum, status, verzonden_op, debiteur, projecten(id, naam)").eq("status", "open").order("vervaldatum").limit(200);
   const rijen = (data ?? []) as unknown as Rij[];
   const vandaag = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date());
   // Facturen die op grond van de montage klaar horen te staan (de 65% op de eerste montagedag, de eindfactuur na afronden).
@@ -42,7 +42,7 @@ export default async function FacturenActies({ rol }: { rol: string | null }) {
     <li key={`${tekst}-${r.id}`}>
       <Link href={`/projecten/${r.projecten?.id ?? ""}#facturen`} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-stone-200 bg-white px-4 py-2.5 text-sm hover:bg-stone-50">
         <span><span className={`mr-2 rounded-full px-2.5 py-0.5 text-xs font-semibold ${kleur}`}>{tekst}</span><b>{r.debiteur?.naam ?? ""}</b> · <span className="font-mono">{r.nummer}</span> · {r.projecten?.naam}</span>
-        <span className="tabular-nums">{euroTekst(Number(r.totaal_incl))}</span>
+        <span className="tabular-nums">{euroTekst(Number(r.totaal_incl) - Number(r.gecrediteerd))}</span>
       </Link>
     </li>
   );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dagenTeLaat, maakFactuurMail, maakBetalingBevestigingMail, mailtoLink, maakHerinneringMail } from "./mail";
+import { dagenTeLaat, maakFactuurMail, maakBetalingBevestigingMail, maakCreditnotaMail, mailtoLink, maakHerinneringMail } from "./mail";
 
 const basis = { begroeting: "Beste heer Jansen,", nummer: "2026-0001", vervaldatum: "8 november 2026", adres: "Voorbeeldstraat 1", bedrijf: "KernKozijnen B.V." };
 
@@ -65,5 +65,19 @@ describe("mailtoLink", () => {
   });
   it("werkt zonder adres", () => {
     expect(mailtoLink(null, "a", "b").startsWith("mailto:?subject=")).toBe(true);
+  });
+});
+
+describe("maakCreditnotaMail", () => {
+  const g = { begroeting: "Beste heer Jansen,", nummer: "CN-2026-0001", factuurNummer: "2026-0001", bedrag: 1000, vervaldatum: "8 november 2026", bedrijf: "KernKozijnen B.V." };
+  it("meldt bij een volledige creditnota dat er niets meer te betalen is", () => {
+    const m = maakCreditnotaMail({ ...g, nogTeBetalen: 0 });
+    expect(m.onderwerp).toBe("Creditnota CN-2026-0001 bij factuur 2026-0001");
+    expect(m.tekst).toContain("volledig gecrediteerd");
+  });
+  it("noemt bij een gedeeltelijke creditnota wat er nog te betalen is", () => {
+    const m = maakCreditnotaMail({ ...g, nogTeBetalen: 2000 });
+    expect(m.tekst).toContain("nog te betalen");
+    expect(m.tekst).toContain("8 november 2026");
   });
 });

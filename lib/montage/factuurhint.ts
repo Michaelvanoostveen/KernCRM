@@ -14,7 +14,7 @@ export interface FactuurActie {
  * Er wordt niets automatisch aangemaakt: dit zijn aandachtspunten voor kantoor.
  */
 export function factuurActies(montages: MontageVoorFactuur[], facturen: FactuurVoorHint[], vandaag: string): FactuurActie[] {
-  const heeft = (projectId: string, termijn: number) => facturen.some((f) => f.projectId === projectId && f.termijn === termijn && f.status !== "geannuleerd");
+  const heeft = (projectId: string, termijn: number) => facturen.some((f) => f.projectId === projectId && f.termijn === termijn && f.status !== "geannuleerd" && f.status !== "gecrediteerd");
   const acties: FactuurActie[] = [];
   for (const m of montages) {
     if ((m.status === "definitief" || m.status === "bezig") && m.startDatum <= vandaag && heeft(m.projectId, 1) && !heeft(m.projectId, 2)) {

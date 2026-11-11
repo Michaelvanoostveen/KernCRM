@@ -9,7 +9,7 @@ import { haalRol } from "../start-gegevens";
 
 type Rij = {
   id: string; nummer: string; termijn: number; totaal_incl: number | string; vervaldatum: string; factuurdatum: string; status: FactuurStatus;
-  verzonden_op: string | null; debiteur: { naam?: string } | null; projecten: { id: string; naam: string } | null;
+  verzonden_op: string | null; gecrediteerd: number | string; debiteur: { naam?: string } | null; projecten: { id: string; naam: string } | null;
 };
 
 const datum = (iso: string) => new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Amsterdam" }).format(new Date(`${iso}T12:00:00Z`));
@@ -17,6 +17,7 @@ const STATUS: Record<FactuurStatus, { label: string; kleur: string }> = {
   open: { label: "Open", kleur: "bg-amber-100 text-amber-900" },
   betaald: { label: "Betaald", kleur: "bg-green-100 text-green-800" },
   geannuleerd: { label: "Geannuleerd", kleur: "bg-stone-200 text-stone-700" },
+  gecrediteerd: { label: "Gecrediteerd", kleur: "bg-stone-200 text-stone-700" },
 };
 
 async function Inhoud({ zoek }: { zoek: Promise<{ filter?: string }> }) {
@@ -28,7 +29,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ filter?: string }> }) {
 
   const supabase = await maakServerClient();
   const { data } = await supabase.from("facturen")
-    .select("id, nummer, termijn, totaal_incl, vervaldatum, factuurdatum, status, verzonden_op, debiteur, projecten(id, naam)")
+    .select("id, nummer, termijn, totaal_incl, vervaldatum, factuurdatum, status, verzonden_op, gecrediteerd, debiteur, projecten(id, naam)")
     .order("vervaldatum").limit(1000);
   const rijen = (data ?? []) as unknown as Rij[];
   const { data: bData } = rijen.length ? await supabase.from("factuur_betalingen").select("factuur_id, bedrag").in("factuur_id", rijen.map((r) => r.id)) : { data: [] };
@@ -37,7 +38,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ filter?: string }> }) {
 
   const alle: OverzichtFactuur[] = rijen.map((r) => ({
     id: r.id, nummer: r.nummer, projectId: r.projecten?.id ?? "", projectNaam: r.projecten?.naam ?? "", klantNaam: r.debiteur?.naam ?? "", termijn: r.termijn,
-    totaal: Number(r.totaal_incl), vervaldatum: r.vervaldatum, factuurdatum: r.factuurdatum, status: r.status, verzonden: r.verzonden_op !== null, betaald: betaald.get(r.id) ?? 0,
+    totaal: Number(r.totaal_incl), vervaldatum: r.vervaldatum, factuurdatum: r.factuurdatum, status: r.status, verzonden: r.verzonden_op !== null, betaald: betaald.get(r.id) ?? 0, gecrediteerd: Number(r.gecrediteerd),
   }));
   const s = samenvatting(alle, vandaag);
   const lijst = sorteerOpVervaldatum(filterFacturen(alle, filter, vandaag));
