@@ -34,7 +34,7 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
   const { data: bData } = facturen.length ? await supabase.from("factuur_betalingen").select("factuur_id, bedrag, betaald_op, notitie").in("factuur_id", facturen.map((f) => f.id)).order("betaald_op") : { data: [] };
   const betalingen = (bData ?? []) as Betaling[];
 
-  const { data: lData } = facturen.length ? await supabase.from("factuur_betaallinks").select("factuur_id, url").in("factuur_id", facturen.map((f) => f.id)).eq("status", "open") : { data: [] };
+  const { data: lData } = facturen.length ? await supabase.from("factuur_betaallinks").select("factuur_id, url").in("factuur_id", facturen.map((f) => f.id)).eq("status", "open").or(`geldig_tot.is.null,geldig_tot.gte.${new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date())}`) : { data: [] };
   const betaallinks = new Map(((lData ?? []) as { factuur_id: string; url: string }[]).map((l) => [l.factuur_id, l.url]));
   const { data: hData } = facturen.length ? await supabase.from("factuur_herinneringen").select("factuur_id, niveau, verstuurd_op").in("factuur_id", facturen.map((f) => f.id)).order("niveau") : { data: [] };
   const herinneringen = (hData ?? []) as Herinnering[];

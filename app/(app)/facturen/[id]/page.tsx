@@ -50,7 +50,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
     supabase.from("factuur_herinneringen").select("niveau, verstuurd_op").eq("factuur_id", id).order("niveau"),
     supabase.from("creditnotas").select("id, nummer, datum, omschrijving, totaal_incl, verzonden_op").eq("factuur_id", id).order("aangemaakt"),
     supabase.rpc("mag_prijzen_aanpassen", { p_tenant: (data as { tenant_id?: string } | null)?.tenant_id ?? "" }),
-    supabase.from("factuur_betaallinks").select("id, url, bedrag, geldig_tot").eq("factuur_id", id).eq("status", "open").maybeSingle(),
+    supabase.from("factuur_betaallinks").select("id, url, bedrag, geldig_tot").eq("factuur_id", id).eq("status", "open").or(`geldig_tot.is.null,geldig_tot.gte.${new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date())}`).maybeSingle(),
   ]);
   const betaallink = (lData as Betaallink | null) ?? null;
   const creditnotas = (cData ?? []) as Creditnota[];

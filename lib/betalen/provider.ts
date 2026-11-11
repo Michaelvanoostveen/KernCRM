@@ -44,10 +44,13 @@ export function maakBetaalProvider(provider: string): BetaalProvider {
   }
 }
 
-/** Is dit een bruikbare betaallink? Alleen https, geen spaties en niet te lang (de database controleert dit ook). */
+/** Dezelfde controle als in de database: alleen https, een gewone hostnaam (geen gebruikersnaam of wachtwoord in de link), alleen URL-veilige tekens. */
+const BETAALLINK = /^https:\/\/[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[0-9]{1,5})?(\/[A-Za-z0-9._~!$&()*+,;=:@%/?#-]*)?$/i;
+
+/** Is dit een bruikbare betaallink? Alleen https, geen aanhalingstekens of spaties, geen inloggegevens in de link en niet te lang. */
 export function isBetaalLink(url: string): boolean {
   const t = url.trim();
-  if (t.length > 500 || !/^https:\/\/[^\s]+$/.test(t)) return false;
+  if (t.length > 500 || !BETAALLINK.test(t)) return false;
   try {
     return new URL(t).protocol === "https:";
   } catch {

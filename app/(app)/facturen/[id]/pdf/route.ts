@@ -16,7 +16,7 @@ export async function GET(_verzoek: Request, { params }: { params: Promise<{ id:
   if (!f) return new Response("Factuur niet gevonden.", { status: 404 });
 
   // Een actieve betaallink komt onderaan de factuur (alleen bij een open factuur).
-  const { data: link } = f.status === "open" ? await supabase.from("factuur_betaallinks").select("url").eq("factuur_id", id).eq("status", "open").maybeSingle() : { data: null };
+  const { data: link } = f.status === "open" ? await supabase.from("factuur_betaallinks").select("url").eq("factuur_id", id).eq("status", "open").or(`geldig_tot.is.null,geldig_tot.gte.${new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date())}`).maybeSingle() : { data: null };
 
   // De klantgegevens zoals ze waren bij het aanmaken van de factuur, niet zoals ze nu in het klantbestand staan.
   const project = f.projecten as unknown as { nummer: string; naam: string } | null;

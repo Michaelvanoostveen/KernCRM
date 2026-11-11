@@ -9,6 +9,11 @@ describe("betaallink", () => {
     expect(isBetaalLink("javascript:alert(1)")).toBe(false);
     expect(isBetaalLink("https://pay.example/a b")).toBe(false);
     expect(isBetaalLink("https://")).toBe(false);
+    expect(isBetaalLink("https://mollie.com@evil.example/x")).toBe(false);
+    expect(isBetaalLink('https://pay.example/a"onmouseover="x')).toBe(false);
+    expect(isBetaalLink("https://pay.example/<script>")).toBe(false);
+    expect(isBetaalLink("https://pay.example/a\\b")).toBe(false);
+    expect(isBetaalLink("https://pay.example:8443/pay?id=tr_1&x=2#a")).toBe(true);
     expect(isBetaalLink("x".repeat(10))).toBe(false);
     expect(isBetaalLink(`https://x.nl/${"a".repeat(500)}`)).toBe(false);
   });

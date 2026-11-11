@@ -17,7 +17,7 @@ create table public.factuur_betaallinks (
   id          uuid primary key default gen_random_uuid(),
   tenant_id   uuid not null references public.tenants (id) on delete cascade,
   factuur_id  uuid not null references public.facturen (id) on delete restrict,
-  url         text not null check (url ~ '^https://[^\s]+$' and length(url) <= 500),
+  url         text not null check (url ~* '^https://[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[0-9]{1,5})?(/[A-Za-z0-9._~!$&()*+,;=:@%/?#-]*)?$' and length(url) <= 500),
   bedrag      numeric(10, 2) not null check (bedrag > 0),
   bron        text not null default 'handmatig' check (bron in ('handmatig', 'mollie')),
   extern_id   text check (extern_id is null or length(extern_id) <= 100),
@@ -83,7 +83,7 @@ begin
     return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
   end if;
   if f.status <> 'open' then return jsonb_build_object('ok', false, 'fout', 'niet_open'); end if;
-  if v_url !~ '^https://[^\s]+$' or length(v_url) > 500 or (p_geldig_tot is not null and p_geldig_tot < (now() at time zone 'Europe/Amsterdam')::date) then
+  if v_url !~* '^https://[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[0-9]{1,5})?(/[A-Za-z0-9._~!$&()*+,;=:@%/?#-]*)?$' or length(v_url) > 500 or (p_geldig_tot is not null and p_geldig_tot < (now() at time zone 'Europe/Amsterdam')::date) then
     return jsonb_build_object('ok', false, 'fout', 'ongeldig');
   end if;
   select coalesce(sum(bedrag), 0) into v_betaald from public.factuur_betalingen where factuur_id = f.id;
