@@ -28,3 +28,13 @@ describe("creditnota-pdf", () => {
     expect(creditnotaBestandsnaam("CN-2026-0001")).toBe("Creditnota-CN-2026-0001.pdf");
   });
 });
+
+describe("factuur-pdf met betaallink", () => {
+  it("maakt een geldig PDF-bestand", async () => {
+    const pdf = await maakFactuurPdf({
+      nummer: "2026-0001", factuurdatum: "2026-11-05", vervaldatum: "2026-11-08", omschrijving: "Aanbetaling", toelichting: null, bedragExcl: 2555.4, btwHoog: 536.63, btwLaag: 68.97, totaal: 3161,
+      meerwerk: 0, status: "open", projectNummer: "2026-0003", projectNaam: "Kozijnen", klantNaam: "Jan Jansen", begroeting: "Beste heer Jansen,", adresRegels: [], betaalLink: "https://pay.example/abc123",
+    });
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+  });
+});

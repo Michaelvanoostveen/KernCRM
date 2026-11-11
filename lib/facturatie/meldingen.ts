@@ -40,5 +40,8 @@ export const FACTUUR_MELDINGEN: Record<string, { tekst: string; fout: boolean }>
   heeft_creditnota: { tekst: "Deze factuur heeft een creditnota en kan niet meer worden aangepast of geannuleerd.", fout: true },
   btw_te_veel: { tekst: "Deze creditnota crediteert meer btw dan er is gefactureerd. Pas het bedrag aan.", fout: true },
   credit_dubbel: { tekst: "Deze creditnota is zojuist al gemaakt.", fout: true },
+  betaallink_toegevoegd: { tekst: "De betaallink is vastgelegd. Hij staat in de mailtekst en op de PDF van de factuur.", fout: false },
+  betaallink_ingetrokken: { tekst: "De betaallink is ingetrokken.", fout: false },
+  betaallink_ongeldig: { tekst: "Vul een geldige link in die met https:// begint, en een geldigheidsdatum die niet in het verleden ligt.", fout: true },
   mislukt: { tekst: "Het lukte niet. Probeer het opnieuw.", fout: true },
 };

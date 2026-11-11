@@ -34,6 +34,8 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
   const { data: bData } = facturen.length ? await supabase.from("factuur_betalingen").select("factuur_id, bedrag, betaald_op, notitie").in("factuur_id", facturen.map((f) => f.id)).order("betaald_op") : { data: [] };
   const betalingen = (bData ?? []) as Betaling[];
 
+  const { data: lData } = facturen.length ? await supabase.from("factuur_betaallinks").select("factuur_id, url").in("factuur_id", facturen.map((f) => f.id)).eq("status", "open").or(`geldig_tot.is.null,geldig_tot.gte.${new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date())}`) : { data: [] };
+  const betaallinks = new Map(((lData ?? []) as { factuur_id: string; url: string }[]).map((l) => [l.factuur_id, l.url]));
   const { data: hData } = facturen.length ? await supabase.from("factuur_herinneringen").select("factuur_id, niveau, verstuurd_op").in("factuur_id", facturen.map((f) => f.id)).order("niveau") : { data: [] };
   const herinneringen = (hData ?? []) as Herinnering[];
   const { data: moRij } = await supabase.from("montages").select("id, status, start_datum, eind_datum, leverdatum").eq("project_id", projectId).neq("status", "geannuleerd").maybeSingle();
@@ -142,10 +144,10 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
                   )}
                   {f.status === "open" && mag && (() => {
                     const groet = begroeting(f.debiteur?.aanhef, f.debiteur?.achternaam, f.debiteur?.naam ?? "");
-                    const mailTekst = maakFactuurMail({ begroeting: groet, nummer: f.nummer, termijn: f.termijn, omschrijving: f.omschrijving, bedrag: Number(f.totaal_incl), vervaldatum: datum(f.vervaldatum), adres: projectNaam, bedrijf: BEDRIJF_FACTUUR.naam });
+                    const mailTekst = maakFactuurMail({ begroeting: groet, nummer: f.nummer, termijn: f.termijn, omschrijving: f.omschrijving, bedrag: Number(f.totaal_incl), vervaldatum: datum(f.vervaldatum), adres: projectNaam, bedrijf: BEDRIJF_FACTUUR.naam, betaalLink: betaallinks.get(f.id) ?? null });
                     const volgende = Math.min(3, herinneringen.filter((h) => h.factuur_id === f.id).length + 1);
                     const laatsteH = herinneringen.filter((h) => h.factuur_id === f.id).length >= 3;
-                    const herMail = teLaat && f.verzonden_op && !laatsteH ? maakHerinneringMail({ begroeting: groet, nummer: f.nummer, bedrag: open, vervaldatum: datum(f.vervaldatum), bedrijf: BEDRIJF_FACTUUR.naam, niveau: volgende }) : null;
+                    const herMail = teLaat && f.verzonden_op && !laatsteH ? maakHerinneringMail({ begroeting: groet, nummer: f.nummer, bedrag: open, vervaldatum: datum(f.vervaldatum), bedrijf: BEDRIJF_FACTUUR.naam, niveau: volgende, betaalLink: betaallinks.get(f.id) ?? null }) : null;
                     return (
                       <div className="mt-3 grid gap-2">
                         <details className="rounded-md border border-stone-200 px-3 py-2">

@@ -8,7 +8,7 @@ import { begroeting, isTeLaat, openstaand, type FactuurStatus } from "@/lib/fact
 import { dagenTeLaat, maakBetalingBevestigingMail, maakCreditnotaMail, maakHerinneringMail, mailtoLink } from "@/lib/facturatie/mail";
 import { FACTUUR_MELDINGEN } from "@/lib/facturatie/meldingen";
 import { haalRol } from "../../start-gegevens";
-import { maakCreditnota, markeerBetalingBevestigd, markeerCreditnotaVerzonden, markeerVerzonden, registreerBetaling, registreerHerinnering } from "../actions";
+import { maakCreditnota, markeerBetalingBevestigd, markeerCreditnotaVerzonden, markeerVerzonden, registreerBetaling, registreerHerinnering, trekBetaallinkIn, voegBetaallinkToe } from "../actions";
 
 type Factuur = {
   id: string; project_id: string; nummer: string; termijn: number; omschrijving: string; factuurdatum: string; vervaldatum: string; totaal_incl: number | string;
@@ -18,6 +18,7 @@ type Factuur = {
 };
 type Betaling = { id: string; bedrag: number | string; betaald_op: string; notitie: string | null; bevestiging_verstuurd_op: string | null };
 type Creditnota = { id: string; nummer: string; datum: string; omschrijving: string; totaal_incl: number | string; verzonden_op: string | null };
+type Betaallink = { id: string; url: string; bedrag: number | string; geldig_tot: string | null };
 type Herinnering = { niveau: number; verstuurd_op: string };
 
 const datum = (iso: string) => new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Amsterdam" }).format(new Date(`${iso}T12:00:00Z`));
@@ -44,12 +45,14 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const f = data as unknown as Factuur | null;
   if (!f) notFound();
 
-  const [{ data: bData }, { data: hData }, { data: cData }, magPrijzenData] = await Promise.all([
+  const [{ data: bData }, { data: hData }, { data: cData }, magPrijzenData, { data: lData }] = await Promise.all([
     supabase.from("factuur_betalingen").select("id, bedrag, betaald_op, notitie, bevestiging_verstuurd_op").eq("factuur_id", id).order("betaald_op").order("aangemaakt"),
     supabase.from("factuur_herinneringen").select("niveau, verstuurd_op").eq("factuur_id", id).order("niveau"),
     supabase.from("creditnotas").select("id, nummer, datum, omschrijving, totaal_incl, verzonden_op").eq("factuur_id", id).order("aangemaakt"),
     supabase.rpc("mag_prijzen_aanpassen", { p_tenant: (data as { tenant_id?: string } | null)?.tenant_id ?? "" }),
+    supabase.from("factuur_betaallinks").select("id, url, bedrag, geldig_tot").eq("factuur_id", id).eq("status", "open").or(`geldig_tot.is.null,geldig_tot.gte.${new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date())}`).maybeSingle(),
   ]);
+  const betaallink = (lData as Betaallink | null) ?? null;
   const creditnotas = (cData ?? []) as Creditnota[];
   const magPrijzen = magPrijzenData.data === true;
   const betalingen = (bData ?? []) as Betaling[];
@@ -69,7 +72,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
 
   const volgende = Math.min(3, herinneringen.length + 1);
   const herMail = f.status === "open" && teLaat && f.verzonden_op && herinneringen.length < 3
-    ? maakHerinneringMail({ begroeting: groet, nummer: f.nummer, bedrag: open, vervaldatum: datum(f.vervaldatum), bedrijf: BEDRIJF_FACTUUR.naam, niveau: volgende })
+    ? maakHerinneringMail({ begroeting: groet, nummer: f.nummer, bedrag: open, vervaldatum: datum(f.vervaldatum), bedrijf: BEDRIJF_FACTUUR.naam, niveau: volgende, betaalLink: betaallink?.url ?? null })
     : null;
   const verborgen = <>
     <input type="hidden" name="naar" value="factuur" /><input type="hidden" name="project_id" value={f.project_id} /><input type="hidden" name="factuur_id" value={f.id} />
@@ -159,6 +162,37 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
         )}
         {!mag && f.status === "open" && <p className="mt-3 text-sm text-stone-500">Betalingen registreren is voorbehouden aan directie en kantoor.</p>}
       </section>
+
+      {f.status === "open" && (
+        <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Betaallink">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Betaallink</h2>
+          {betaallink ? (
+            <div className="mt-2 text-sm">
+              <p>Actieve link voor {euroTekst(Number(betaallink.bedrag), 2)}{betaallink.geldig_tot ? `, geldig tot ${datum(betaallink.geldig_tot)}` : ""}:</p>
+              <p className="mt-1 break-all"><a href={betaallink.url} target="_blank" rel="noreferrer" className="underline">{betaallink.url}</a></p>
+              <p className="mt-1 text-xs text-stone-500">De link staat in de mailtekst van herinneringen en op de PDF van de factuur. Na een deelbetaling of creditnota klopt het bedrag niet meer en wordt de link ingetrokken.</p>
+              {mag && (
+                <form action={trekBetaallinkIn} className="mt-2">
+                  <input type="hidden" name="factuur_id" value={f.id} /><input type="hidden" name="link_id" value={betaallink.id} />
+                  <button className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold hover:bg-stone-50">Link intrekken</button>
+                </form>
+              )}
+            </div>
+          ) : <p className="mt-2 text-sm text-stone-600">Er is geen betaallink. Met een link kan de klant direct online betalen.</p>}
+          {mag && (
+            <details className="mt-3 rounded-md border border-stone-200 px-3 py-2">
+              <summary className="cursor-pointer font-semibold">{betaallink ? "Andere link vastleggen" : "Betaallink vastleggen"}</summary>
+              <form action={voegBetaallinkToe} className="mt-2 grid gap-2">
+                <input type="hidden" name="factuur_id" value={f.id} />
+                <label className="text-xs font-semibold">Link (begint met https://)<input name="url" required maxLength={500} inputMode="url" placeholder="https://" className={veld} /></label>
+                <label className="text-xs font-semibold">Geldig tot (optioneel)<input type="date" name="geldig_tot" min={vandaag} className={veld} /></label>
+                <p className="text-xs text-stone-500">Maak de link voor {euroTekst(open, 2)} in het dashboard van je betaaldienst en plak hem hier. Dat de klant heeft betaald, registreer je hierboven als betaling.</p>
+                <button className="rounded-md bg-[#24332B] px-4 py-2 text-sm font-semibold text-white">Link vastleggen</button>
+              </form>
+            </details>
+          )}
+        </section>
+      )}
 
       {(creditnotas.length > 0 || (mag && f.status === "open")) && (
         <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Creditnota's">

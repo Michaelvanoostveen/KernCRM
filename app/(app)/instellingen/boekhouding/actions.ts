@@ -53,3 +53,19 @@ export async function markeerWachtrij(formData: FormData) {
   const uitkomst = data as { ok?: boolean; fout?: string } | null;
   return terug(uitkomst?.ok ? (status === "verwerkt" ? "verwerkt" : "overgeslagen") : uitkomst?.fout ?? "mislukt");
 }
+
+/** Bewaart de betaaldienst voor online betalen (alleen de directie). */
+export async function bewaarBetaalKoppeling(formData: FormData) {
+  const { supabase, tenantId } = await mijnBedrijf(["directie"]);
+  if (!tenantId) return terug("rechten");
+  const provider = String(formData.get("betaal_provider") ?? "geen");
+  if (provider !== "geen" && provider !== "mollie") return terug("ongeldig");
+  const profiel = String(formData.get("profiel") ?? "").trim().slice(0, 40);
+  const { data, error } = await supabase.rpc("betaal_koppeling_bewaar", { p_tenant: tenantId, p_provider: provider, p_actief: formData.get("betaal_actief") === "aan", p_instellingen: profiel ? { profiel } : {} });
+  if (error) {
+    console.error("betaalkoppeling bewaren mislukt:", error.code, error.message);
+    return terug("mislukt");
+  }
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  return terug(uitkomst?.ok ? "betaal_bewaard" : uitkomst?.fout ?? "mislukt");
+}
