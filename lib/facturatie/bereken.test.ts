@@ -87,3 +87,11 @@ describe("begroeting", () => {
     expect(begroeting(null, null, "VvE De Linde")).toBe("Beste heer/mevrouw VvE De Linde,");
   });
 });
+
+describe("openstaand met creditnota's", () => {
+  it("trekt het gecrediteerde bedrag af", () => {
+    expect(openstaand(3000, [500], 1000)).toBe(1500);
+    expect(openstaand(3000, [], 3000)).toBe(0);
+    expect(openstaand(3000, [], 0)).toBe(3000);
+  });
+});

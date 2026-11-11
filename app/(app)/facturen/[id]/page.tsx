@@ -5,18 +5,19 @@ import { maakServerClient } from "@/lib/supabase/server";
 import { euroTekst } from "@/lib/offerte/bereken";
 import { BEDRIJF_FACTUUR } from "@/lib/facturatie/bedrijf";
 import { begroeting, isTeLaat, openstaand, type FactuurStatus } from "@/lib/facturatie/bereken";
-import { dagenTeLaat, maakBetalingBevestigingMail, maakHerinneringMail, mailtoLink } from "@/lib/facturatie/mail";
+import { dagenTeLaat, maakBetalingBevestigingMail, maakCreditnotaMail, maakHerinneringMail, mailtoLink } from "@/lib/facturatie/mail";
 import { FACTUUR_MELDINGEN } from "@/lib/facturatie/meldingen";
 import { haalRol } from "../../start-gegevens";
-import { markeerBetalingBevestigd, markeerVerzonden, registreerBetaling, registreerHerinnering } from "../actions";
+import { maakCreditnota, markeerBetalingBevestigd, markeerCreditnotaVerzonden, markeerVerzonden, registreerBetaling, registreerHerinnering } from "../actions";
 
 type Factuur = {
   id: string; project_id: string; nummer: string; termijn: number; omschrijving: string; factuurdatum: string; vervaldatum: string; totaal_incl: number | string;
-  bedrag_excl: number | string; status: FactuurStatus; verzonden_op: string | null; annulering_reden: string | null;
+  bedrag_excl: number | string; status: FactuurStatus; verzonden_op: string | null; gecrediteerd: number | string; annulering_reden: string | null;
   debiteur: { aanhef?: string | null; achternaam?: string | null; naam?: string } | null;
   projecten: { naam: string; klanten: { email: string | null } | null } | null;
 };
 type Betaling = { id: string; bedrag: number | string; betaald_op: string; notitie: string | null; bevestiging_verstuurd_op: string | null };
+type Creditnota = { id: string; nummer: string; datum: string; omschrijving: string; totaal_incl: number | string; verzonden_op: string | null };
 type Herinnering = { niveau: number; verstuurd_op: string };
 
 const datum = (iso: string) => new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Amsterdam" }).format(new Date(`${iso}T12:00:00Z`));
@@ -24,6 +25,7 @@ const STATUS: Record<FactuurStatus, { label: string; kleur: string }> = {
   open: { label: "Open", kleur: "bg-amber-100 text-amber-900" },
   betaald: { label: "Betaald", kleur: "bg-green-100 text-green-800" },
   geannuleerd: { label: "Geannuleerd", kleur: "bg-stone-200 text-stone-700" },
+  gecrediteerd: { label: "Gecrediteerd", kleur: "bg-stone-200 text-stone-700" },
 };
 const veld = "mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm";
 const knopLink = "inline-block rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-stone-50";
@@ -37,28 +39,33 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
 
   const supabase = await maakServerClient();
   const { data } = await supabase.from("facturen")
-    .select("id, project_id, nummer, termijn, omschrijving, factuurdatum, vervaldatum, totaal_incl, bedrag_excl, status, verzonden_op, annulering_reden, debiteur, projecten(naam, klanten(email))")
+    .select("id, tenant_id, project_id, nummer, termijn, omschrijving, factuurdatum, vervaldatum, totaal_incl, bedrag_excl, status, verzonden_op, gecrediteerd, annulering_reden, debiteur, projecten(naam, klanten(email))")
     .eq("id", id).maybeSingle();
   const f = data as unknown as Factuur | null;
   if (!f) notFound();
 
-  const [{ data: bData }, { data: hData }] = await Promise.all([
+  const [{ data: bData }, { data: hData }, { data: cData }, magPrijzenData] = await Promise.all([
     supabase.from("factuur_betalingen").select("id, bedrag, betaald_op, notitie, bevestiging_verstuurd_op").eq("factuur_id", id).order("betaald_op").order("aangemaakt"),
     supabase.from("factuur_herinneringen").select("niveau, verstuurd_op").eq("factuur_id", id).order("niveau"),
+    supabase.from("creditnotas").select("id, nummer, datum, omschrijving, totaal_incl, verzonden_op").eq("factuur_id", id).order("aangemaakt"),
+    supabase.rpc("mag_prijzen_aanpassen", { p_tenant: (data as { tenant_id?: string } | null)?.tenant_id ?? "" }),
   ]);
+  const creditnotas = (cData ?? []) as Creditnota[];
+  const magPrijzen = magPrijzenData.data === true;
   const betalingen = (bData ?? []) as Betaling[];
   const herinneringen = (hData ?? []) as Herinnering[];
 
   const vandaag = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date());
   const totaal = Number(f.totaal_incl);
-  const open = openstaand(totaal, betalingen.map((b) => Number(b.bedrag)));
+  const gecrediteerd = Number(f.gecrediteerd);
+  const open = openstaand(totaal, betalingen.map((b) => Number(b.bedrag)), gecrediteerd);
   const teLaat = isTeLaat(f.status, f.vervaldatum, vandaag);
   const groet = begroeting(f.debiteur?.aanhef, f.debiteur?.achternaam, f.debiteur?.naam ?? "");
   const klantMail = f.projecten?.klanten?.email ?? null;
   const melding = code ? FACTUUR_MELDINGEN[code] : null;
 
   // Na elke betaling is het saldo anders: bereken per betaling wat er daarna nog openstond.
-  const metSaldo = betalingen.map((b, i) => ({ ...b, resterend: openstaand(totaal, betalingen.slice(0, i + 1).map((x) => Number(x.bedrag))) }));
+  const metSaldo = betalingen.map((b, i) => ({ ...b, resterend: openstaand(totaal, betalingen.slice(0, i + 1).map((x) => Number(x.bedrag)), gecrediteerd) }));
 
   const volgende = Math.min(3, herinneringen.length + 1);
   const herMail = f.status === "open" && teLaat && f.verzonden_op && herinneringen.length < 3
@@ -88,6 +95,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           <div className="flex justify-between"><dt className="text-stone-600">Factuurdatum</dt><dd>{datum(f.factuurdatum)}</dd></div>
           <div className="flex justify-between"><dt className="text-stone-600">Vervaldatum</dt><dd className={teLaat ? "font-semibold text-red-700" : ""}>{datum(f.vervaldatum)}{teLaat ? ` (${dagenTeLaat(f.vervaldatum, vandaag)} dagen te laat)` : ""}</dd></div>
           <div className="flex justify-between"><dt className="text-stone-600">Verzonden</dt><dd>{f.verzonden_op ? datum(f.verzonden_op.slice(0, 10)) : "nog niet"}</dd></div>
+          {gecrediteerd > 0 && <div className="flex justify-between"><dt className="text-stone-600">Gecrediteerd</dt><dd>{euroTekst(gecrediteerd, 2)}</dd></div>}
           {f.status === "open" && <div className="flex justify-between"><dt className="text-stone-600">Openstaand</dt><dd className="font-semibold">{euroTekst(open, 2)}</dd></div>}
         </dl>
         {f.status === "geannuleerd" && f.annulering_reden && <p className="mt-3 text-sm text-stone-600">Geannuleerd: {f.annulering_reden}</p>}
@@ -151,6 +159,59 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
         )}
         {!mag && f.status === "open" && <p className="mt-3 text-sm text-stone-500">Betalingen registreren is voorbehouden aan directie en kantoor.</p>}
       </section>
+
+      {(creditnotas.length > 0 || (mag && f.status === "open")) && (
+        <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Creditnota's">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Creditnota&apos;s</h2>
+          {creditnotas.length === 0 && <p className="mt-2 text-sm text-stone-600">Er is geen creditnota gemaakt. Heeft de klant de factuur al ontvangen en klopt het bedrag niet, maak dan een creditnota in plaats van de factuur aan te passen.</p>}
+          <ul className="mt-2 grid gap-3">
+            {creditnotas.map((c) => {
+              const mail = maakCreditnotaMail({ begroeting: groet, nummer: c.nummer, factuurNummer: f.nummer, bedrag: Number(c.totaal_incl), nogTeBetalen: open, vervaldatum: datum(f.vervaldatum), bedrijf: BEDRIJF_FACTUUR.naam });
+              return (
+                <li key={c.id} className="rounded-md border border-stone-200 p-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span><b className="font-mono">{c.nummer}</b> · {euroTekst(Number(c.totaal_incl), 2)} · {datum(c.datum)} · {c.omschrijving}</span>
+                    <span className="flex items-center gap-3">
+                      <a href={`/creditnotas/${c.id}/pdf`} target="_blank" rel="noreferrer" className="underline">PDF</a>
+                      {c.verzonden_op ? <span className="text-green-700">Verstuurd op {datum(c.verzonden_op.slice(0, 10))}</span> : <span className="text-amber-800">Nog niet verstuurd</span>}
+                    </span>
+                  </div>
+                  {mag && !c.verzonden_op && (
+                    <details className="mt-2 rounded-md bg-stone-50 px-3 py-2">
+                      <summary className="cursor-pointer font-semibold">Mailtekst met de creditnota</summary>
+                      <label className="mt-2 block text-xs font-semibold">Onderwerp<input readOnly value={mail.onderwerp} className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
+                      <label className="mt-2 block text-xs font-semibold">Tekst<textarea readOnly rows={7} value={mail.tekst} className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
+                      <p className="mt-2 text-xs text-stone-600">Voeg de PDF van de creditnota als bijlage toe. Leg daarna vast dat hij is verstuurd.</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <a href={mailtoLink(klantMail, mail.onderwerp, mail.tekst)} className={knopLink}>Open in mailprogramma</a>
+                        <form action={markeerCreditnotaVerzonden}>
+                          <input type="hidden" name="factuur_id" value={f.id} /><input type="hidden" name="creditnota_id" value={c.id} />
+                          <button className="rounded-md bg-[#24332B] px-4 py-2 text-sm font-semibold text-white">Creditnota is verstuurd</button>
+                        </form>
+                      </div>
+                    </details>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {mag && f.status === "open" && f.verzonden_op && open > 0 && magPrijzen && (
+            <details className="mt-3 rounded-md border border-stone-200 px-3 py-2">
+              <summary className="cursor-pointer font-semibold">Creditnota maken</summary>
+              <form action={maakCreditnota} className="mt-2 grid gap-2">
+                <input type="hidden" name="factuur_id" value={f.id} />
+                <label className="text-xs font-semibold">Bedrag dat van de factuur af gaat (incl. btw, hooguit {euroTekst(open, 2)})<input name="bedrag" required inputMode="decimal" defaultValue={String(open).replace(".", ",")} className={veld} /></label>
+                <label className="text-xs font-semibold">Omschrijving op de creditnota<input name="omschrijving" required maxLength={300} defaultValue={`Correctie op factuur ${f.nummer}`} className={veld} /></label>
+                <label className="text-xs font-semibold">Reden (alleen zichtbaar voor de directie)<input name="reden" required maxLength={1000} className={veld} /></label>
+                <p className="text-xs text-stone-500">De creditnota staat daarna vast en krijgt een eigen nummer. Het btw-bedrag wordt berekend volgens dezelfde verdeling als de factuur. Wil je het volledige bedrag crediteren, dan kan de termijn daarna opnieuw worden gefactureerd.</p>
+                <button className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white">Creditnota maken</button>
+              </form>
+            </details>
+          )}
+          {mag && f.status === "open" && f.verzonden_op && !magPrijzen && <p className="mt-3 text-sm text-stone-500">Een creditnota maken kan met de toestemming &quot;prijzen aanpassen&quot;. Vraag de directie.</p>}
+          {mag && f.status === "open" && !f.verzonden_op && <p className="mt-3 text-sm text-stone-500">Een creditnota kan pas nadat de factuur is verstuurd. Vóór het versturen pas je de factuur aan of annuleer je hem.</p>}
+        </section>
+      )}
 
       {f.status === "open" && (
         <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Herinneringen">

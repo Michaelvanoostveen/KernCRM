@@ -91,3 +91,26 @@ export function maakBetalingBevestigingMail(g: BetalingBevestigingGegevens): { o
 export function mailtoLink(aan: string | null | undefined, onderwerp: string, tekst: string): string {
   return `mailto:${encodeURIComponent((aan ?? "").trim()).replace(/%40/g, "@")}?subject=${encodeURIComponent(onderwerp)}&body=${encodeURIComponent(tekst).replace(/%0A/g, "%0D%0A")}`;
 }
+
+export interface CreditnotaMailGegevens {
+  begroeting: string;
+  nummer: string;
+  factuurNummer: string;
+  bedrag: number;
+  /** Wat er na deze creditnota nog te betalen is op de factuur (0 = niets meer). */
+  nogTeBetalen: number;
+  vervaldatum: string;
+  bedrijf: string;
+}
+
+/** Concepttekst voor de mail met een creditnota. De reden van de correctie staat bewust niet in de tekst: kantoor voegt die zo nodig zelf toe. */
+export function maakCreditnotaMail(g: CreditnotaMailGegevens): { onderwerp: string; tekst: string } {
+  const bedrag = euroTekst(g.bedrag, 2);
+  const kern = g.nogTeBetalen <= 0
+    ? `Hierbij ontvangt u creditnota ${g.nummer} van ${bedrag} bij factuur ${g.factuurNummer}. Daarmee is de factuur volledig gecrediteerd; u hoeft niets meer te betalen voor deze factuur.`
+    : `Hierbij ontvangt u creditnota ${g.nummer} van ${bedrag} bij factuur ${g.factuurNummer}. Het bedrag dat u nog te betalen heeft voor deze factuur is daarmee ${euroTekst(g.nogTeBetalen, 2)}. Wilt u dit bedrag voor ${g.vervaldatum} overmaken?`;
+  return {
+    onderwerp: `Creditnota ${g.nummer} bij factuur ${g.factuurNummer}`,
+    tekst: [g.begroeting, "", kern, "", "U vindt de creditnota als bijlage. Heeft u een vraag? Laat het ons gerust weten.", "", afsluiting(g.bedrijf)].join("\n"),
+  };
+}

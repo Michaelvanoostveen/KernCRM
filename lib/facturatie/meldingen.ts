@@ -32,5 +32,11 @@ export const FACTUUR_MELDINGEN: Record<string, { tekst: string; fout: boolean }>
   geen_toegang: { tekst: "Je hebt geen toestemming om te factureren.", fout: true },
   bevestigd: { tekst: "Vastgelegd dat de bevestiging naar de klant is gestuurd.", fout: false },
   al_bevestigd: { tekst: "Deze betaling is al als bevestigd gemarkeerd.", fout: true },
+  creditnota_gemaakt: { tekst: "De creditnota is gemaakt. Stuur hem naar de klant en leg daarna vast dat hij is verstuurd.", fout: false },
+  creditnota_verzonden: { tekst: "Vastgelegd dat de creditnota naar de klant is gestuurd.", fout: false },
+  credit_niet_verzonden: { tekst: "Een creditnota maak je pas nadat de factuur naar de klant is gestuurd. Heeft de klant de factuur nog niet gekregen, pas hem dan aan of annuleer hem.", fout: true },
+  credit_geen_toestemming: { tekst: "Voor een creditnota heb je de toestemming \"prijzen aanpassen\" nodig. Vraag de directie.", fout: true },
+  credit_reden: { tekst: "Vul een reden in voor de creditnota. De reden komt in het logboek van de directie en niet op de creditnota.", fout: true },
+  heeft_creditnota: { tekst: "Deze factuur heeft een creditnota en kan niet meer worden aangepast of geannuleerd.", fout: true },
   mislukt: { tekst: "Het lukte niet. Probeer het opnieuw.", fout: true },
 };

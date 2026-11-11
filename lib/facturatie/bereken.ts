@@ -78,12 +78,12 @@ export function begroeting(aanhef: string | null | undefined, achternaam: string
   return `Beste ${woord} ${achternaam || klantNaam},`;
 }
 
-export type FactuurStatus = "open" | "betaald" | "geannuleerd";
+export type FactuurStatus = "open" | "betaald" | "geannuleerd" | "gecrediteerd";
 
-/** Openstaand bedrag van een factuur na de betalingen tot nu toe. */
-export function openstaand(totaal: number, betalingen: number[]): number {
+/** Openstaand bedrag van een factuur na de betalingen en de creditnota's tot nu toe. */
+export function openstaand(totaal: number, betalingen: number[], gecrediteerd = 0): number {
   const betaaldC = betalingen.reduce((s, b) => s + cent(b), 0);
-  return euro(Math.max(0, cent(totaal) - betaaldC));
+  return euro(Math.max(0, cent(totaal) - betaaldC - cent(gecrediteerd)));
 }
 
 /** Is de factuur over de vervaldatum en nog niet betaald? */

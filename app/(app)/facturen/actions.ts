@@ -149,3 +149,40 @@ export async function markeerBetalingBevestigd(formData: FormData) {
   const uitkomst = data as { ok?: boolean; fout?: string } | null;
   return gaTerug(uitkomst?.ok ? "bevestigd" : uitkomst?.fout ?? "mislukt");
 }
+
+const CREDIT_FOUT: Record<string, string> = { niet_verzonden: "credit_niet_verzonden", geen_toestemming: "credit_geen_toestemming", reden: "credit_reden" };
+
+/** Maakt een (gedeeltelijke) creditnota op een verzonden, openstaande factuur. Het btw-bedrag rekent de server opnieuw uit volgens dezelfde regel als de offerte. */
+export async function maakCreditnota(formData: FormData) {
+  const factuurId = String(formData.get("factuur_id") ?? "");
+  if (!UUID.test(factuurId)) redirect("/facturen");
+  const gaTerug = (code: string): never => redirect(`/facturen/${factuurId}?m=${code}`);
+  const bedrag = parseBedrag(String(formData.get("bedrag") ?? ""));
+  const omschrijving = String(formData.get("omschrijving") ?? "").trim();
+  if (bedrag === null || Number.isNaN(bedrag) || bedrag <= 0 || !omschrijving) return gaTerug("ongeldig");
+  const btw = splitsBtw(bedrag, INSTELLINGEN_KERNKOZIJNEN);
+  const supabase = await maakServerClient();
+  const { data, error } = await supabase.rpc("maak_creditnota", {
+    p_factuur: factuurId, p_omschrijving: omschrijving.slice(0, 300), p_excl: btw.exclBtw, p_hoog: btw.btwHoog, p_laag: btw.btwLaag, p_incl: btw.totaal,
+    p_reden: String(formData.get("reden") ?? ""),
+  });
+  if (error) {
+    console.error("creditnota maken mislukt:", error.code, error.message);
+    return gaTerug("mislukt");
+  }
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  return gaTerug(uitkomst?.ok ? "creditnota_gemaakt" : CREDIT_FOUT[uitkomst?.fout ?? ""] ?? uitkomst?.fout ?? "mislukt");
+}
+
+/** Legt vast dat de creditnota naar de klant is gestuurd. */
+export async function markeerCreditnotaVerzonden(formData: FormData) {
+  const factuurId = String(formData.get("factuur_id") ?? "");
+  const creditnotaId = String(formData.get("creditnota_id") ?? "");
+  if (!UUID.test(factuurId)) redirect("/facturen");
+  const gaTerug = (code: string): never => redirect(`/facturen/${factuurId}?m=${code}`);
+  if (!UUID.test(creditnotaId)) return gaTerug("ongeldig");
+  const supabase = await maakServerClient();
+  const { data } = await supabase.rpc("markeer_creditnota_verzonden", { p_creditnota: creditnotaId });
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  return gaTerug(uitkomst?.ok ? "creditnota_verzonden" : uitkomst?.fout ?? "mislukt");
+}
