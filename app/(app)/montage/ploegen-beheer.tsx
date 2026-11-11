@@ -1,6 +1,6 @@
 import { maakServerClient } from "@/lib/supabase/server";
 import { STANDAARD_MONTEURS } from "@/lib/montage/standaard";
-import { hernoemMonteur, hernoemPloeg, koppelAccount, laadStandaardOpstelling, maakMonteur, maakPloeg, wijsMonteurToe, zetMonteurActief, zetPloegActief } from "./actions";
+import { hernoemMonteur, hernoemPloeg, koppelAccount, laadStandaardOpstelling, maakMonteur, maakPloeg, verwijderMonteur, verwijderPloeg, wijsMonteurToe, zetMonteurActief, zetPloegActief } from "./actions";
 
 type Ploeg = { id: string; naam: string; actief: boolean };
 type Monteur = { id: string; naam: string; actief: boolean; user_id: string | null };
@@ -9,6 +9,20 @@ type Account = { user_id: string; email: string; rol: string };
 
 const veld = "rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm";
 const knop = "rounded-md border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold hover:bg-stone-50";
+
+/** Verwijderen met een bevestigingsstap, zonder JavaScript. */
+function Verwijder({ actie, naam, id, tekst }: { actie: (f: FormData) => Promise<void>; naam: string; id: string; tekst: string }) {
+  return (
+    <details className="mt-2 text-xs">
+      <summary className="cursor-pointer text-red-700 hover:underline">Verwijderen…</summary>
+      <form action={actie} className="mt-1 flex flex-wrap items-center gap-2 rounded-md bg-red-50 p-2">
+        <input type="hidden" name={naam} value={id} />
+        <span className="text-red-900">{tekst}</span>
+        <button className="rounded-md bg-red-700 px-3 py-1.5 text-xs font-semibold text-white">Ja, verwijderen</button>
+      </form>
+    </details>
+  );
+}
 
 /** Ploegen en monteurs beheren: namen aanpassen, monteurs in een ploeg zetten, inlogaccounts koppelen. Voor directie en kantoor. */
 export default async function PloegenBeheer() {
@@ -59,6 +73,7 @@ export default async function PloegenBeheer() {
                       <button className={knop}>{p.actief ? "Uit dienst" : "Weer in dienst"}</button>
                     </form>
                   </div>
+                  <Verwijder actie={verwijderPloeg} naam="ploeg_id" id={p.id} tekst={`Ploeg "${p.naam}" verwijderen? De monteurs blijven bestaan, maar staan dan zonder ploeg.`} />
                   <ul className="mt-2 text-sm">
                     {inPloeg.length === 0 && <li className="text-stone-500">Nog geen monteurs in deze ploeg.</li>}
                     {inPloeg.map((m) => (
@@ -95,6 +110,7 @@ export default async function PloegenBeheer() {
                     <button className={knop}>{m.actief ? "Uit dienst" : "Weer in dienst"}</button>
                   </form>
                 </div>
+                <Verwijder actie={verwijderMonteur} naam="monteur_id" id={m.id} tekst={`Monteur "${m.naam}" verwijderen? Dit kan niet ongedaan worden gemaakt.`} />
                 {m.actief && (
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     <form action={wijsMonteurToe} className="flex items-center gap-2">

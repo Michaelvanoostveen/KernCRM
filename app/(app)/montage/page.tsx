@@ -21,6 +21,10 @@ const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   gekoppeld: { tekst: "Het inlogaccount is bijgewerkt.", fout: false },
   opstelling_geladen: { tekst: "De startopstelling is geladen. Pas namen en samenstelling aan waar nodig.", fout: false },
   niet_toegestaan: { tekst: "Dat kan niet: een ploeg met lopende montages gaat niet uit dienst en een account moet de rol monteur hebben.", fout: true },
+  monteur_verwijderd: { tekst: "De monteur is verwijderd.", fout: false },
+  ploeg_verwijderd: { tekst: "De ploeg is verwijderd. De monteurs uit die ploeg staan nu zonder ploeg.", fout: false },
+  monteur_in_gebruik: { tekst: "Deze monteur staat op een werkbon en kan niet worden verwijderd. Zet hem uit dienst.", fout: true },
+  ploeg_in_gebruik: { tekst: "Deze ploeg heeft montages in de planning of de historie en kan niet worden verwijderd. Zet haar uit dienst.", fout: true },
   mislukt: { tekst: "Het lukte niet. Probeer het opnieuw.", fout: true },
 };
 const KLEUR: Record<string, string> = {

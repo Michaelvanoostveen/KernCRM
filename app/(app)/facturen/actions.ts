@@ -14,6 +14,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Meldingscodes die de projectpagina laat zien (?factuur=...). */
 const terug = (projectId: string, code: string): never => redirect(`/projecten/${projectId}?factuur=${code}#facturen`);
 
+/** Terug naar de factuurpagina (formulier met naar=factuur) of naar de projectpagina. */
+const keer = (formData: FormData, projectId: string, factuurId: string, code: string): never =>
+  formData.get("naar") === "factuur" && UUID.test(factuurId) ? redirect(`/facturen/${factuurId}?m=${code}`) : terug(projectId, code);
+
 /** Maakt de factuur voor een termijn: bedragen uit de getekende offerte, bij de eindtermijn met het goedgekeurde meerwerk. */
 export async function maakFactuur(formData: FormData) {
   const projectId = String(formData.get("project_id") ?? "");
@@ -46,19 +50,19 @@ export async function registreerBetaling(formData: FormData) {
   const projectId = String(formData.get("project_id") ?? "");
   const factuurId = String(formData.get("factuur_id") ?? "");
   if (!UUID.test(projectId)) redirect("/projecten");
-  if (!UUID.test(factuurId)) return terug(projectId, "ongeldig");
+  if (!UUID.test(factuurId)) return keer(formData, projectId, factuurId, "ongeldig");
   const bedrag = parseBedrag(String(formData.get("bedrag") ?? ""));
   const datum = String(formData.get("datum") ?? "");
-  if (bedrag === null || Number.isNaN(bedrag) || bedrag <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(datum)) return terug(projectId, "ongeldig");
+  if (bedrag === null || Number.isNaN(bedrag) || bedrag <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(datum)) return keer(formData, projectId, factuurId, "ongeldig");
 
   const supabase = await maakServerClient();
   const { data, error } = await supabase.rpc("registreer_betaling", { p_factuur: factuurId, p_bedrag: bedrag, p_datum: datum, p_notitie: String(formData.get("notitie") ?? "") });
   if (error) {
     console.error("betaling registreren mislukt:", error.code, error.message);
-    return terug(projectId, "mislukt");
+    return keer(formData, projectId, factuurId, "mislukt");
   }
   const uitkomst = data as { ok?: boolean; fout?: string; betaald?: boolean } | null;
-  return terug(projectId, uitkomst?.ok ? (uitkomst.betaald ? "betaald" : "deelbetaling") : uitkomst?.fout ?? "mislukt");
+  return keer(formData, projectId, factuurId, uitkomst?.ok ? (uitkomst.betaald ? "betaald" : "deelbetaling") : uitkomst?.fout ?? "mislukt");
 }
 
 /** Annuleert een factuur zonder betalingen, met een reden. Daarna kan de termijn opnieuw worden gefactureerd. */
@@ -114,11 +118,11 @@ export async function markeerVerzonden(formData: FormData) {
   const projectId = String(formData.get("project_id") ?? "");
   const factuurId = String(formData.get("factuur_id") ?? "");
   if (!UUID.test(projectId)) redirect("/projecten");
-  if (!UUID.test(factuurId)) return terug(projectId, "ongeldig");
+  if (!UUID.test(factuurId)) return keer(formData, projectId, factuurId, "ongeldig");
   const supabase = await maakServerClient();
   const { data } = await supabase.rpc("markeer_factuur_verzonden", { p_factuur: factuurId });
   const uitkomst = data as { ok?: boolean; fout?: string } | null;
-  return terug(projectId, uitkomst?.ok ? "verzonden" : uitkomst?.fout ?? "mislukt");
+  return keer(formData, projectId, factuurId, uitkomst?.ok ? "verzonden" : uitkomst?.fout ?? "mislukt");
 }
 
 /** Legt vast dat er een betalingsherinnering is gestuurd. De database bewaakt de volgorde en de wachttijd tussen herinneringen. */
@@ -126,9 +130,22 @@ export async function registreerHerinnering(formData: FormData) {
   const projectId = String(formData.get("project_id") ?? "");
   const factuurId = String(formData.get("factuur_id") ?? "");
   if (!UUID.test(projectId)) redirect("/projecten");
-  if (!UUID.test(factuurId)) return terug(projectId, "ongeldig");
+  if (!UUID.test(factuurId)) return keer(formData, projectId, factuurId, "ongeldig");
   const supabase = await maakServerClient();
   const { data } = await supabase.rpc("registreer_herinnering", { p_factuur: factuurId });
   const uitkomst = data as { ok?: boolean; fout?: string } | null;
-  return terug(projectId, uitkomst?.ok ? "herinnerd" : uitkomst?.fout ?? "mislukt");
+  return keer(formData, projectId, factuurId, uitkomst?.ok ? "herinnerd" : uitkomst?.fout ?? "mislukt");
+}
+
+/** Legt vast dat de bevestiging van een betaling naar de klant is gestuurd. Alleen vanaf de factuurpagina. */
+export async function markeerBetalingBevestigd(formData: FormData) {
+  const factuurId = String(formData.get("factuur_id") ?? "");
+  const betalingId = String(formData.get("betaling_id") ?? "");
+  if (!UUID.test(factuurId)) redirect("/facturen");
+  const gaTerug = (code: string): never => redirect(`/facturen/${factuurId}?m=${code}`);
+  if (!UUID.test(betalingId)) return gaTerug("ongeldig");
+  const supabase = await maakServerClient();
+  const { data } = await supabase.rpc("markeer_betaling_bevestigd", { p_betaling: betalingId });
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  return gaTerug(uitkomst?.ok ? "bevestigd" : uitkomst?.fout ?? "mislukt");
 }

@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { maakServerClient } from "@/lib/supabase/server";
 import { euroTekst } from "@/lib/offerte/bereken";
 import { bedrijfsgegevensCompleet } from "@/lib/facturatie/bedrijf";
 import { begroeting, isTeLaat, openstaand, type FactuurStatus } from "@/lib/facturatie/bereken";
 import { dagenTeLaat, maakFactuurMail, maakHerinneringMail } from "@/lib/facturatie/mail";
 import { BEDRIJF_FACTUUR } from "@/lib/facturatie/bedrijf";
+import { FACTUUR_MELDINGEN as MELDINGEN } from "@/lib/facturatie/meldingen";
 import { annuleerFactuur, maakFactuur, markeerVerzonden, registreerBetaling, registreerHerinnering, wijzigFactuur } from "../../facturen/actions";
 import { laadFactuurplan } from "../../facturen/plan";
 
@@ -12,39 +14,6 @@ type Wijziging = { factuur_id: string; oud: Record<string, unknown>; nieuw: Reco
 type Herinnering = { factuur_id: string; niveau: number; verstuurd_op: string };
 type Betaling = { factuur_id: string; bedrag: number | string; betaald_op: string; notitie: string | null };
 
-const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
-  gemaakt: { tekst: "De factuur is gemaakt.", fout: false },
-  betaald: { tekst: "De betaling is geregistreerd. De factuur is betaald.", fout: false },
-  deelbetaling: { tekst: "De betaling is geregistreerd. Er staat nog een bedrag open.", fout: false },
-  geannuleerd: { tekst: "De factuur is geannuleerd. Je kunt de termijn opnieuw factureren.", fout: false },
-  verzonden: { tekst: "Vastgelegd dat de factuur naar de klant is gestuurd.", fout: false },
-  herinnerd: { tekst: "De herinnering is vastgelegd.", fout: false },
-  herinnering_bestaat: { tekst: "Na een herinnering kan de vervaldatum niet meer worden aangepast.", fout: true },
-  vervaldatum_eerder: { tekst: "Een verzonden factuur kan alleen een latere vervaldatum krijgen.", fout: true },
-  al_verzonden: { tekst: "Deze factuur is al als verzonden gemarkeerd.", fout: true },
-  niet_verzonden: { tekst: "Markeer de factuur eerst als verzonden voordat je een herinnering vastlegt.", fout: true },
-  nog_niet_verlopen: { tekst: "De vervaldatum is nog niet verstreken.", fout: true },
-  te_snel: { tekst: "Er is minder dan 7 dagen geleden al een herinnering vastgelegd.", fout: true },
-  geen_volgende: { tekst: "Er zijn al drie herinneringen vastgelegd.", fout: true },
-  gewijzigd: { tekst: "De factuur is aangepast. De wijziging staat in het logboek.", fout: false },
-  niets_gewijzigd: { tekst: "Er was niets om aan te passen.", fout: false },
-  geen_toestemming: { tekst: "Voor een ander bedrag dan het termijnbedrag heb je de toestemming \"prijzen aanpassen\" nodig. Vraag de directie, of pas alleen de tekst of de vervaldatum aan.", fout: true },
-  onder_betaald: { tekst: "Het nieuwe bedrag is lager dan wat al is betaald.", fout: true },
-  boven_opdracht: { tekst: "Het totaal van de facturen mag niet hoger worden dan de opdracht (getekende offerte plus goedgekeurd meerwerk).", fout: true },
-  dubbel: { tekst: "Deze betaling is zojuist al geregistreerd.", fout: true },
-  latere_termijn: { tekst: "Annuleer eerst de factuur van de latere termijn.", fout: true },
-  geen_akkoord: { tekst: "Je kunt pas factureren nadat de klant akkoord heeft gegeven op de offerte.", fout: true },
-  volgorde: { tekst: "Maak eerst de factuur van de vorige termijn.", fout: true },
-  bestaat_al: { tekst: "Voor deze termijn bestaat al een factuur.", fout: true },
-  inmeting_open: { tekst: "Rond eerst de inmeting af. Het meer- of minderwerk komt op de eindfactuur.", fout: true },
-  te_veel: { tekst: "Dit bedrag is hoger dan wat er nog openstaat.", fout: true },
-  niet_open: { tekst: "Deze factuur staat niet meer open.", fout: true },
-  heeft_betalingen: { tekst: "Een factuur met betalingen kan niet worden geannuleerd.", fout: true },
-  reden: { tekst: "Vul een reden in om de factuur te annuleren.", fout: true },
-  ongeldig: { tekst: "Controleer de ingevulde gegevens.", fout: true },
-  geen_toegang: { tekst: "Je hebt geen toestemming om te factureren.", fout: true },
-  mislukt: { tekst: "Het lukte niet. Probeer het opnieuw.", fout: true },
-};
 
 const datum = (iso: string) => new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Amsterdam" }).format(new Date(`${iso}T12:00:00Z`));
 const STATUS: Record<FactuurStatus, { label: string; kleur: string }> = {
@@ -135,7 +104,7 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
               {f && (
                 <div className="mt-3 text-sm">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <b className="font-mono">{f.nummer}</b>
+                    <Link href={`/facturen/${f.id}`} className="font-mono font-bold underline">{f.nummer}</Link>
                     <span>factuurdatum {datum(f.factuurdatum)}</span>
                     <span className={teLaat ? "font-semibold text-red-700" : ""}>vervalt {datum(f.vervaldatum)}{teLaat ? " (te laat)" : ""}</span>
                     <a href={`/facturen/${f.id}/pdf`} target="_blank" rel="noreferrer" className="underline">PDF</a>

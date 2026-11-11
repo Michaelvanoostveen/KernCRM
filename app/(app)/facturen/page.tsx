@@ -72,7 +72,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ filter?: string }> }) {
               const laat = isTeLaat(f.status, f.vervaldatum, vandaag);
               return (
                 <tr key={f.id}>
-                  <td className="px-3 py-2"><a href={`/facturen/${f.id}/pdf`} target="_blank" rel="noreferrer" className="font-mono underline">{f.nummer}</a></td>
+                  <td className="px-3 py-2"><Link href={`/facturen/${f.id}`} className="font-mono underline">{f.nummer}</Link></td>
                   <td className="px-3 py-2"><div className="font-semibold">{f.klantNaam}</div><Link href={`/projecten/${f.projectId}#facturen`} className="text-stone-600 underline">{f.projectNaam}</Link></td>
                   <td className="px-3 py-2">{f.termijn}</td>
                   <td className={`px-3 py-2 ${laat ? "font-semibold text-red-700" : ""}`}>{datum(f.vervaldatum)}{laat ? <div className="text-xs">{teLaatTekst(f, vandaag)}</div> : null}</td>

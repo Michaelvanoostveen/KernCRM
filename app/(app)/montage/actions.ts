@@ -158,6 +158,26 @@ export async function wijsMonteurToe(formData: FormData) {
   return naarBeheer(error ? foutcode(error.code) : "bijgewerkt");
 }
 
+/** Verwijdert een monteur definitief. Heeft hij uren op een werkbon, dan blijft hij bewaard en zet je hem uit dienst. */
+export async function verwijderMonteur(formData: FormData) {
+  const id = String(formData.get("monteur_id") ?? "");
+  if (!UUID.test(id)) return naarBeheer("mislukt");
+  const { supabase } = await beheerder();
+  const { data, error } = await supabase.from("monteurs").delete().eq("id", id).select("id");
+  if (error) return naarBeheer(error.code === "23503" ? "monteur_in_gebruik" : foutcode(error.code));
+  return naarBeheer(data && data.length > 0 ? "monteur_verwijderd" : "rechten");
+}
+
+/** Verwijdert een ploeg definitief. Heeft de ploeg montages (ook afgeronde), dan blijft ze bewaard en zet je haar uit dienst. */
+export async function verwijderPloeg(formData: FormData) {
+  const id = String(formData.get("ploeg_id") ?? "");
+  if (!UUID.test(id)) return naarBeheer("mislukt");
+  const { supabase } = await beheerder();
+  const { data, error } = await supabase.from("montageploegen").delete().eq("id", id).select("id");
+  if (error) return naarBeheer(error.code === "23503" ? "ploeg_in_gebruik" : foutcode(error.code));
+  return naarBeheer(data && data.length > 0 ? "ploeg_verwijderd" : "rechten");
+}
+
 /** Koppelt een inlogaccount (een gebruiker met de rol monteur) aan een monteur, of haalt de koppeling weg. */
 export async function koppelAccount(formData: FormData) {
   const monteurId = String(formData.get("monteur_id") ?? "");

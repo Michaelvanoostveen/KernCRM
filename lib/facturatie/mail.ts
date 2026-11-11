@@ -59,3 +59,35 @@ export function dagenTeLaat(vervaldatumIso: string, vandaagIso: string): number 
   const ms = new Date(`${vandaagIso}T00:00:00Z`).getTime() - new Date(`${vervaldatumIso}T00:00:00Z`).getTime();
   return Math.max(0, Math.round(ms / 86_400_000));
 }
+
+export interface BetalingBevestigingGegevens {
+  begroeting: string;
+  nummer: string;
+  /** Het bedrag van deze betaling. */
+  bedrag: number;
+  /** Datum van de betaling als tekst, bijvoorbeeld "8 november 2026". */
+  betaaldOp: string;
+  /** Wat er na deze betaling nog openstaat (0 = volledig voldaan). */
+  resterend: number;
+  /** Vervaldatum als tekst; alleen nodig bij een deelbetaling. */
+  vervaldatum: string;
+  bedrijf: string;
+}
+
+/** Concepttekst voor de bevestiging van een ontvangen betaling: volledig voldaan, of een deelbetaling met het resterende bedrag. */
+export function maakBetalingBevestigingMail(g: BetalingBevestigingGegevens): { onderwerp: string; tekst: string } {
+  const bedrag = euroTekst(g.bedrag, 2);
+  const voldaan = g.resterend <= 0;
+  const kern = voldaan
+    ? `Wij hebben uw betaling van ${bedrag} (ontvangen op ${g.betaaldOp}) voor factuur ${g.nummer} in goede orde ontvangen. Daarmee is deze factuur volledig voldaan. Hartelijk dank!`
+    : `Wij hebben uw betaling van ${bedrag} (ontvangen op ${g.betaaldOp}) voor factuur ${g.nummer} ontvangen. Hartelijk dank! Er staat nog ${euroTekst(g.resterend, 2)} open. Wilt u dit bedrag voor ${g.vervaldatum} overmaken?`;
+  return {
+    onderwerp: voldaan ? `Betaling ontvangen - factuur ${g.nummer}` : `Deelbetaling ontvangen - factuur ${g.nummer}`,
+    tekst: [g.begroeting, "", kern, "", "Heeft u een vraag? Laat het ons gerust weten.", "", afsluiting(g.bedrijf)].join("\n"),
+  };
+}
+
+/** Maakt een mailto-link waarmee het mailprogramma van de medewerker opent met adres, onderwerp en tekst al ingevuld. */
+export function mailtoLink(aan: string | null | undefined, onderwerp: string, tekst: string): string {
+  return `mailto:${encodeURIComponent((aan ?? "").trim()).replace(/%40/g, "@")}?subject=${encodeURIComponent(onderwerp)}&body=${encodeURIComponent(tekst).replace(/%0A/g, "%0D%0A")}`;
+}
