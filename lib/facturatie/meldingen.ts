@@ -38,5 +38,7 @@ export const FACTUUR_MELDINGEN: Record<string, { tekst: string; fout: boolean }>
   credit_geen_toestemming: { tekst: "Voor een creditnota heb je de toestemming \"prijzen aanpassen\" nodig. Vraag de directie.", fout: true },
   credit_reden: { tekst: "Vul een reden in voor de creditnota. De reden komt in het logboek van de directie en niet op de creditnota.", fout: true },
   heeft_creditnota: { tekst: "Deze factuur heeft een creditnota en kan niet meer worden aangepast of geannuleerd.", fout: true },
+  btw_te_veel: { tekst: "Deze creditnota crediteert meer btw dan er is gefactureerd. Pas het bedrag aan.", fout: true },
+  credit_dubbel: { tekst: "Deze creditnota is zojuist al gemaakt.", fout: true },
   mislukt: { tekst: "Het lukte niet. Probeer het opnieuw.", fout: true },
 };

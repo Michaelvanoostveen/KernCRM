@@ -150,7 +150,7 @@ export async function markeerBetalingBevestigd(formData: FormData) {
   return gaTerug(uitkomst?.ok ? "bevestigd" : uitkomst?.fout ?? "mislukt");
 }
 
-const CREDIT_FOUT: Record<string, string> = { niet_verzonden: "credit_niet_verzonden", geen_toestemming: "credit_geen_toestemming", reden: "credit_reden" };
+const CREDIT_FOUT: Record<string, string> = { niet_verzonden: "credit_niet_verzonden", geen_toestemming: "credit_geen_toestemming", reden: "credit_reden", dubbel: "credit_dubbel" };
 
 /** Maakt een (gedeeltelijke) creditnota op een verzonden, openstaande factuur. Het btw-bedrag rekent de server opnieuw uit volgens dezelfde regel als de offerte. */
 export async function maakCreditnota(formData: FormData) {
@@ -160,8 +160,15 @@ export async function maakCreditnota(formData: FormData) {
   const bedrag = parseBedrag(String(formData.get("bedrag") ?? ""));
   const omschrijving = String(formData.get("omschrijving") ?? "").trim();
   if (bedrag === null || Number.isNaN(bedrag) || bedrag <= 0 || !omschrijving) return gaTerug("ongeldig");
-  const btw = splitsBtw(bedrag, INSTELLINGEN_KERNKOZIJNEN);
   const supabase = await maakServerClient();
+  // Crediteer je al het resterende bedrag, dan nemen we de resterende btw-componenten van de factuur over (anders kan een cent afrondingsverschil de btw boven de factuur uit tillen).
+  const { data: fRij } = await supabase.from("facturen").select("bedrag_excl, btw_hoog, btw_laag, totaal_incl, gecrediteerd").eq("id", factuurId).maybeSingle();
+  const { data: cRijen } = await supabase.from("creditnotas").select("bedrag_excl, btw_hoog, btw_laag").eq("factuur_id", factuurId);
+  const rest = (veld: "bedrag_excl" | "btw_hoog" | "btw_laag") => Math.round((Number((fRij as Record<string, number | string> | null)?.[veld] ?? 0) - ((cRijen ?? []) as Record<string, number | string>[]).reduce((s, c) => s + Number(c[veld]), 0)) * 100) / 100;
+  const restTotaal = fRij ? Math.round((Number(fRij.totaal_incl) - Number(fRij.gecrediteerd)) * 100) / 100 : 0;
+  const btw = fRij && Math.round(bedrag * 100) === Math.round(restTotaal * 100)
+    ? { exclBtw: rest("bedrag_excl"), btwHoog: rest("btw_hoog"), btwLaag: rest("btw_laag"), totaal: restTotaal }
+    : splitsBtw(bedrag, INSTELLINGEN_KERNKOZIJNEN);
   const { data, error } = await supabase.rpc("maak_creditnota", {
     p_factuur: factuurId, p_omschrijving: omschrijving.slice(0, 300), p_excl: btw.exclBtw, p_hoog: btw.btwHoog, p_laag: btw.btwLaag, p_incl: btw.totaal,
     p_reden: String(formData.get("reden") ?? ""),

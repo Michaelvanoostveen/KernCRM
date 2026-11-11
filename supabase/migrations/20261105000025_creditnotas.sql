@@ -157,7 +157,7 @@ begin
   if length(btrim(coalesce(p_reden, ''))) = 0 then return jsonb_build_object('ok', false, 'fout', 'reden'); end if;
   if exists (select 1 from public.factuur_betalingen b where b.factuur_id = f.id) then return jsonb_build_object('ok', false, 'fout', 'heeft_betalingen'); end if;
   if f.gecrediteerd > 0 then return jsonb_build_object('ok', false, 'fout', 'heeft_creditnota'); end if;
-  if exists (select 1 from public.facturen x where x.project_id = f.project_id and x.termijn > f.termijn and x.status <> 'geannuleerd') then
+  if exists (select 1 from public.facturen x where x.project_id = f.project_id and x.termijn > f.termijn and x.status not in ('geannuleerd', 'gecrediteerd')) then
     return jsonb_build_object('ok', false, 'fout', 'latere_termijn');
   end if;
   update public.facturen set status = 'geannuleerd', annulering_reden = left(btrim(p_reden), 500) where id = f.id;
@@ -325,6 +325,29 @@ exception when unique_violation then
   return jsonb_build_object('ok', false, 'fout', 'bestaat_al');
 end $$;
 
+-- Het creditnotanummer neem je alleen via maak_creditnota: anders ontstaan er gaten in de reeks.
+create or replace function public.volgend_nummer(p_tenant uuid, p_soort text) returns text
+  language plpgsql security definer set search_path = ''
+  as $$
+declare
+  v_jaar integer := extract(year from now() at time zone 'Europe/Amsterdam')::integer;
+  v_n integer;
+begin
+  if p_tenant not in (select public.mijn_tenants()) then
+    raise exception 'Geen toegang tot dit bedrijf' using errcode = '42501';
+  end if;
+  if p_soort = 'creditnota' then
+    raise exception 'Creditnotanummers worden alleen door de creditnotafunctie genomen' using errcode = '42501';
+  end if;
+  if p_soort = 'factuur' and not public.heeft_rol(p_tenant, array['directie','kantoor']::public.gebruikersrol[]) then
+    raise exception 'Geen toegang tot de factuurnummers' using errcode = '42501';
+  end if;
+  insert into public.nummerreeksen (tenant_id, soort, jaar, laatste) values (p_tenant, p_soort, v_jaar, 1)
+  on conflict (tenant_id, soort, jaar) do update set laatste = public.nummerreeksen.laatste + 1
+  returning laatste into v_n;
+  return v_jaar::text || '-' || lpad(v_n::text, 4, '0');
+end $$;
+
 -- Maakt een (gedeeltelijke) creditnota op een verzonden, openstaande factuur. De bedragen komen van de app; de database bewaakt de btw-opbouw
 -- en dat er niet meer wordt gecrediteerd dan er nog openstaat. De reden komt in het logboek van de directie.
 create function public.maak_creditnota(
@@ -341,6 +364,9 @@ declare
   v_n integer;
   v_id uuid;
   v_status text;
+  v_c_excl numeric(10, 2);
+  v_c_hoog numeric(10, 2);
+  v_c_laag numeric(10, 2);
 begin
   perform 1 from public.offertes where id = (select x.offerte_id from public.facturen x where x.id = p_factuur) for update;
   select * into f from public.facturen where id = p_factuur for update;
@@ -361,6 +387,21 @@ begin
   select coalesce(sum(bedrag), 0) into v_betaald from public.factuur_betalingen where factuur_id = f.id;
   if round(p_incl, 2) > f.totaal_incl - f.gecrediteerd - v_betaald then
     return jsonb_build_object('ok', false, 'fout', 'te_veel');
+  end if;
+  -- Per btw-component mag er niet meer worden gecrediteerd dan er is gefactureerd (voor de btw-aangifte).
+  select coalesce(sum(bedrag_excl), 0), coalesce(sum(btw_hoog), 0), coalesce(sum(btw_laag), 0) into v_c_excl, v_c_hoog, v_c_laag
+    from public.creditnotas where factuur_id = f.id;
+  if v_c_excl + round(p_excl, 2) > f.bedrag_excl or v_c_hoog + round(p_hoog, 2) > f.btw_hoog or v_c_laag + round(p_laag, 2) > f.btw_laag then
+    return jsonb_build_object('ok', false, 'fout', 'btw_te_veel');
+  end if;
+  -- Dubbele klik: dezelfde creditnota binnen een minuut.
+  if exists (select 1 from public.creditnotas c where c.factuur_id = f.id and c.totaal_incl = round(p_incl, 2) and c.omschrijving = left(btrim(p_omschrijving), 300) and c.aangemaakt > now() - interval '1 minute') then
+    return jsonb_build_object('ok', false, 'fout', 'dubbel');
+  end if;
+  -- Een factuur helemaal crediteren kan pas als er geen latere termijn meer loopt (anders ontstaat een gat in de volgorde).
+  if f.gecrediteerd + round(p_incl, 2) = f.totaal_incl
+     and exists (select 1 from public.facturen x where x.project_id = f.project_id and x.termijn > f.termijn and x.status not in ('geannuleerd', 'gecrediteerd')) then
+    return jsonb_build_object('ok', false, 'fout', 'latere_termijn');
   end if;
 
   insert into public.nummerreeksen (tenant_id, soort, jaar, laatste) values (f.tenant_id, 'creditnota', v_jaar, 1)
