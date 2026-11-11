@@ -41,6 +41,17 @@ describe("dagenTeLaat", () => {
   });
 });
 
+describe("betaallink in de mail", () => {
+  it("noemt de link in de factuurmail en de herinnering, alleen als hij er is", () => {
+    const f = { begroeting: "Beste heer Jansen,", nummer: "2026-0001", vervaldatum: "8 november 2026", adres: "Voorbeeldstraat 1", bedrijf: "KernKozijnen B.V.", termijn: 1, omschrijving: "x", bedrag: 3000 };
+    expect(maakFactuurMail({ ...f, betaalLink: "https://pay.example/1" }).tekst).toContain("https://pay.example/1");
+    expect(maakFactuurMail(f).tekst).not.toContain("online");
+    const h = { begroeting: "Beste heer Jansen,", nummer: "2026-0001", bedrag: 3000, vervaldatum: "8 november 2026", bedrijf: "KernKozijnen B.V.", niveau: 1 };
+    expect(maakHerinneringMail({ ...h, betaalLink: "https://pay.example/1" }).tekst).toContain("https://pay.example/1");
+    expect(maakHerinneringMail(h).tekst).not.toContain("online");
+  });
+});
+
 describe("maakBetalingBevestigingMail", () => {
   const basis = { begroeting: "Beste heer Jansen,", nummer: "2026-0001", bedrag: 1000, betaaldOp: "8 november 2026", vervaldatum: "10 november 2026", bedrijf: "KernKozijnen B.V." };
   it("bevestigt een volledige betaling", () => {

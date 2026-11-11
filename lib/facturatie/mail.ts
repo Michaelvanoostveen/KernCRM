@@ -10,7 +10,12 @@ export interface FactuurMailGegevens {
   vervaldatum: string;
   adres: string;
   bedrijf: string;
+  /** Link om online te betalen, als die er is. */
+  betaalLink?: string | null;
 }
+
+/** Regel(s) met de betaallink, of niets als er geen link is. */
+const betaalRegel = (link: string | null | undefined) => (link ? ["", `Betalen kan ook direct online via deze link: ${link}`] : []);
 
 const afsluiting = (bedrijf: string) => ["Met vriendelijke groet,", bedrijf].join("\n");
 
@@ -25,7 +30,7 @@ export function maakFactuurMail(g: FactuurMailGegevens): { onderwerp: string; te
         : `Fijn dat uw nieuwe kozijnen (${g.adres}) zijn opgeleverd! Hierbij ontvangt u de eindfactuur. Wilt u het bedrag van ${bedrag} voor ${g.vervaldatum} overmaken?`;
   return {
     onderwerp: `Factuur ${g.nummer} - ${g.omschrijving}`,
-    tekst: [g.begroeting, "", kern, "", "U vindt de factuur als bijlage. Heeft u een vraag? Laat het ons gerust weten.", "", afsluiting(g.bedrijf)].join("\n"),
+    tekst: [g.begroeting, "", kern, "", "U vindt de factuur als bijlage. Heeft u een vraag? Laat het ons gerust weten.", ...betaalRegel(g.betaalLink), "", afsluiting(g.bedrijf)].join("\n"),
   };
 }
 
@@ -37,6 +42,8 @@ export interface HerinneringGegevens {
   bedrijf: string;
   /** 1 = vriendelijke herinnering, 2 = tweede herinnering, 3 = laatste herinnering. */
   niveau: number;
+  /** Link om online te betalen, als die er is. */
+  betaalLink?: string | null;
 }
 
 /** Concepttekst voor een betalingsherinnering: vriendelijk, en bij elke volgende stap iets duidelijker. */
@@ -50,7 +57,7 @@ export function maakHerinneringMail(g: HerinneringGegevens): { onderwerp: string
         : `Dit is onze laatste herinnering voor factuur ${g.nummer} (${bedrag}, vervaldatum ${g.vervaldatum}). Wij verzoeken u het bedrag binnen 7 dagen over te maken. Kunt u om welke reden dan ook niet op tijd betalen? Neem dan vandaag nog contact met ons op, dan zoeken wij samen naar een oplossing.`;
   return {
     onderwerp: g.niveau <= 1 ? `Herinnering factuur ${g.nummer}` : g.niveau === 2 ? `Tweede herinnering factuur ${g.nummer}` : `Laatste herinnering factuur ${g.nummer}`,
-    tekst: [g.begroeting, "", kern, "", "De factuur vindt u opnieuw als bijlage.", "", afsluiting(g.bedrijf)].join("\n"),
+    tekst: [g.begroeting, "", kern, "", "De factuur vindt u opnieuw als bijlage.", ...betaalRegel(g.betaalLink), "", afsluiting(g.bedrijf)].join("\n"),
   };
 }
 

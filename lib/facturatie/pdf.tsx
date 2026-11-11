@@ -56,6 +56,8 @@ export interface FactuurGegevens {
   soort?: "factuur" | "creditnota";
   /** Bij een creditnota: het nummer van de factuur waar hij bij hoort. */
   verwijstNaar?: string;
+  /** Link om online te betalen, als die er is (alleen op een factuur). */
+  betaalLink?: string | null;
   projectNummer: string;
   projectNaam: string;
   klantNaam: string;
@@ -127,6 +129,7 @@ export function FactuurDocument({ f }: { f: FactuurGegevens }) {
           {!credit && (<View style={s.betalen} wrap={false}>
             <Text style={s.betalenTitel}>Betalen</Text>
             <Text style={s.tekst}>{pdfTekst(`Wilt u het bedrag van ${euroTekst(f.totaal, 2)} overmaken voor ${datum(f.vervaldatum)}?`)}</Text>
+            {f.betaalLink && <Text style={[s.tekst, { marginTop: 6 }]}>{pdfTekst(`Liever online betalen? Gebruik deze link: ${f.betaalLink}`)}</Text>}
             <View style={[s.metaRij, { marginTop: 6 }]}><Text style={s.klein}>IBAN</Text><Text style={s.vet}>{pdfTekst(b.iban)}</Text></View>
             <View style={s.metaRij}><Text style={s.klein}>Ten name van</Text><Text>{pdfTekst(b.naam)}</Text></View>
             <View style={s.metaRij}><Text style={s.klein}>Onder vermelding van</Text><Text style={s.vet}>{pdfTekst(`factuurnummer ${f.nummer}`)}</Text></View>

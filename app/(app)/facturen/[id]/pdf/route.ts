@@ -15,6 +15,9 @@ export async function GET(_verzoek: Request, { params }: { params: Promise<{ id:
     .eq("id", id).maybeSingle();
   if (!f) return new Response("Factuur niet gevonden.", { status: 404 });
 
+  // Een actieve betaallink komt onderaan de factuur (alleen bij een open factuur).
+  const { data: link } = f.status === "open" ? await supabase.from("factuur_betaallinks").select("url").eq("factuur_id", id).eq("status", "open").maybeSingle() : { data: null };
+
   // De klantgegevens zoals ze waren bij het aanmaken van de factuur, niet zoals ze nu in het klantbestand staan.
   const project = f.projecten as unknown as { nummer: string; naam: string } | null;
   const debiteur = f.debiteur as { naam?: string; aanhef?: string | null; achternaam?: string | null; regels?: string[] } | null;
@@ -23,7 +26,7 @@ export async function GET(_verzoek: Request, { params }: { params: Promise<{ id:
   const pdf = await maakFactuurPdf({
     nummer: f.nummer, factuurdatum: f.factuurdatum, vervaldatum: f.vervaldatum, omschrijving: f.omschrijving, toelichting: f.toelichting,
     bedragExcl: Number(f.bedrag_excl), btwHoog: Number(f.btw_hoog), btwLaag: Number(f.btw_laag), totaal: Number(f.totaal_incl), meerwerk: Number(f.meerwerk),
-    status: f.status, projectNummer: project?.nummer ?? "", projectNaam: project?.naam ?? "", klantNaam,
+    status: f.status, betaalLink: (link as { url?: string } | null)?.url ?? null, projectNummer: project?.nummer ?? "", projectNaam: project?.naam ?? "", klantNaam,
     begroeting: begroeting(debiteur?.aanhef, debiteur?.achternaam, klantNaam),
     adresRegels: Array.isArray(debiteur?.regels) ? debiteur.regels.filter((r): r is string => typeof r === "string") : [],
   });
