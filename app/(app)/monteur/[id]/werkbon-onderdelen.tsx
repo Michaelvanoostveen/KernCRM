@@ -149,17 +149,19 @@ export function WerkbonPunten({ montageId, punten, posities, fotos, vergrendeld,
 }
 
 /** Opleveren: de klant tekent op het scherm. Pas mogelijk als elk kozijn is geplaatst en wat nog moet, als opleverpunt is gemeld. */
-export function WerkbonOpleveren({ montageId, klantNaam, onvolledig, openPunten }: { montageId: string; klantNaam: string; onvolledig: number; openPunten: number }) {
+export function WerkbonOpleveren({ montageId, klantNaam, onvolledig, openPunten, meerwerkOpen = 0 }: { montageId: string; klantNaam: string; onvolledig: number; openPunten: number; meerwerkOpen?: number }) {
   const [status, actie, bezig] = useActionState<WerkbonStatus, FormData>(leverOp, {});
   const [naam, setNaam] = useState("");
   const [vink, setVink] = useState(false);
   const [handtekening, setHandtekening] = useState("");
-  const klaar = onvolledig === 0 && naam.trim().length >= 3 && vink && handtekening !== "";
+  const klaar = onvolledig === 0 && meerwerkOpen === 0 && naam.trim().length >= 3 && vink && handtekening !== "";
 
   return (
     <section className="mt-6 rounded-xl border-2 border-[#B35B40] bg-white p-4" aria-label="Opleveren">
       <h2 className="text-lg font-bold">Opleveren</h2>
-      {onvolledig > 0 ? (
+      {meerwerkOpen > 0 ? (
+        <p role="status" className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">Je kunt nog niet opleveren: er staat meerwerk open waar de klant nog niet voor heeft getekend. Laat de klant bij het meerwerk tekenen, of verwijder het meerwerk.</p>
+      ) : onvolledig > 0 ? (
         <p role="status" className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">Je kunt nog niet opleveren: bij {onvolledig} {onvolledig === 1 ? "kozijn" : "kozijnen"} is de checklist niet af. Elk kozijn moet geplaatst zijn; wat nog niet is afgewerkt, meld je als opleverpunt.</p>
       ) : (
         <form action={actie} className="mt-2">

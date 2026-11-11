@@ -12,7 +12,7 @@ const werkbon = (o: Partial<Werkbon> = {}): Werkbon => ({
   id: "w", status: "opgeleverd", bijzonderheden: "Klant wil nog een rolluik.\nGraag terugbellen.", kantoor_actie: true, opgeruimd: true, kantoor_gezien_op: null, opgeleverd_op: "2026-11-10T14:30:00Z",
   regels: [{ positie_id: "p1", geplaatst: true, afgesteld: true, afgekit: true, afgewerkt: false, opmerking: "Dagkant scheef ✓" }],
   uren: [{ monteur: "Frits", monteur_id: "a", datum: "2026-11-10", uren: 7.5, notitie: null }, { monteur: "Angelo", monteur_id: "b", datum: "2026-11-10", uren: 7.5, notitie: null }],
-  fotos: [], punten: [{ id: "x", positie_id: "p1", omschrijving: "Binnenkant nog afwerken", status: "open", opgelost_op: null }],
+  fotos: [], meerwerk: [], punten: [{ id: "x", positie_id: "p1", omschrijving: "Binnenkant nog afwerken", status: "open", opgelost_op: null }],
   akkoord: { naam: "Jan Jansen", op: "2026-11-10T14:30:00Z", met_voorbehoud: true, aantal_open_punten: 1 }, ...o,
 });
 const gegevens = (o: Partial<WerkbonPdfGegevens> = {}): WerkbonPdfGegevens => ({
@@ -38,6 +38,10 @@ describe("werkbon-pdf", () => {
     expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
   }, 30_000);
 
+  it("neemt goedgekeurd meerwerk op in de PDF", async () => {
+    const pdf = await maakWerkbonPdf(gegevens({ werkbon: werkbon({ meerwerk: [{ id: "m", positie_id: "p1", omschrijving: "Vensterbank", aantal: 2, meerprijs: 242, status: "akkoord" }] }) }));
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+  });
   it("gaat niet kapot op een onleesbare configuratie", async () => {
     const pdf = await maakWerkbonPdf(gegevens({ kozijnen: [{ ...gegevens().kozijnen[0], config: { kapot: true } }] }));
     expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");

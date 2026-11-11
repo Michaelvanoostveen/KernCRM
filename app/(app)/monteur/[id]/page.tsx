@@ -11,6 +11,7 @@ import { vandaagIso } from "@/lib/montage/week";
 import { haalRol } from "../../start-gegevens";
 import { startWerkbon } from "../actions";
 import WerkbonKozijn from "./werkbon-kozijn";
+import WerkbonMeerwerk, { type MeerwerkArtikel } from "./werkbon-meerwerk";
 import { WerkbonAlgemeen, WerkbonOpleveren, WerkbonPunten, WerkbonUrenBlok } from "./werkbon-onderdelen";
 import type { WerkbonFotoItem } from "./werkbon-foto-blok";
 
@@ -39,11 +40,14 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const fotoUrl = new Map((urlData ?? []).flatMap((u) => (u.path && u.signedUrl ? [[u.path, u.signedUrl] as const] : [])));
   const fotosVan = (pid: string | null, soort: string): WerkbonFotoItem[] => (werkbon?.fotos ?? []).filter((f) => f.positie_id === pid && f.soort === soort && fotoUrl.get(f.pad)).map((f) => ({ id: f.id, url: fotoUrl.get(f.pad)! }));
   const schrijfbaar = !!werkbon && werkbon.status === "open" && d.status === "bezig";
+  const { data: artData } = schrijfbaar ? await supabase.rpc("werkbon_meerwerk_artikelen", { p_montage: id }) : { data: [] };
+  const artikelen = ((artData ?? []) as MeerwerkArtikel[]).map((a) => ({ ...a, prijs: Number(a.prijs) }));
+  const meerwerkOpen = werkbon ? werkbon.meerwerk.filter((x) => x.status === "voorgesteld").length : 0;
   const kanStarten = !werkbon && d.status === "definitief";
   const startToegestaan = d.start_datum <= vandaag;
   const onvolledig = werkbon ? onvolledigeKozijnen(werkbon.regels, werkbon.punten) : 0;
   const posLijst = d.posities.map((p) => ({ id: p.positie_id, label: `Pos. ${p.nummer}${p.ruimte ? ` · ${p.ruimte}` : ""}` }));
-  const FOUTEN: Record<string, string> = { te_vroeg: "Je kunt pas beginnen op of na de startdatum van de montage.", voorlopig: "Deze montage is nog voorlopig: kantoor moet eerst de leverdatum invullen.", geen_toegang: "Je hebt geen toegang tot deze montage.", niet_te_starten: "Deze montage kan niet meer worden gestart.", mislukt: "Het lukte niet. Probeer het opnieuw." };
+  const FOUTEN: Record<string, string> = { niet_te_verwijderen: "Dit meerwerk is al goedgekeurd of bestaat niet meer.", te_vroeg: "Je kunt pas beginnen op of na de startdatum van de montage.", voorlopig: "Deze montage is nog voorlopig: kantoor moet eerst de leverdatum invullen.", geen_toegang: "Je hebt geen toegang tot deze montage.", niet_te_starten: "Deze montage kan niet meer worden gestart.", mislukt: "Het lukte niet. Probeer het opnieuw." };
   const a = d.adres;
   const tel = d.mobiel || d.telefoon;
   const adresTekst = a ? `${a.straat} ${a.huisnummer}${a.toevoeging ? ` ${a.toevoeging}` : ""}, ${a.postcode} ${a.plaats}` : d.project_naam;
@@ -131,7 +135,8 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           <WerkbonUrenBlok montageId={d.id} uren={werkbon.uren} startDatum={d.start_datum} vandaag={vandaag} vergrendeld={!schrijfbaar} />
           <WerkbonAlgemeen montageId={d.id} bijzonderheden={werkbon.bijzonderheden} kantoorActie={werkbon.kantoor_actie} opgeruimd={werkbon.opgeruimd} vergrendeld={!schrijfbaar} />
           <WerkbonPunten montageId={d.id} punten={werkbon.punten} posities={posLijst} fotos={fotosVan(null, "punt")} vergrendeld={!schrijfbaar} kantoor={kantoor} />
-          {schrijfbaar && <WerkbonOpleveren montageId={d.id} klantNaam={d.klant_naam} onvolledig={onvolledig} openPunten={openPunten(werkbon.punten)} />}
+          <WerkbonMeerwerk montageId={d.id} meerwerk={werkbon.meerwerk} artikelen={artikelen} posities={posLijst} vergrendeld={!schrijfbaar} />
+          {schrijfbaar && <WerkbonOpleveren montageId={d.id} klantNaam={d.klant_naam} onvolledig={onvolledig} openPunten={openPunten(werkbon.punten)} meerwerkOpen={meerwerkOpen} />}
         </>
       )}
     </>

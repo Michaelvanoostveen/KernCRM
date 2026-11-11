@@ -2,6 +2,7 @@ export interface WerkbonRegel { positie_id: string; geplaatst: boolean; afgestel
 export interface Opleverpunt { id: string; positie_id: string | null; omschrijving: string; status: "open" | "opgelost"; opgelost_op: string | null }
 export interface WerkbonFoto { id: string; positie_id: string | null; soort: "voor" | "na" | "punt" | "overig"; pad: string }
 export interface WerkbonUren { monteur: string; monteur_id: string; datum: string; uren: number; notitie: string | null }
+export interface Meerwerk { id: string; positie_id: string | null; omschrijving: string; aantal: number; meerprijs: number; status: "voorgesteld" | "akkoord" }
 export interface Werkbon {
   id: string;
   status: "open" | "opgeleverd";
@@ -14,6 +15,7 @@ export interface Werkbon {
   uren: WerkbonUren[];
   fotos: WerkbonFoto[];
   punten: Opleverpunt[];
+  meerwerk: Meerwerk[];
   akkoord: { naam: string; op: string; met_voorbehoud: boolean; aantal_open_punten: number } | null;
 }
 
@@ -38,6 +40,7 @@ export function leesWerkbon(invoer: unknown): Werkbon | null {
     id: o.id, status: o.status === "opgeleverd" ? "opgeleverd" : "open", bijzonderheden: o.bijzonderheden ?? null, kantoor_actie: !!o.kantoor_actie, opgeruimd: !!o.opgeruimd,
     kantoor_gezien_op: o.kantoor_gezien_op ?? null, opgeleverd_op: o.opgeleverd_op ?? null,
     regels: lijst<WerkbonRegel>(o.regels), uren: lijst<WerkbonUren>(o.uren).map((u) => ({ ...u, uren: Number(u.uren) })), fotos: lijst<WerkbonFoto>(o.fotos), punten: lijst<Opleverpunt>(o.punten),
+    meerwerk: lijst<Meerwerk>(o.meerwerk).map((x) => ({ ...x, meerprijs: Number(x.meerprijs), aantal: Number(x.aantal) })),
     akkoord: o.akkoord ?? null,
   };
 }
@@ -75,3 +78,8 @@ export function kiesPdfFotos(fotos: WerkbonFoto[], kozijnIds: string[]): { perKo
 
 /** Naam van het PDF-bestand, zonder tekens die in een bestandsnaam niet kunnen. */
 export const werkbonBestandsnaam = (projectNummer: string) => `Werkbon-${projectNummer}.pdf`.replace(/[^A-Za-z0-9._-]/g, "-");
+
+/** Totaal (incl. btw) van het meerwerk met een bepaalde status, op de cent afgerond. */
+export function meerwerkTotaal(lijst: Meerwerk[], status: Meerwerk["status"]): number {
+  return Math.round(lijst.filter((x) => x.status === status).reduce((s, x) => s + Math.round(x.meerprijs * 100), 0)) / 100;
+}

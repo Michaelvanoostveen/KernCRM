@@ -29,6 +29,9 @@ export async function laadFactuurplan(supabase: SupabaseClient, projectId: strin
 
   const inmetingen = (iData ?? []) as { id: string; status: string }[];
   let meerwerk = 0;
+  // Meerwerk dat de monteur ter plekke heeft voorgesteld en de klant heeft getekend, telt ook mee.
+  const { data: mwData } = await supabase.from("werkbon_meerwerk").select("meerprijs, werkbonnen!inner(montages!inner(offerte_id))").eq("status", "akkoord").eq("werkbonnen.montages.offerte_id", offerte.id);
+  for (const x of (mwData ?? []) as { meerprijs: number | string }[]) meerwerk += Number(x.meerprijs);
   for (const i of inmetingen.filter((x) => x.status === "uitgevoerd")) {
     const { data } = await supabase.rpc("inmeting_wijzigingen_lijst", { p_inmeting: i.id });
     meerwerk += leesWijzigingen(data).filter((w) => w.status === "akkoord").reduce((s, w) => s + w.meerprijs, 0);
