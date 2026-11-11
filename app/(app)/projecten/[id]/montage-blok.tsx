@@ -1,6 +1,7 @@
 import { maakServerClient } from "@/lib/supabase/server";
 import { eersteWerkdag, vandaagIso } from "@/lib/montage/week";
-import { leesWerkbon, onvolledigeKozijnen, openPunten, regelKlaar, urenOverzicht, urenTekst } from "@/lib/montage/werkbon";
+import { euroTekst } from "@/lib/offerte/bereken";
+import { leesWerkbon, meerwerkTotaal, onvolledigeKozijnen, openPunten, regelKlaar, urenOverzicht, urenTekst } from "@/lib/montage/werkbon";
 import { werkbonGezien, zetPuntOpgelost } from "../../monteur/actions";
 import { annuleerMontage, planMontage, startMontage, wijzigMontage } from "../../montage/actions";
 
@@ -170,6 +171,20 @@ export default async function MontageBlok({ projectId, offerteId, rol, melding }
                     </li>
                   ))}
                 </ul>
+              )}
+              {werkbon.meerwerk.length > 0 && (
+                <div className="mt-2 rounded-md bg-stone-50 px-3 py-2 text-sm">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-stone-500">Meerwerk van de monteur</div>
+                  <ul className="mt-1 divide-y divide-stone-100">
+                    {werkbon.meerwerk.map((x) => (
+                      <li key={x.id} className="flex justify-between gap-3 py-1">
+                        <span>{x.omschrijving}{x.aantal > 1 ? ` (${x.aantal}×)` : ""} <span className={x.status === "akkoord" ? "text-green-700" : "text-amber-800"}>· {x.status === "akkoord" ? "klant akkoord" : "wacht op akkoord"}</span></span>
+                        <span className="tabular-nums">{euroTekst(x.meerprijs, 2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-1 text-xs text-stone-600">Goedgekeurd: {euroTekst(meerwerkTotaal(werkbon.meerwerk, "akkoord"), 2)} incl. btw. Dit komt automatisch op de eindfactuur.</div>
+                </div>
               )}
               {werkbon.status === "opgeleverd" && werkbon.akkoord && (
                 <div className="mt-2 text-xs text-stone-600">Opgeleverd en getekend door {werkbon.akkoord.naam}{werkbon.akkoord.met_voorbehoud ? ` met voorbehoud (${openPunten(werkbon.punten)} opleverpunt(en) nu nog open)` : ""}. Handtekening, tijdstip, IP-adres en apparaat zijn vastgelegd.</div>

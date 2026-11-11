@@ -5,7 +5,8 @@ import { leesConfiguratie, positieOmschrijving } from "../projecten/positie";
 import { pdfTekst } from "../offerte/pdf/tekst";
 import { svgOnderdelen } from "../offerte/pdf/svg";
 import { BEDRIJF_FACTUUR } from "../facturatie/bedrijf";
-import { urenOverzicht, urenTekst, type Werkbon } from "./werkbon";
+import { meerwerkTotaal, urenOverzicht, urenTekst, type Werkbon } from "./werkbon";
+import { euroTekst } from "../offerte/bereken";
 
 Font.registerHyphenationCallback((woord) => [woord]);
 
@@ -170,6 +171,14 @@ export function WerkbonDocument({ g }: { g: WerkbonPdfGegevens }) {
               <Text style={s.koptekst}>Bijzonderheden</Text>
               <Text style={s.tekst}>{pdfTekst(w.bijzonderheden)}</Text>
               <Text style={[s.klein, { marginTop: 3 }]}>{w.opgeruimd ? "Opgeruimd en schoon achtergelaten." : "Opruimen niet bevestigd."}</Text>
+            </View>
+          )}
+
+          {w.meerwerk.some((x) => x.status === "akkoord") && (
+            <View wrap={false}>
+              <Text style={s.koptekst}>Meerwerk (klant akkoord)</Text>
+              {w.meerwerk.filter((x) => x.status === "akkoord").map((x) => <Text key={x.id} style={s.tekst}>{pdfTekst(`${x.omschrijving}${x.aantal > 1 ? ` (${x.aantal}x)` : ""} - ${kozijnLabel(x.positie_id)} - ${euroTekst(x.meerprijs, 2)} incl. btw`)}</Text>)}
+              <Text style={[s.klein, { marginTop: 3 }]}>{pdfTekst(`Totaal goedgekeurd meerwerk: ${euroTekst(meerwerkTotaal(w.meerwerk, "akkoord"), 2)} incl. btw. De klant heeft hiervoor getekend.`)}</Text>
             </View>
           )}
 

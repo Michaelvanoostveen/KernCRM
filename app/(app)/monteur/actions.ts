@@ -23,7 +23,7 @@ const FOUTEN: Record<string, string> = {
   monteur: "Je bent niet als monteur aan dit account gekoppeld. Vraag kantoor om dat te doen.",
   ongeldig: "Controleer de ingevulde gegevens: de datum ligt tussen de start van de montage en vandaag, en de uren zijn hele kwartieren.",
   omschrijving: "Beschrijf het opleverpunt.",
-  te_veel: "Er zijn al te veel foto's of punten toegevoegd.",
+  te_veel: "Er zijn al te veel foto's, punten of meerwerkregels toegevoegd.",
   bestand: "De foto is niet aangekomen. Probeer het opnieuw.",
   niet_bezig: "De montage moet eerst gestart zijn voordat je hem kunt opleveren.",
   naam: "Vul de volledige naam van de klant in.",
@@ -32,6 +32,13 @@ const FOUTEN: Record<string, string> = {
   onbekend: "Dit onderdeel bestaat niet meer.",
   alleen_monteur: "Alleen een monteur of de directie kan opleveren, met de handtekening van de klant.",
   niets_te_doen: "Er was niets om als gezien te markeren.",
+  meerwerk_open: "Er staat meerwerk open waar de klant nog niet voor heeft getekend. Laat de klant tekenen of verwijder het meerwerk.",
+  artikel: "Dit artikel is niet beschikbaar. Kies een artikel uit de lijst.",
+  aantal: "Kies een aantal tussen 1 en 100.",
+  eindfactuur: "Alles is al gefactureerd, dus dit meerwerk kan niet meer op een factuur. Vraag kantoor wat te doen.",
+  gewijzigd: "Het meerwerk is veranderd terwijl de klant keek. Laat de klant het bedrag opnieuw bekijken.",
+  leeg: "Er is geen meerwerk om voor te tekenen.",
+  niet_te_verwijderen: "Dit meerwerk is al goedgekeurd of bestaat niet meer.",
 };
 const foutTekst = (code?: string) => FOUTEN[code ?? ""] ?? "Opslaan lukte niet. Probeer het opnieuw.";
 const ververs = (montageId: string) => revalidatePath(`/monteur/${montageId}`);
@@ -180,6 +187,53 @@ export async function leverOp(_vorige: WerkbonStatus, formData: FormData): Promi
     p_ip: eersteIp(h.get("x-forwarded-for")) ?? eersteIp(h.get("x-real-ip")), p_user_agent: h.get("user-agent"),
   });
   if (u?.fout === "checklist_onvolledig") return { fout: `Bij ${u.aantal ?? "enkele"} kozijn(en) is de checklist nog niet af. Elk kozijn moet geplaatst zijn; wat nog niet is afgewerkt, meld je als opleverpunt.` };
+  if (!u?.ok) return { fout: foutTekst(u?.fout) };
+  ververs(montageId);
+  return { opgeslagen: true };
+}
+
+/** Stelt een artikel uit de catalogus voor als meerwerk. De prijs komt uit de catalogus; de klant tekent daarna voor het totaal. */
+export async function voegMeerwerkToe(_vorige: WerkbonStatus, formData: FormData): Promise<WerkbonStatus> {
+  const montageId = String(formData.get("montage_id") ?? "");
+  const artikelId = String(formData.get("artikel_id") ?? "");
+  const positieId = String(formData.get("positie_id") ?? "");
+  if (!UUID.test(montageId) || !UUID.test(artikelId) || (positieId !== "" && !UUID.test(positieId))) return { fout: foutTekst("artikel") };
+  const aantal = Number(formData.get("aantal"));
+  if (!Number.isInteger(aantal) || aantal < 1 || aantal > 100) return { fout: foutTekst("aantal") };
+  const u = await rpc("werkbon_meerwerk_toevoegen", { p_montage: montageId, p_positie: positieId === "" ? null : positieId, p_artikel: artikelId, p_aantal: aantal });
+  if (!u?.ok) return { fout: foutTekst(u?.fout) };
+  ververs(montageId);
+  return { opgeslagen: true };
+}
+
+/** Haalt meerwerk weg zolang de klant er niet voor heeft getekend. */
+export async function verwijderMeerwerk(formData: FormData) {
+  const montageId = String(formData.get("montage_id") ?? "");
+  const meerwerkId = String(formData.get("meerwerk_id") ?? "");
+  if (!UUID.test(montageId) || !UUID.test(meerwerkId)) redirect("/monteur");
+  const u = await rpc("werkbon_meerwerk_verwijderen", { p_montage: montageId, p_meerwerk: meerwerkId });
+  if (!u?.ok) redirect(`/monteur/${montageId}?fout=${u?.fout === "niet_te_verwijderen" ? "niet_te_verwijderen" : "mislukt"}`);
+  ververs(montageId);
+  redirect(`/monteur/${montageId}`);
+}
+
+/** De klant tekent voor het meerwerk: naam, handtekening, tijdstip, IP-adres en apparaat worden vastgelegd. */
+export async function meerwerkAkkoord(_vorige: WerkbonStatus, formData: FormData): Promise<WerkbonStatus> {
+  const montageId = String(formData.get("montage_id") ?? "");
+  if (!UUID.test(montageId)) return { fout: foutTekst("geen_toegang") };
+  const naam = String(formData.get("naam") ?? "").trim();
+  if (naam.length < 3 || naam.length > 120) return { fout: foutTekst("naam") };
+  const handtekening = formData.get("handtekening");
+  if (!isGeldigeHandtekening(handtekening)) return { fout: foutTekst("handtekening") };
+  if (formData.get("akkoord") !== "on") return { fout: "Vink aan dat de klant akkoord gaat met het meerwerk en het bedrag." };
+  const totaal = Number(String(formData.get("verwacht_totaal") ?? "").replace(",", "."));
+  if (!Number.isFinite(totaal)) return { fout: foutTekst("gewijzigd") };
+
+  const h = await headers();
+  const u = await rpc("werkbon_meerwerk_akkoord", {
+    p_montage: montageId, p_naam: naam, p_handtekening: handtekening, p_verwacht_totaal: totaal,
+    p_ip: eersteIp(h.get("x-forwarded-for")) ?? eersteIp(h.get("x-real-ip")), p_user_agent: h.get("user-agent"),
+  });
   if (!u?.ok) return { fout: foutTekst(u?.fout) };
   ververs(montageId);
   return { opgeslagen: true };
