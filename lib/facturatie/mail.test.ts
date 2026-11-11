@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dagenTeLaat, maakFactuurMail, maakHerinneringMail } from "./mail";
+import { dagenTeLaat, maakFactuurMail, maakBetalingBevestigingMail, mailtoLink, maakHerinneringMail } from "./mail";
 
 const basis = { begroeting: "Beste heer Jansen,", nummer: "2026-0001", vervaldatum: "8 november 2026", adres: "Voorbeeldstraat 1", bedrijf: "KernKozijnen B.V." };
 
@@ -38,5 +38,32 @@ describe("dagenTeLaat", () => {
     expect(dagenTeLaat("2026-11-08", "2026-11-12")).toBe(4);
     expect(dagenTeLaat("2026-11-08", "2026-11-08")).toBe(0);
     expect(dagenTeLaat("2026-11-08", "2026-11-01")).toBe(0);
+  });
+});
+
+describe("maakBetalingBevestigingMail", () => {
+  const basis = { begroeting: "Beste heer Jansen,", nummer: "2026-0001", bedrag: 1000, betaaldOp: "8 november 2026", vervaldatum: "10 november 2026", bedrijf: "KernKozijnen B.V." };
+  it("bevestigt een volledige betaling", () => {
+    const m = maakBetalingBevestigingMail({ ...basis, resterend: 0 });
+    expect(m.onderwerp).toBe("Betaling ontvangen - factuur 2026-0001");
+    expect(m.tekst).toContain("volledig voldaan");
+    expect(m.tekst).not.toContain("open");
+  });
+  it("noemt bij een deelbetaling het resterende bedrag en de vervaldatum", () => {
+    const m = maakBetalingBevestigingMail({ ...basis, resterend: 2000 });
+    expect(m.onderwerp).toBe("Deelbetaling ontvangen - factuur 2026-0001");
+    expect(m.tekst).toContain("nog");
+    expect(m.tekst).toContain("10 november 2026");
+  });
+});
+
+describe("mailtoLink", () => {
+  it("codeert onderwerp en tekst met regeleinden", () => {
+    const l = mailtoLink("klant@x.nl", "Factuur & meer", "Regel 1\nRegel 2");
+    expect(l.startsWith("mailto:klant@x.nl?subject=Factuur%20%26%20meer&body=")).toBe(true);
+    expect(l).toContain("Regel%201%0D%0ARegel%202");
+  });
+  it("werkt zonder adres", () => {
+    expect(mailtoLink(null, "a", "b").startsWith("mailto:?subject=")).toBe(true);
   });
 });
