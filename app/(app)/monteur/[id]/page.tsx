@@ -43,7 +43,8 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const { data: artData } = schrijfbaar ? await supabase.rpc("werkbon_meerwerk_artikelen", { p_montage: id }) : { data: [] };
   const artikelen = ((artData ?? []) as MeerwerkArtikel[]).map((a) => ({ ...a, prijs: Number(a.prijs) }));
   const meerwerkOpen = werkbon ? werkbon.meerwerk.filter((x) => x.status === "voorgesteld").length : 0;
-  const kanStarten = !werkbon && d.status === "definitief";
+  // Ook een montage die kantoor al op "bezig" heeft gezet, maar waarvoor nog geen werkbon is aangemaakt, kan hier nog worden gestart.
+  const kanStarten = !werkbon && (d.status === "definitief" || d.status === "bezig");
   const startToegestaan = d.start_datum <= vandaag;
   const onvolledig = werkbon ? onvolledigeKozijnen(werkbon.regels, werkbon.punten) : 0;
   const posLijst = d.posities.map((p) => ({ id: p.positie_id, label: `Pos. ${p.nummer}${p.ruimte ? ` · ${p.ruimte}` : ""}` }));
@@ -76,8 +77,8 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
       {kanStarten && (
         <form action={startWerkbon} className="mt-4 rounded-xl border-2 border-[#B35B40] bg-white p-4">
           <input type="hidden" name="montage_id" value={d.id} />
-          <p className="text-sm text-stone-700">{startToegestaan ? "Aan de slag? Met starten maak je de werkbon aan: de checklist per kozijn, foto's, uren en de oplevering." : `Je kunt starten op ${dagLabel(d.start_datum, vandaag).toLowerCase()}.`}</p>
-          <button disabled={!startToegestaan} className="mt-3 w-full rounded-lg bg-[#B35B40] px-6 py-4 text-base font-bold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">Montage starten</button>
+          <p className="text-sm text-stone-700">{startToegestaan ? (d.status === "bezig" ? "Deze montage staat al op bezig, maar er is nog geen werkbon. Maak hem nu aan: de checklist per kozijn, foto's, uren en de oplevering." : "Aan de slag? Met starten maak je de werkbon aan: de checklist per kozijn, foto's, uren en de oplevering.") : `Je kunt starten op ${dagLabel(d.start_datum, vandaag).toLowerCase()}.`}</p>
+          <button disabled={!startToegestaan} className="mt-3 w-full rounded-lg bg-[#B35B40] px-6 py-4 text-base font-bold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">{d.status === "bezig" ? "Werkbon aanmaken" : "Montage starten"}</button>
         </form>
       )}
       {werkbon?.status === "opgeleverd" && werkbon.akkoord && (
