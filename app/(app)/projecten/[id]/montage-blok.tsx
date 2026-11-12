@@ -3,7 +3,7 @@ import { eersteWerkdag, vandaagIso } from "@/lib/montage/week";
 import { euroTekst } from "@/lib/offerte/bereken";
 import { leesWerkbon, meerwerkTotaal, onvolledigeKozijnen, openPunten, regelKlaar, urenOverzicht, urenTekst } from "@/lib/montage/werkbon";
 import { werkbonGezien, zetPuntOpgelost } from "../../monteur/actions";
-import { annuleerMontage, planMontage, startMontage, wijzigMontage } from "../../montage/actions";
+import { annuleerMontage, planMontage, wijzigMontage } from "../../montage/actions";
 
 type Ploeg = { id: string; naam: string };
 type Montage = { id: string; ploeg_id: string; start_datum: string; werkdagen: number; eind_datum: string; leverdatum: string | null; hulpmiddel: string; status: string; notitie: string | null; annulering_reden: string | null };
@@ -199,11 +199,8 @@ export default async function MontageBlok({ projectId, offerteId, rol, melding }
           {mag && (
             <div className="mt-3 grid gap-2">
               <div className="flex flex-wrap gap-2">
-                {huidige.status === "definitief" && (
-                  <form action={startMontage}>
-                    <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="montage_id" value={huidige.id} />
-                    <button disabled={huidige.start_datum > vandaag} className="rounded-md bg-[#24332B] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">Montage starten</button>
-                  </form>
+                {huidige.status === "definitief" && !werkbon && (
+                  <a href={`/monteur/${huidige.id}`} className="rounded-md bg-[#24332B] px-4 py-2 text-sm font-semibold text-white">Werkbon starten en opleveren</a>
                 )}
                 {huidige.status === "bezig" && !werkbon && (
                   <a href={`/monteur/${huidige.id}`} className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-stone-50">Werkbon starten en opleveren</a>
