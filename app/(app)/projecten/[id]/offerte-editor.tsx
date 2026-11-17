@@ -430,11 +430,11 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
                 {gekopieerd === "mail" && <span role="status" className="ml-2 text-xs text-green-700">Gekopieerd.</span>}
                 {gekopieerd === "mail-handmatig" && <span role="status" className="ml-2 text-xs text-amber-800">Selecteer de tekst en kopieer met Ctrl+C.</span>}
                 {statusRuw === "verstuurd" && mailKlaar && (
-                  <form action={verstuurOfferteMail} className="mt-3">
-                    <input type="hidden" name="project_id" value={projectId} />
-                    <button className="rounded-md bg-[#B35B40] px-4 py-2 text-sm font-semibold text-white hover:brightness-110">Mailen naar {klantMail} (met PDF)</button>
+                  // Geen eigen <form>: dit staat binnen het formulier van de offerte, en een formulier in een formulier werkt niet.
+                  <div className="mt-3">
+                    <button type="button" disabled={bezig} onClick={() => zendProject(verstuurOfferteMail)} className="rounded-md bg-[#B35B40] px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60">{bezig ? "Bezig met mailen…" : `Mailen naar ${klantMail} (met PDF)`}</button>
                     <p className="mt-1 text-xs text-stone-500">De mail gaat namens het bedrijf, met de link en de PDF. Antwoorden komen in je eigen mailbox.</p>
-                  </form>
+                  </div>
                 )}
                 {statusRuw === "verstuurd" && !mailKlaar && (
                   <p className="mt-2 text-xs text-stone-500">{!mailAan ? "Mailen vanuit het CRM staat nog niet aan (de directie zet dat aan bij E-mail). Plak de tekst tot dan in je eigen mail." : "Bij deze klant staat geen geldig e-mailadres. Vul het in bij de klantgegevens, of plak de tekst in je eigen mail."}</p>
