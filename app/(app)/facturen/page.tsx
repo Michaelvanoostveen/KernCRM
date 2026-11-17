@@ -6,6 +6,7 @@ import { euroTekst } from "@/lib/offerte/bereken";
 import { FILTERS, filterFacturen, isFilter, samenvatting, sorteerOpVervaldatum, teLaatTekst, openBedrag, type Filter, type OverzichtFactuur } from "@/lib/facturatie/overzicht";
 import { isTeLaat, type FactuurStatus } from "@/lib/facturatie/bereken";
 import { haalRol } from "../start-gegevens";
+import SelectieBalk from "./selectie-balk";
 
 type Rij = {
   id: string; nummer: string; termijn: number; totaal_incl: number | string; vervaldatum: string; factuurdatum: string; status: FactuurStatus;
@@ -24,6 +25,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ filter?: string }> }) {
   const { filter: gekozen } = await zoek;
   const rol = await haalRol();
   if (rol !== "directie" && rol !== "kantoor" && rol !== "verkoop") redirect("/");
+  const kanExporteren = rol === "directie" || rol === "kantoor";
   const filter: Filter = isFilter(gekozen) ? gekozen : "open";
   const vandaag = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date());
 
@@ -62,17 +64,20 @@ async function Inhoud({ zoek }: { zoek: Promise<{ filter?: string }> }) {
         ))}
       </nav>
 
+      <form method="post" action="/instellingen/boekhouding/export">
+      {kanExporteren && <SelectieBalk />}
       <div className="mt-4 overflow-x-auto rounded-lg border border-stone-200 bg-white">
         <table className="w-full min-w-max text-left text-sm">
           <thead className="border-b border-stone-200 bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
-            <tr><th className="px-3 py-2 font-semibold">Factuur</th><th className="px-3 py-2 font-semibold">Klant en project</th><th className="px-3 py-2 font-semibold">Termijn</th><th className="px-3 py-2 font-semibold">Vervalt</th><th className="px-3 py-2 text-right font-semibold">Bedrag</th><th className="px-3 py-2 text-right font-semibold">Openstaand</th><th className="px-3 py-2 font-semibold">Status</th></tr>
+            <tr>{kanExporteren && <th className="w-8 px-3 py-2"><span className="sr-only">Selecteren</span></th>}<th className="px-3 py-2 font-semibold">Factuur</th><th className="px-3 py-2 font-semibold">Klant en project</th><th className="px-3 py-2 font-semibold">Termijn</th><th className="px-3 py-2 font-semibold">Vervalt</th><th className="px-3 py-2 text-right font-semibold">Bedrag</th><th className="px-3 py-2 text-right font-semibold">Openstaand</th><th className="px-3 py-2 font-semibold">Status</th></tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
-            {lijst.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-stone-500">Geen facturen in deze weergave.</td></tr>}
+            {lijst.length === 0 && <tr><td colSpan={kanExporteren ? 8 : 7} className="px-3 py-6 text-center text-stone-500">Geen facturen in deze weergave.</td></tr>}
             {lijst.map((f) => {
               const laat = isTeLaat(f.status, f.vervaldatum, vandaag);
               return (
                 <tr key={f.id}>
+                  {kanExporteren && <td className="px-3 py-2"><input type="checkbox" name="id" value={f.id} aria-label={`Selecteer factuur ${f.nummer}`} className="h-4 w-4 accent-[#24332B]" /></td>}
                   <td className="px-3 py-2"><Link href={`/facturen/${f.id}`} className="font-mono underline">{f.nummer}</Link></td>
                   <td className="px-3 py-2"><div className="font-semibold">{f.klantNaam}</div><Link href={`/projecten/${f.projectId}#facturen`} className="text-stone-600 underline">{f.projectNaam}</Link></td>
                   <td className="px-3 py-2">{f.termijn}</td>
@@ -86,6 +91,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ filter?: string }> }) {
           </tbody>
         </table>
       </div>
+      </form>
     </>
   );
 }

@@ -71,11 +71,11 @@ export async function annuleerFactuur(formData: FormData) {
   const projectId = String(formData.get("project_id") ?? "");
   const factuurId = String(formData.get("factuur_id") ?? "");
   if (!UUID.test(projectId)) redirect("/projecten");
-  if (!UUID.test(factuurId)) return terug(projectId, "ongeldig");
+  if (!UUID.test(factuurId)) return keer(formData, projectId, factuurId, "ongeldig");
   const supabase = await maakServerClient();
   const { data } = await supabase.rpc("annuleer_factuur", { p_factuur: factuurId, p_reden: String(formData.get("reden") ?? "") });
   const uitkomst = data as { ok?: boolean; fout?: string } | null;
-  return terug(projectId, uitkomst?.ok ? "geannuleerd" : uitkomst?.fout ?? "mislukt");
+  return keer(formData, projectId, factuurId, uitkomst?.ok ? "geannuleerd" : uitkomst?.fout ?? "mislukt");
 }
 
 /**
