@@ -1,7 +1,5 @@
 import { maakServerClient } from "@/lib/supabase/server";
-import { maakAnoniemeClient } from "@/lib/supabase/anoniem";
-import { maakOffertePdf, pdfBestandsnaam } from "@/lib/offerte/pdf/maak";
-import { leesPubliekeOfferte } from "@/lib/offerte/publiek";
+import { laadOffertePdf } from "@/lib/offerte/pdf/laden";
 
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -19,15 +17,12 @@ export async function GET(_verzoek: Request, { params }: { params: Promise<{ id:
   if (!offerte) return new Response("Project niet gevonden.", { status: 404 });
   if (!offerte.publiek_token) return new Response("De PDF is beschikbaar nadat de offerte is verstuurd.", { status: 409 });
 
-  const { data } = await maakAnoniemeClient().rpc("offerte_publiek", { p_token: offerte.publiek_token });
-  const publiek = leesPubliekeOfferte(data);
-  if (!publiek) return new Response("Offerte niet gevonden.", { status: 404 });
-
-  const pdf = await maakOffertePdf(publiek);
-  return new Response(new Uint8Array(pdf), {
+  const uit = await laadOffertePdf(offerte.publiek_token);
+  if (!uit) return new Response("Offerte niet gevonden.", { status: 404 });
+  return new Response(new Uint8Array(uit.pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${pdfBestandsnaam(publiek)}"`,
+      "Content-Disposition": `inline; filename="${uit.bestandsnaam}"`,
       "Cache-Control": "private, no-store",
     },
   });

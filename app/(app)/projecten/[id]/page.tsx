@@ -8,6 +8,7 @@ import { kozijnSvg } from "@/lib/tekening/tekenen";
 import { FASEN, faseIndex, faseLabel } from "@/lib/projecten/fase";
 import { leesConfiguratie, positieOmschrijving } from "@/lib/projecten/positie";
 import { INSTELLINGEN_KERNKOZIJNEN } from "@/lib/offerte/instellingen";
+import { isMailAdres } from "@/lib/mail/adres";
 import { maakMail } from "@/lib/offerte/mail";
 import OfferteEditor, { type EditorRegel } from "./offerte-editor";
 import FacturenBlok from "./facturen-blok";
@@ -44,19 +45,19 @@ function maakRegel(r: RegelRij): EditorRegel {
   return { ...basis, aantal: p.aantal, prijs: Number(p.prijs), nummer: p.nummer, ruimte: p.ruimte, omschrijving, svg };
 }
 
-async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string; nieuweversie?: string; inmeting?: string; factuur?: string; montage?: string; isde?: string }> }) {
+async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek: Promise<{ opgeslagen?: string; fout?: string; verstuurd?: string; ingetrokken?: string; nieuweversie?: string; inmeting?: string; mail?: string; factuur?: string; montage?: string; isde?: string }> }) {
   const { id } = await params;
-  const { opgeslagen, fout, verstuurd, ingetrokken, nieuweversie, inmeting, factuur, montage, isde } = await zoek;
+  const { opgeslagen, fout, verstuurd, ingetrokken, nieuweversie, inmeting, mail: mailCode, factuur, montage, isde } = await zoek;
   if (!UUID.test(id)) notFound();
   const supabase = await maakServerClient();
   const { data: p } = await supabase
     .from("projecten")
-    .select("id, tenant_id, nummer, naam, fase, klanten(id, naam, aanhef, achternaam), offertes(id, versie, status, gewijzigd, totaal_override, publiek_token, geldig_tot, verstuurd_op)")
+    .select("id, tenant_id, nummer, naam, fase, klanten(id, naam, aanhef, achternaam, email), offertes(id, versie, status, gewijzigd, totaal_override, publiek_token, geldig_tot, verstuurd_op)")
     .eq("id", id)
     .maybeSingle();
   if (!p) notFound();
 
-  const klant = p.klanten as unknown as { id: string; naam: string; aanhef: string | null; achternaam: string | null } | null;
+  const klant = p.klanten as unknown as { id: string; naam: string; aanhef: string | null; achternaam: string | null; email: string | null } | null;
   const offerte = [...(p.offertes as { id: string; versie: number; status: string; gewijzigd: string; totaal_override: number | null; publiek_token: string | null; geldig_tot: string | null; verstuurd_op: string | null }[])].sort((a, b) => b.versie - a.versie)[0];
   const { data: regelData } = offerte
     ? await supabase
@@ -87,6 +88,10 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const protocol = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const link = offerte?.publiek_token ? `${protocol}://${host}/o/${offerte.publiek_token}` : null;
   const mail = link && offerte ? maakMail({ aanhef: klant?.aanhef ?? null, achternaam: klant?.achternaam ?? null, klantNaam: klant?.naam ?? "", nummer: p.nummer, versie: offerte.versie, geldigTot: offerte.geldig_tot, adres: p.naam, link, bedrijf: "KernKozijnen" }) : null;
+  const { data: afzData } = await supabase.rpc("mail_afzender", { p_tenant: p.tenant_id });
+  const afz = afzData as { provider?: string; actief?: boolean; domein_ok?: boolean } | null;
+  const mailAan = afz?.provider === "resend" && afz.actief === true && afz.domein_ok === true;
+  const mailKlaar = mailAan && isMailAdres(klant?.email);
   const { data: artikelData } = await supabase.from("artikelen").select("id, groep, code, naam, eenheid, verkoopprijs_incl").eq("actief", true).order("groep").order("naam");
   const artikelen = (artikelData ?? []).map((a) => ({ id: a.id as string, groep: a.groep as string, code: a.code as string, naam: a.naam as string, eenheid: a.eenheid as string, prijsIncl: Number(a.verkoopprijs_incl) }));
   const { data: magData } = await supabase.rpc("mag_prijzen_aanpassen", { p_tenant: p.tenant_id });
@@ -158,7 +163,8 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           geldigTot={offerte.geldig_tot}
           gebeurtenissen={gebeurtenissen}
           mail={mail}
-          melding={verstuurd === "1" ? "verstuurd" : ingetrokken === "1" ? "ingetrokken" : nieuweversie === "1" ? "nieuweversie" : fout ?? null}
+          mailKlaar={mailKlaar} mailAan={mailAan} klantMail={klant?.email ?? null}
+          melding={mailCode ? `mail_${mailCode}` : verstuurd === "1" ? "verstuurd" : ingetrokken === "1" ? "ingetrokken" : nieuweversie === "1" ? "nieuweversie" : fout ?? null}
           versies={[...(p.offertes as { versie: number; status: string }[])].sort((a, b) => b.versie - a.versie).map((v) => ({ versie: v.versie, status: v.status }))}
           redenen={redenen}
           totaalReden={totaalReden}
