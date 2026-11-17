@@ -10,7 +10,7 @@ import { dagenTeLaat, maakBetalingBevestigingMail, maakCreditnotaMail, maakHerin
 import { FACTUUR_MELDINGEN } from "@/lib/facturatie/meldingen";
 import { haalRol } from "../../start-gegevens";
 import { verstuurBetaalbevestigingMail, verstuurCreditnotaMail, verstuurFactuurMail, verstuurHerinneringMail } from "../mail-actions";
-import { maakCreditnota, markeerBetalingBevestigd, markeerCreditnotaVerzonden, markeerVerzonden, registreerBetaling, registreerHerinnering, trekBetaallinkIn, voegBetaallinkToe } from "../actions";
+import { annuleerFactuur, maakCreditnota, markeerBetalingBevestigd, markeerCreditnotaVerzonden, markeerVerzonden, registreerBetaling, registreerHerinnering, trekBetaallinkIn, voegBetaallinkToe } from "../actions";
 
 type Factuur = {
   id: string; project_id: string; nummer: string; termijn: number; omschrijving: string; factuurdatum: string; vervaldatum: string; totaal_incl: number | string;
@@ -110,6 +110,41 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
         <p className="mt-3"><a href={`/facturen/${f.id}/pdf`} target="_blank" rel="noreferrer" className={knopLink}>Open de PDF</a></p>
       </section>
 
+      {mag && (
+        <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Acties">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Annuleren of crediteren</h2>
+          <p className="mt-2 text-sm text-stone-600">Een factuur kan niet worden verwijderd: het factuurnummer blijft bestaan (doorlopende nummering en bewaarplicht). Is hij fout, dan <b>annuleer</b> je hem zolang de klant hem nog niet heeft gekregen, en <b>crediteer</b> je hem als hij al is verstuurd.</p>
+          {f.status === "geannuleerd" && <p className="mt-2 text-sm font-semibold text-stone-700">Deze factuur is geannuleerd{f.annulering_reden ? `: ${f.annulering_reden}` : ""}. De termijn kan opnieuw worden gefactureerd.</p>}
+          {f.status === "gecrediteerd" && <p className="mt-2 text-sm font-semibold text-stone-700">Deze factuur is volledig gecrediteerd. De termijn kan opnieuw worden gefactureerd.</p>}
+          {f.status === "betaald" && <p className="mt-2 text-sm text-stone-600">Deze factuur is betaald en kan niet meer worden geannuleerd. Een creditnota op een betaalde factuur (met terugbetaling) is nog niet mogelijk.</p>}
+          {f.status === "open" && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-md border border-stone-200 p-3">
+                <div className="text-sm font-semibold">Factuur annuleren</div>
+                {!f.verzonden_op && betalingen.length === 0 && gecrediteerd === 0 ? (
+                  <form action={annuleerFactuur} className="mt-2 grid gap-2">
+                    {verborgen}
+                    <label className="text-xs font-semibold">Reden<input name="reden" required maxLength={500} className={veld} /></label>
+                    <p className="text-xs text-stone-500">Het nummer blijft bestaan en je kunt de termijn opnieuw factureren. Dit kan niet ongedaan worden gemaakt.</p>
+                    <button className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white">Factuur annuleren</button>
+                  </form>
+                ) : (
+                  <p className="mt-1 text-xs text-stone-600">{f.verzonden_op ? "Deze factuur is al naar de klant gestuurd en kan daarom niet meer worden geannuleerd: crediteer hem." : betalingen.length > 0 ? "Er is al betaald, dus annuleren kan niet." : "Er is al een creditnota, dus annuleren kan niet."}</p>
+                )}
+              </div>
+              <div className="rounded-md border border-stone-200 p-3">
+                <div className="text-sm font-semibold">Factuur crediteren</div>
+                {f.verzonden_op && open > 0 ? (
+                  <p className="mt-1 text-xs text-stone-600">Maak een creditnota voor het hele openstaande bedrag ({euroTekst(open, 2)}) of een deel ervan. <a href="#creditnota" className="font-semibold underline">Naar het formulier</a></p>
+                ) : (
+                  <p className="mt-1 text-xs text-stone-600">{!f.verzonden_op ? "Crediteren kan pas nadat de factuur naar de klant is gestuurd. Is hij nog niet verstuurd, dan kun je hem annuleren." : "Er staat niets meer open om te crediteren."}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Betalingen">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Betalingen</h2>
         {metSaldo.length === 0 && <p className="mt-2 text-sm text-stone-600">Er is nog niets betaald.</p>}
@@ -206,7 +241,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
       )}
 
       {(creditnotas.length > 0 || (mag && f.status === "open")) && (
-        <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Creditnota's">
+        <section id="creditnota" className="mt-4 scroll-mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Creditnota's">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Creditnota&apos;s</h2>
           {creditnotas.length === 0 && <p className="mt-2 text-sm text-stone-600">Er is geen creditnota gemaakt. Heeft de klant de factuur al ontvangen en klopt het bedrag niet, maak dan een creditnota in plaats van de factuur aan te passen.</p>}
           <ul className="mt-2 grid gap-3">
@@ -247,7 +282,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
             })}
           </ul>
           {mag && f.status === "open" && f.verzonden_op && open > 0 && magPrijzen && (
-            <details className="mt-3 rounded-md border border-stone-200 px-3 py-2">
+            <details open className="mt-3 rounded-md border border-stone-200 px-3 py-2">
               <summary className="cursor-pointer font-semibold">Creditnota maken</summary>
               <form action={maakCreditnota} className="mt-2 grid gap-2">
                 <input type="hidden" name="factuur_id" value={f.id} />
