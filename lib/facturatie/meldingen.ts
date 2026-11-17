@@ -50,5 +50,9 @@ export const FACTUUR_MELDINGEN: Record<string, { tekst: string; fout: boolean }>
   mail_limiet: { tekst: "Er zijn het afgelopen uur al veel mails verstuurd. Probeer het over een uur opnieuw.", fout: true },
   mail_mislukt: { tekst: "De mail is niet verstuurd. De reden staat in het logboek bij E-mail. Er is niets vastgelegd, je kunt het opnieuw proberen.", fout: true },
   mail_niet_vastgelegd: { tekst: "De mail is wel verstuurd, maar vastleggen lukte niet. Leg het zelf vast met de knop hieronder; verstuur de mail niet nog een keer.", fout: true },
+  terugbetaling_vastgelegd: { tekst: "De terugbetaling is vastgelegd.", fout: false },
+  terug_te_veel: { tekst: "Dit bedrag is hoger dan wat de klant nog terugkrijgt.", fout: true },
+  terug_dubbel: { tekst: "Deze terugbetaling is zojuist al vastgelegd.", fout: true },
+  niets_terug: { tekst: "Er is niets terug te betalen aan de klant.", fout: true },
   mislukt: { tekst: "Het lukte niet. Probeer het opnieuw.", fout: true },
 };

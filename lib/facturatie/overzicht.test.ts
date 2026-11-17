@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { filterFacturen, samenvatting, sorteerOpVervaldatum, teLaatTekst, type OverzichtFactuur } from "./overzicht";
 
-const f = (o: Partial<OverzichtFactuur>): OverzichtFactuur => ({ id: "x", nummer: "2026-0001", projectId: "p", projectNaam: "P", klantNaam: "K", termijn: 1, totaal: 1000, vervaldatum: "2026-11-10", factuurdatum: "2026-11-05", status: "open", verzonden: true, betaald: 0, gecrediteerd: 0, ...o });
+const f = (o: Partial<OverzichtFactuur>): OverzichtFactuur => ({ id: "x", nummer: "2026-0001", projectId: "p", projectNaam: "P", klantNaam: "K", termijn: 1, totaal: 1000, vervaldatum: "2026-11-10", factuurdatum: "2026-11-05", status: "open", verzonden: true, betaald: 0, gecrediteerd: 0, terugbetaald: 0, ...o });
 const lijst = [
   f({ id: "a", nummer: "2026-0001", vervaldatum: "2026-11-06" }),                                     // te laat
   f({ id: "b", nummer: "2026-0002", vervaldatum: "2026-11-20", verzonden: false, totaal: 2000 }),      // open, niet verzonden
@@ -33,5 +33,17 @@ describe("facturenoverzicht", () => {
     expect(sorteerOpVervaldatum(lijst).map((x) => x.id)[0]).toBe("e");
     expect(teLaatTekst(lijst[0], vandaag)).toBe("6 dagen te laat");
     expect(teLaatTekst(f({ vervaldatum: "2026-11-11" }), vandaag)).toBe("1 dag te laat");
+  });
+});
+
+describe("terug te betalen in het overzicht", () => {
+  it("toont een gecrediteerde, betaalde factuur onder Terug te betalen en telt het bedrag mee", () => {
+    const lijst = [
+      f({ id: "a", nummer: "2026-0010", status: "betaald", betaald: 1000, totaal: 1000, gecrediteerd: 400 }),
+      f({ id: "b", nummer: "2026-0011", status: "gecrediteerd", betaald: 500, totaal: 500, gecrediteerd: 500, terugbetaald: 500 }),
+      f({ id: "c", nummer: "2026-0012", status: "betaald", betaald: 800, totaal: 800 }),
+    ];
+    expect(filterFacturen(lijst, "terug", "2026-11-10").map((x) => x.id)).toEqual(["a"]);
+    expect(samenvatting(lijst, "2026-11-10")).toMatchObject({ aantalTerug: 1, terugTeBetalen: 400 });
   });
 });

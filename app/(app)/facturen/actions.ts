@@ -225,3 +225,22 @@ export async function trekBetaallinkIn(formData: FormData) {
   const uitkomst = data as { ok?: boolean; fout?: string } | null;
   return gaTerug(uitkomst?.ok ? "betaallink_ingetrokken" : uitkomst?.fout ?? "mislukt");
 }
+
+/** Legt vast dat een bedrag is teruggestort aan de klant, na een creditnota op een (deels) betaalde factuur. Alleen vanaf de factuurpagina. */
+export async function registreerTerugbetaling(formData: FormData) {
+  const factuurId = String(formData.get("factuur_id") ?? "");
+  if (!UUID.test(factuurId)) redirect("/facturen");
+  const gaTerug = (code: string): never => redirect(`/facturen/${factuurId}?m=${code}`);
+  const bedrag = parseBedrag(String(formData.get("bedrag") ?? ""));
+  const datum = String(formData.get("datum") ?? "");
+  if (bedrag === null || Number.isNaN(bedrag) || bedrag <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(datum)) return gaTerug("ongeldig");
+  const supabase = await maakServerClient();
+  const { data, error } = await supabase.rpc("registreer_terugbetaling", { p_factuur: factuurId, p_bedrag: bedrag, p_datum: datum, p_notitie: String(formData.get("notitie") ?? "").slice(0, 500) });
+  if (error) {
+    console.error("terugbetaling registreren mislukt:", error.code, error.message);
+    return gaTerug("mislukt");
+  }
+  const uitkomst = data as { ok?: boolean; fout?: string } | null;
+  const fout = uitkomst?.fout === "te_veel" ? "terug_te_veel" : uitkomst?.fout === "dubbel" ? "terug_dubbel" : uitkomst?.fout;
+  return gaTerug(uitkomst?.ok ? "terugbetaling_vastgelegd" : fout ?? "mislukt");
+}

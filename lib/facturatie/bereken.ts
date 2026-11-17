@@ -90,3 +90,13 @@ export function openstaand(totaal: number, betalingen: number[], gecrediteerd = 
 export function isTeLaat(status: FactuurStatus, vervaldatumIso: string, vandaag: string): boolean {
   return status === "open" && vervaldatumIso < vandaag;
 }
+
+/**
+ * Wat de klant nog terugkrijgt: wat er is betaald plus wat er is gecrediteerd, boven het factuurbedrag, min wat al is teruggestort. Nooit negatief.
+ * Zelfde regel als in de database (registreer_terugbetaling).
+ */
+export function terugTeBetalen(totaal: number, betalingen: number[], gecrediteerd: number, terugbetalingen: number[]): number {
+  const betaaldC = betalingen.reduce((s, b) => s + cent(b), 0);
+  const terugC = terugbetalingen.reduce((s, b) => s + cent(b), 0);
+  return euro(Math.max(0, Math.max(0, betaaldC + cent(gecrediteerd) - cent(totaal)) - terugC));
+}

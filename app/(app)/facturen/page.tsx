@@ -35,12 +35,15 @@ async function Inhoud({ zoek }: { zoek: Promise<{ filter?: string }> }) {
     .order("vervaldatum").limit(1000);
   const rijen = (data ?? []) as unknown as Rij[];
   const { data: bData } = rijen.length ? await supabase.from("factuur_betalingen").select("factuur_id, bedrag").in("factuur_id", rijen.map((r) => r.id)) : { data: [] };
+  const { data: tData } = rijen.length ? await supabase.from("factuur_terugbetalingen").select("factuur_id, bedrag").in("factuur_id", rijen.map((r) => r.id)) : { data: [] };
+  const teruggestort = new Map<string, number>();
+  for (const t of (tData ?? []) as { factuur_id: string; bedrag: number | string }[]) teruggestort.set(t.factuur_id, Math.round(((teruggestort.get(t.factuur_id) ?? 0) + Number(t.bedrag)) * 100) / 100);
   const betaald = new Map<string, number>();
   for (const b of (bData ?? []) as { factuur_id: string; bedrag: number | string }[]) betaald.set(b.factuur_id, Math.round(((betaald.get(b.factuur_id) ?? 0) + Number(b.bedrag)) * 100) / 100);
 
   const alle: OverzichtFactuur[] = rijen.map((r) => ({
     id: r.id, nummer: r.nummer, projectId: r.projecten?.id ?? "", projectNaam: r.projecten?.naam ?? "", klantNaam: r.debiteur?.naam ?? "", termijn: r.termijn,
-    totaal: Number(r.totaal_incl), vervaldatum: r.vervaldatum, factuurdatum: r.factuurdatum, status: r.status, verzonden: r.verzonden_op !== null, betaald: betaald.get(r.id) ?? 0, gecrediteerd: Number(r.gecrediteerd),
+    totaal: Number(r.totaal_incl), vervaldatum: r.vervaldatum, factuurdatum: r.factuurdatum, status: r.status, verzonden: r.verzonden_op !== null, betaald: betaald.get(r.id) ?? 0, gecrediteerd: Number(r.gecrediteerd), terugbetaald: teruggestort.get(r.id) ?? 0,
   }));
   const s = samenvatting(alle, vandaag);
   const lijst = sorteerOpVervaldatum(filterFacturen(alle, filter, vandaag));
@@ -56,6 +59,12 @@ async function Inhoud({ zoek }: { zoek: Promise<{ filter?: string }> }) {
         <div className="rounded-lg border border-stone-200 bg-white p-4"><div className="text-xs uppercase tracking-wide text-stone-500">Gefactureerd</div><div className="mt-1 text-xl font-bold tabular-nums">{euroTekst(s.gefactureerd, 0)}</div><div className="text-xs text-stone-500">incl. btw, zonder geannuleerde</div></div>
         <div className="rounded-lg border border-stone-200 bg-white p-4"><div className="text-xs uppercase tracking-wide text-stone-500">Ontvangen</div><div className="mt-1 text-xl font-bold tabular-nums text-green-800">{euroTekst(s.ontvangen, 0)}</div><div className="text-xs text-stone-500">betalingen tot nu toe</div></div>
       </div>
+
+      {s.aantalTerug > 0 && (
+        <Link href="/facturen?filter=terug" className="mt-3 block rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 hover:bg-red-100">
+          <b>{euroTekst(s.terugTeBetalen, 2)}</b> moet nog worden teruggestort aan {s.aantalTerug === 1 ? "1 klant" : `${s.aantalTerug} klanten`} (na een creditnota op een betaalde factuur). Bekijk de facturen →
+        </Link>
+      )}
 
       <nav aria-label="Filter" className="mt-5 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
