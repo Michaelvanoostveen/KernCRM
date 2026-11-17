@@ -6,6 +6,8 @@ import { begroeting, isTeLaat, openstaand, type FactuurStatus } from "@/lib/fact
 import { dagenTeLaat, maakFactuurMail, maakHerinneringMail } from "@/lib/facturatie/mail";
 import { BEDRIJF_FACTUUR } from "@/lib/facturatie/bedrijf";
 import { FACTUUR_MELDINGEN as MELDINGEN } from "@/lib/facturatie/meldingen";
+import { verstuurFactuurMail, verstuurHerinneringMail } from "../../facturen/mail-actions";
+import { isMailAdres } from "@/lib/mail/adres";
 import { annuleerFactuur, maakFactuur, markeerVerzonden, registreerBetaling, registreerHerinnering, wijzigFactuur } from "../../facturen/actions";
 import { laadFactuurplan } from "../../facturen/plan";
 
@@ -34,6 +36,10 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
   const { data: bData } = facturen.length ? await supabase.from("factuur_betalingen").select("factuur_id, bedrag, betaald_op, notitie").in("factuur_id", facturen.map((f) => f.id)).order("betaald_op") : { data: [] };
   const betalingen = (bData ?? []) as Betaling[];
 
+  const { data: mailRij } = await supabase.from("mail_instellingen").select("actief").maybeSingle();
+  const mailActief = (mailRij as { actief?: boolean } | null)?.actief === true;
+  const { data: kRij } = await supabase.from("projecten").select("klanten(email)").eq("id", projectId).maybeSingle();
+  const klantMail = (kRij as unknown as { klanten: { email: string | null } | null } | null)?.klanten?.email ?? null;
   const { data: lData } = facturen.length ? await supabase.from("factuur_betaallinks").select("factuur_id, url").in("factuur_id", facturen.map((f) => f.id)).eq("status", "open").or(`geldig_tot.is.null,geldig_tot.gte.${new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date())}`) : { data: [] };
   const betaallinks = new Map(((lData ?? []) as { factuur_id: string; url: string }[]).map((l) => [l.factuur_id, l.url]));
   const { data: hData } = facturen.length ? await supabase.from("factuur_herinneringen").select("factuur_id, niveau, verstuurd_op").in("factuur_id", facturen.map((f) => f.id)).order("niveau") : { data: [] };
@@ -155,6 +161,12 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
                           <p className="mt-2 text-xs text-stone-500">Kopieer de tekst, voeg de PDF als bijlage toe en verstuur de mail zelf. Leg daarna vast dat hij is verzonden.</p>
                           <label className="mt-2 block text-xs font-semibold">Onderwerp<input readOnly value={mailTekst.onderwerp} className="mt-1 w-full rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm" /></label>
                           <label className="mt-2 block text-xs font-semibold">Tekst<textarea readOnly rows={9} value={mailTekst.tekst} className="mt-1 w-full rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm" /></label>
+                          {!f.verzonden_op && mailActief && isMailAdres(klantMail) && (
+                            <form action={verstuurFactuurMail} className="mt-2">
+                              <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="factuur_id" value={f.id} />
+                              <button className="rounded-md bg-[#B35B40] px-4 py-2 text-sm font-semibold text-white hover:brightness-110">Versturen naar {klantMail} (met PDF)</button>
+                            </form>
+                          )}
                           {!f.verzonden_op && (
                             <form action={markeerVerzonden} className="mt-2">
                               <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="factuur_id" value={f.id} />
@@ -168,6 +180,12 @@ export default async function FacturenBlok({ projectId, rol, melding }: { projec
                             <summary className="cursor-pointer font-semibold text-red-800">Herinnering {volgende} klaarzetten ({dagenTeLaat(f.vervaldatum, vandaag)} dagen te laat)</summary>
                             <label className="mt-2 block text-xs font-semibold">Onderwerp<input readOnly value={herMail.onderwerp} className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
                             <label className="mt-2 block text-xs font-semibold">Tekst<textarea readOnly rows={8} value={herMail.tekst} className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
+                            {mailActief && isMailAdres(klantMail) && (
+                              <form action={verstuurHerinneringMail} className="mt-2">
+                                <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="factuur_id" value={f.id} />
+                                <button className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white">Versturen naar {klantMail} (met PDF)</button>
+                              </form>
+                            )}
                             <form action={registreerHerinnering} className="mt-2">
                               <input type="hidden" name="project_id" value={projectId} /><input type="hidden" name="factuur_id" value={f.id} />
                               <button className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white">Herinnering is verstuurd</button>
