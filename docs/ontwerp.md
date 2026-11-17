@@ -199,6 +199,8 @@ Na de inmeting maakt KernCRM met één klik de bestelling aan op basis van de in
 - Status: niet van toepassing / klaargezet / aangevraagd door klant / toegekend (of afgewezen)
 - **Stand (gebouwd, voorbereiding):** op de projectpagina staat het blok ISDE-subsidie (na akkoord op de offerte). Per positie legt directie of kantoor vast of ze meetelt, de U-waarde van het glas (volgens de leverancier) en de m² glas (standaard geschat uit de maten); het blok toont de indicatie per positie en voor het project, de checklist met stukken (factuur, betaalbewijs, foto's na plaatsing, getekende oplevering, glasspecificatie; het systeem ziet zelf wat er al is) en de status met datum van aanvraag en referentie van RVO. Verkoop kan meekijken. De klant vraagt de subsidie zelf aan; de bedragen zijn indicatief en komen uit de prijsregels, de voorwaarden van RVO zijn niet ingebouwd. Nog niet gebouwd: de stukken als één pakket downloaden en de ISDE-begeleiding als artikel op de offerte.
 
+**Navigatie (besluit 2026-11-17):** het hoofdmenu staat als zijbalk links (zoals bij Teamleader), in groepen: Start, Verkoop (klanten, projecten), Uitvoering (inmeting, montage, werkbonnen), Financieel (facturen, boekhouding) en Beheer (e-mail, catalogus, gebruikers), met Uitloggen onderaan. Op een telefoon of smal scherm is het een balk bovenaan met een menuknop; een monteur of inmeter (een of twee onderdelen) ziet zijn onderdelen direct in de balk. De rechten per rol zijn ongewijzigd (`lib/menu.ts`). Er komen later meer onderdelen bij; de groepen bieden daar ruimte voor.
+
 ## Module 5: Service, opleverpunten en werkbonnen
 
 Opleverpunten en servicemeldingen hangen aan het project en de positie, zodat elke monteur ziet om welk kozijn het gaat en wat er eerder is gedaan.

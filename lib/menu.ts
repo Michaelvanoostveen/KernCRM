@@ -28,3 +28,29 @@ export function menuVoorRol(rol: string | null | undefined): MenuItem[] {
     default: return [START];
   }
 }
+
+export type MenuGroep = { titel: string | null; items: MenuItem[] };
+
+const GROEP_VAN: Record<string, string> = {
+  "/klanten": "Verkoop", "/projecten": "Verkoop",
+  "/inmeting": "Uitvoering", "/montage": "Uitvoering", "/werkbonnen": "Uitvoering",
+  "/facturen": "Financieel", "/instellingen/boekhouding": "Financieel",
+  "/instellingen/email": "Beheer", "/instellingen/catalogus": "Beheer", "/instellingen/gebruikers": "Beheer",
+};
+const GROEP_VOLGORDE = ["Verkoop", "Uitvoering", "Financieel", "Beheer"];
+
+/**
+ * Het menu in groepen voor de zijbalk: bovenaan de losse onderdelen (Start), dan Verkoop, Uitvoering, Financieel en Beheer. Wie maar een of twee onderdelen heeft
+ * (een monteur of inmeter) krijgt één groep zonder titels. Dezelfde onderdelen en rechten als menuVoorRol.
+ */
+export function menuGroepen(rol: string | null | undefined): MenuGroep[] {
+  const items = menuVoorRol(rol);
+  if (items.length <= 3) return [{ titel: null, items }];
+  const los = items.filter((i) => !GROEP_VAN[i.href]);
+  const groepen: MenuGroep[] = los.length ? [{ titel: null, items: los }] : [];
+  for (const titel of GROEP_VOLGORDE) {
+    const leden = items.filter((i) => GROEP_VAN[i.href] === titel);
+    if (leden.length) groepen.push({ titel, items: leden });
+  }
+  return groepen;
+}
