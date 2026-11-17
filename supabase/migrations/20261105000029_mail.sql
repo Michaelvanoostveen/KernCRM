@@ -1,10 +1,11 @@
 -- Fase 3: e-mail versturen vanuit het CRM via een bezorgdienst (nu Resend). Eén platformaccount; elk bedrijf heeft zijn eigen afzenderadres op een eigen,
 -- geverifieerd domein. Een bedrijf kan alleen verzenden vanaf een domein dat voor dat bedrijf is vrijgegeven (tabel mail_domeinen, beheerd door de
 -- platformbeheerder), zodat het ene bedrijf nooit uit naam van het domein van een ander kan mailen. De API-sleutel staat niet in de database maar als geheim op de server.
--- Elke verzonden (of mislukte) mail komt in een logboek dat niet te wijzigen is.
+-- Elke verzonden (of mislukte) mail komt in een logboek dat niet te wijzigen is. Het logboek is een hulpmiddel van het CRM, geen onweerlegbaar bewijs (directie en kantoor
+-- leggen de regels via de app vast); de bezorgdienst heeft zelf het volledige logboek. Het logboek houdt, net als de facturen, een bedrijf onverwijderbaar zolang er regels zijn.
 
 create table public.mail_domeinen (
-  domein     text primary key check (domein = lower(domein) and domein ~ '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$'),
+  domein     text primary key check (domein = lower(domein) and domein ~ '^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$'),
   tenant_id  uuid not null references public.tenants (id) on delete cascade,
   aangemaakt timestamptz not null default now()
 );
@@ -14,9 +15,9 @@ create table public.mail_instellingen (
   tenant_id      uuid primary key references public.tenants (id) on delete cascade,
   provider       text not null default 'geen' check (provider in ('geen', 'resend')),
   actief         boolean not null default false,
-  afzender_naam  text check (afzender_naam is null or (length(btrim(afzender_naam)) between 1 and 80 and afzender_naam !~ '[\r\n<>",;]')),
-  afzender_adres text check (afzender_adres is null or (afzender_adres = lower(afzender_adres) and afzender_adres ~ '^[a-z0-9._+-]+@[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$' and length(afzender_adres) <= 120)),
-  antwoord_adres text check (antwoord_adres is null or (antwoord_adres = lower(antwoord_adres) and antwoord_adres ~ '^[a-z0-9._+-]+@[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$' and length(antwoord_adres) <= 120)),
+  afzender_naam  text check (afzender_naam is null or (length(btrim(afzender_naam)) between 1 and 80 and afzender_naam !~ '[\r\n<>",;@:]')),
+  afzender_adres text check (afzender_adres is null or (afzender_adres = lower(afzender_adres) and afzender_adres ~ '^[a-z0-9]+([._+-][a-z0-9]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$' and length(afzender_adres) <= 120)),
+  antwoord_adres text check (antwoord_adres is null or (antwoord_adres = lower(antwoord_adres) and antwoord_adres ~ '^[a-z0-9]+([._+-][a-z0-9]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$' and length(antwoord_adres) <= 120)),
   gewijzigd      timestamptz not null default now(),
   gewijzigd_door uuid default auth.uid() references auth.users (id) on delete set null,
   check (not actief or (provider <> 'geen' and afzender_adres is not null and afzender_naam is not null))
@@ -80,9 +81,9 @@ begin
     return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
   end if;
   if p_provider is null or p_provider not in ('geen', 'resend') then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
-  if v_naam !~ '^[^\r\n<>",;]{1,80}$' and v_naam <> '' then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
-  if v_afzender <> '' and v_afzender !~ '^[a-z0-9._+-]+@[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$' then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
-  if v_antwoord <> '' and v_antwoord !~ '^[a-z0-9._+-]+@[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$' then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
+  if v_naam !~ '^[^\r\n<>",;@:]{1,80}$' and v_naam <> '' then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
+  if v_afzender <> '' and v_afzender !~ '^[a-z0-9]+([._+-][a-z0-9]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$' then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
+  if v_antwoord <> '' and v_antwoord !~ '^[a-z0-9]+([._+-][a-z0-9]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$' then return jsonb_build_object('ok', false, 'fout', 'ongeldig'); end if;
   if p_provider = 'resend' and v_afzender <> '' then
     v_domein := split_part(v_afzender, '@', 2);
     if not exists (select 1 from public.mail_domeinen d where d.domein = v_domein and d.tenant_id = p_tenant) then
@@ -99,21 +100,55 @@ end $$;
 revoke all on function public.mail_instellingen_bewaar(uuid, text, boolean, text, text, text) from public, anon;
 grant execute on function public.mail_instellingen_bewaar(uuid, text, boolean, text, text, text) to authenticated;
 
--- Mag er nu een mail worden verstuurd? Directie of kantoor, en hooguit 60 mails per uur per bedrijf (tegen misbruik en een uit de hand gelopen reeks).
+-- Teller per bedrijf per klokuur: het aantal mails dat al is aangevraagd. Een aanvraag telt direct mee (ook bij gelijktijdige aanvragen), los van het logboek.
+create table public.mail_teller (
+  tenant_id uuid not null references public.tenants (id) on delete cascade,
+  uur       timestamptz not null,
+  aantal    integer not null default 0,
+  primary key (tenant_id, uur)
+);
+alter table public.mail_teller enable row level security;
+revoke all on public.mail_teller from authenticated, anon;
+
+-- Vraagt toestemming om een mail te versturen en telt hem meteen mee. Alleen directie of kantoor; hooguit 60 mails per klokuur per bedrijf (tegen misbruik en een uit de hand
+-- gelopen reeks); en het afzenderadres moet nu nog op een voor dit bedrijf vrijgegeven domein staan (of het mailen aanstaat, controleert de app).
 create function public.mail_mag_versturen(p_tenant uuid) returns jsonb
-  language plpgsql stable security definer set search_path = ''
+  language plpgsql security definer set search_path = ''
   as $$
+declare
+  v_uur timestamptz := date_trunc('hour', now());
+  v_aantal integer;
 begin
   if p_tenant is null or not public.heeft_rol(p_tenant, array['directie','kantoor']::public.gebruikersrol[]) then
     return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
   end if;
-  if (select count(*) from public.mail_log l where l.tenant_id = p_tenant and l.aangemaakt > now() - interval '1 hour') >= 60 then
-    return jsonb_build_object('ok', false, 'fout', 'limiet');
+  if not exists (
+    select 1 from public.mail_instellingen i join public.mail_domeinen d on d.domein = split_part(i.afzender_adres, '@', 2) and d.tenant_id = i.tenant_id
+    where i.tenant_id = p_tenant
+  ) then
+    return jsonb_build_object('ok', false, 'fout', 'domein_niet_vrijgegeven');
   end if;
+  delete from public.mail_teller where tenant_id = p_tenant and uur < now() - interval '2 days';
+  insert into public.mail_teller as t (tenant_id, uur, aantal) values (p_tenant, v_uur, 1)
+    on conflict (tenant_id, uur) do update set aantal = t.aantal + 1 where t.aantal < 60
+    returning aantal into v_aantal;
+  if v_aantal is null then return jsonb_build_object('ok', false, 'fout', 'limiet'); end if;
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.mail_mag_versturen(uuid) from public, anon;
 grant execute on function public.mail_mag_versturen(uuid) to authenticated;
+
+-- Wordt een domein ingetrokken of gewijzigd, dan gaat het mailen van het bedrijf dat dat domein gebruikte direct uit.
+create function public.mail_domein_ingetrokken() returns trigger
+  language plpgsql security definer set search_path = ''
+  as $$
+begin
+  update public.mail_instellingen set actief = false, gewijzigd = now()
+    where tenant_id = old.tenant_id and split_part(afzender_adres, '@', 2) = old.domein and actief;
+  return coalesce(new, old);
+end $$;
+create trigger mail_domeinen_ingetrokken after update of domein, tenant_id or delete on public.mail_domeinen
+  for each row execute function public.mail_domein_ingetrokken();
 
 -- Legt een verzonden of mislukte mail vast in het logboek.
 create function public.mail_log_toevoegen(p_tenant uuid, p_soort text, p_factuur uuid, p_creditnota uuid, p_aan text, p_onderwerp text, p_status text, p_extern_id text, p_fout text) returns jsonb

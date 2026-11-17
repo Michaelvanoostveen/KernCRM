@@ -9,11 +9,12 @@ describe("adressen en koppen", () => {
   it("accepteert één gewoon adres en weigert rommel", () => {
     expect(isMailAdres("klant@example.nl")).toBe(true);
     expect(isMailAdres(" info+frits@kernkozijnen.nl ")).toBe(true);
-    for (const x of ["", "geen", "a@b", "a@b.nl, c@d.nl", "a@b.nl;c@d.nl", "a b@c.nl", "a@b.nl\r\nBcc: x@y.nl", null, undefined]) expect(isMailAdres(x as string), String(x)).toBe(false);
+    for (const x of ["", "geen", "a@b", "a@b..nl", ".a@b.nl", "a..b@c.nl", "a@-b.nl", "a@b.nl, c@d.nl", "a@b.nl;c@d.nl", "a b@c.nl", "a@b.nl\r\nBcc: x@y.nl", null, undefined]) expect(isMailAdres(x as string), String(x)).toBe(false);
   });
   it("haalt regeleinden uit kopregels en breekbare tekens uit de afzendernaam", () => {
     expect(schoneKop("Onderwerp\r\nBcc: x@y.nl")).toBe("Onderwerp Bcc: x@y.nl");
     expect(afzenderKop('Kern "Kozijnen" <x>', "info@mail.kernkozijnen.nl")).toBe("Kern Kozijnen x <info@mail.kernkozijnen.nl>");
+    expect(afzenderKop("info@bank.nl", "info@mail.kernkozijnen.nl")).toBe("infobank.nl <info@mail.kernkozijnen.nl>");
   });
 });
 
