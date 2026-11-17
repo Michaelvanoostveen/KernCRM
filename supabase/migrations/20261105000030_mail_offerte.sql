@@ -1,5 +1,5 @@
 -- Fase 3: de offerte vanuit het CRM mailen. Ook verkoop verstuurt offertes, dus de afzendergegevens en de verzendtoestemming moeten voor verkoop te lezen zijn zonder dat
--- verkoop de mailinstellingen of het logboek kan inzien of facturen kan mailen. De limiet per uur blijft gedeeld met de rest van de mail.
+-- verkoop de mailinstellingen of het logboek kan inzien of facturen kan mailen. Offertes hebben een eigen limiet per uur, los van die voor facturen.
 
 alter table public.mail_log add column offerte_id uuid references public.offertes (id) on delete restrict;
 alter table public.mail_log drop constraint mail_log_soort_check;
@@ -22,7 +22,17 @@ end $$;
 revoke all on function public.mail_afzender(uuid) from public, anon;
 grant execute on function public.mail_afzender(uuid) to authenticated;
 
--- Vraagt toestemming om een offerte te mailen (directie, kantoor of verkoop) en telt de mail meteen mee in de limiet van 60 per klokuur.
+-- Offertes hebben een eigen teller, los van de teller voor facturen: een verkoper kan zo nooit de limiet voor facturen en herinneringen leegmaken.
+create table public.mail_teller_offerte (
+  tenant_id uuid not null references public.tenants (id) on delete cascade,
+  uur       timestamptz not null,
+  aantal    integer not null default 0,
+  primary key (tenant_id, uur)
+);
+alter table public.mail_teller_offerte enable row level security;
+revoke all on public.mail_teller_offerte from authenticated, anon;
+
+-- Vraagt toestemming om een offerte te mailen (directie, kantoor of verkoop) en telt de mail meteen mee: hooguit 30 offertemails per klokuur per bedrijf.
 create function public.mail_mag_versturen_offerte(p_tenant uuid) returns jsonb
   language plpgsql security definer set search_path = ''
   as $$
@@ -39,9 +49,9 @@ begin
   ) then
     return jsonb_build_object('ok', false, 'fout', 'domein_niet_vrijgegeven');
   end if;
-  delete from public.mail_teller where tenant_id = p_tenant and uur < now() - interval '2 days';
-  insert into public.mail_teller as t (tenant_id, uur, aantal) values (p_tenant, v_uur, 1)
-    on conflict (tenant_id, uur) do update set aantal = t.aantal + 1 where t.aantal < 60
+  delete from public.mail_teller_offerte where tenant_id = p_tenant and uur < now() - interval '2 days';
+  insert into public.mail_teller_offerte as t (tenant_id, uur, aantal) values (p_tenant, v_uur, 1)
+    on conflict (tenant_id, uur) do update set aantal = t.aantal + 1 where t.aantal < 30
     returning aantal into v_aantal;
   if v_aantal is null then return jsonb_build_object('ok', false, 'fout', 'limiet'); end if;
   return jsonb_build_object('ok', true);
