@@ -9,6 +9,7 @@ const MONTAGE = { href: "/montage", label: "Montage" };
 const WERKBONNEN = { href: "/werkbonnen", label: "Werkbonnen" };
 const FACTUREN = { href: "/facturen", label: "Facturen" };
 const BOEKHOUDING = { href: "/instellingen/boekhouding", label: "Boekhouding" };
+const EMAIL = { href: "/instellingen/email", label: "E-mail" };
 const CATALOGUS = { href: "/instellingen/catalogus", label: "Catalogus" };
 const GEBRUIKERS = { href: "/instellingen/gebruikers", label: "Gebruikers" };
 
@@ -19,9 +20,9 @@ const GEBRUIKERS = { href: "/instellingen/gebruikers", label: "Gebruikers" };
  */
 export function menuVoorRol(rol: string | null | undefined): MenuItem[] {
   switch (rol) {
-    case "directie": return [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, BOEKHOUDING, CATALOGUS, GEBRUIKERS];
+    case "directie": return [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, BOEKHOUDING, EMAIL, CATALOGUS, GEBRUIKERS];
     case "verkoop":
-    case "kantoor": return rol === "kantoor" ? [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, BOEKHOUDING, CATALOGUS] : [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, CATALOGUS];
+    case "kantoor": return rol === "kantoor" ? [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, BOEKHOUDING, EMAIL, CATALOGUS] : [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, CATALOGUS];
     case "inmeter": return [INMETING];
     case "monteur": return [MIJN_MONTAGES];
     default: return [START];

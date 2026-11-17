@@ -43,5 +43,12 @@ export const FACTUUR_MELDINGEN: Record<string, { tekst: string; fout: boolean }>
   betaallink_toegevoegd: { tekst: "De betaallink is vastgelegd. Hij staat in de mailtekst en op de PDF van de factuur.", fout: false },
   betaallink_ingetrokken: { tekst: "De betaallink is ingetrokken.", fout: false },
   betaallink_ongeldig: { tekst: "Vul een geldige link in die met https:// begint, en een geldigheidsdatum die niet in het verleden ligt.", fout: true },
+  mail_verzonden: { tekst: "De mail is verstuurd naar de klant en vastgelegd.", fout: false },
+  mail_geen_adres: { tekst: "Bij deze klant staat geen geldig e-mailadres. Vul het in bij de klantgegevens.", fout: true },
+  mail_niet_actief: { tekst: "Mailen vanuit het CRM staat nog niet aan. De directie zet dat aan bij E-mail; tot dan kopieer je de tekst naar je mailprogramma.", fout: true },
+  mail_geen_sleutel: { tekst: "De koppeling met de mailserver is nog niet verbonden (de sleutel ontbreekt op de server).", fout: true },
+  mail_limiet: { tekst: "Er zijn het afgelopen uur al veel mails verstuurd. Probeer het over een uur opnieuw.", fout: true },
+  mail_mislukt: { tekst: "De mail is niet verstuurd. De reden staat in het logboek bij E-mail. Er is niets vastgelegd, je kunt het opnieuw proberen.", fout: true },
+  mail_niet_vastgelegd: { tekst: "De mail is wel verstuurd, maar vastleggen lukte niet. Leg het zelf vast met de knop hieronder; verstuur de mail niet nog een keer.", fout: true },
   mislukt: { tekst: "Het lukte niet. Probeer het opnieuw.", fout: true },
 };

@@ -5,9 +5,11 @@ import { maakServerClient } from "@/lib/supabase/server";
 import { euroTekst } from "@/lib/offerte/bereken";
 import { BEDRIJF_FACTUUR } from "@/lib/facturatie/bedrijf";
 import { begroeting, isTeLaat, openstaand, type FactuurStatus } from "@/lib/facturatie/bereken";
+import { isMailAdres } from "@/lib/mail/adres";
 import { dagenTeLaat, maakBetalingBevestigingMail, maakCreditnotaMail, maakHerinneringMail, mailtoLink } from "@/lib/facturatie/mail";
 import { FACTUUR_MELDINGEN } from "@/lib/facturatie/meldingen";
 import { haalRol } from "../../start-gegevens";
+import { verstuurBetaalbevestigingMail, verstuurCreditnotaMail, verstuurFactuurMail, verstuurHerinneringMail } from "../mail-actions";
 import { maakCreditnota, markeerBetalingBevestigd, markeerCreditnotaVerzonden, markeerVerzonden, registreerBetaling, registreerHerinnering, trekBetaallinkIn, voegBetaallinkToe } from "../actions";
 
 type Factuur = {
@@ -45,13 +47,15 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const f = data as unknown as Factuur | null;
   if (!f) notFound();
 
-  const [{ data: bData }, { data: hData }, { data: cData }, magPrijzenData, { data: lData }] = await Promise.all([
+  const [{ data: bData }, { data: hData }, { data: cData }, magPrijzenData, { data: lData }, { data: mailRij }] = await Promise.all([
     supabase.from("factuur_betalingen").select("id, bedrag, betaald_op, notitie, bevestiging_verstuurd_op").eq("factuur_id", id).order("betaald_op").order("aangemaakt"),
     supabase.from("factuur_herinneringen").select("niveau, verstuurd_op").eq("factuur_id", id).order("niveau"),
     supabase.from("creditnotas").select("id, nummer, datum, omschrijving, totaal_incl, verzonden_op").eq("factuur_id", id).order("aangemaakt"),
     supabase.rpc("mag_prijzen_aanpassen", { p_tenant: (data as { tenant_id?: string } | null)?.tenant_id ?? "" }),
     supabase.from("factuur_betaallinks").select("id, url, bedrag, geldig_tot").eq("factuur_id", id).eq("status", "open").or(`geldig_tot.is.null,geldig_tot.gte.${new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date())}`).maybeSingle(),
+    supabase.from("mail_instellingen").select("actief").maybeSingle(),
   ]);
+  const mailActief = (mailRij as { actief?: boolean } | null)?.actief === true;
   const betaallink = (lData as Betaallink | null) ?? null;
   const creditnotas = (cData ?? []) as Creditnota[];
   const magPrijzen = magPrijzenData.data === true;
@@ -66,6 +70,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const groet = begroeting(f.debiteur?.aanhef, f.debiteur?.achternaam, f.debiteur?.naam ?? "");
   const klantMail = f.projecten?.klanten?.email ?? null;
   const melding = code ? FACTUUR_MELDINGEN[code] : null;
+  const kanMailen = mag && mailActief && isMailAdres(klantMail);
 
   // Na elke betaling is het saldo anders: bereken per betaling wat er daarna nog openstond.
   const metSaldo = betalingen.map((b, i) => ({ ...b, resterend: openstaand(totaal, betalingen.slice(0, i + 1).map((x) => Number(x.bedrag)), gecrediteerd) }));
@@ -125,6 +130,12 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
                     <label className="mt-2 block text-xs font-semibold">Onderwerp<input readOnly value={mail.onderwerp} className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
                     <label className="mt-2 block text-xs font-semibold">Tekst<textarea readOnly rows={7} value={mail.tekst} className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {kanMailen && (
+                        <form action={verstuurBetaalbevestigingMail}>
+                          <input type="hidden" name="naar" value="factuur" /><input type="hidden" name="factuur_id" value={f.id} /><input type="hidden" name="betaling_id" value={b.id} />
+                          <button className="rounded-md bg-[#B35B40] px-4 py-2 text-sm font-semibold text-white hover:brightness-110">Versturen naar {klantMail}</button>
+                        </form>
+                      )}
                       <a href={mailtoLink(klantMail, mail.onderwerp, mail.tekst)} className={knopLink}>Open in mailprogramma</a>
                       <form action={markeerBetalingBevestigd}>
                         <input type="hidden" name="factuur_id" value={f.id} /><input type="hidden" name="betaling_id" value={b.id} />
@@ -217,6 +228,12 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
                       <label className="mt-2 block text-xs font-semibold">Tekst<textarea readOnly rows={7} value={mail.tekst} className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
                       <p className="mt-2 text-xs text-stone-600">Voeg de PDF van de creditnota als bijlage toe. Leg daarna vast dat hij is verstuurd.</p>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {kanMailen && (
+                          <form action={verstuurCreditnotaMail}>
+                            <input type="hidden" name="naar" value="factuur" /><input type="hidden" name="factuur_id" value={f.id} /><input type="hidden" name="creditnota_id" value={c.id} />
+                            <button className="rounded-md bg-[#B35B40] px-4 py-2 text-sm font-semibold text-white hover:brightness-110">Versturen naar {klantMail} (met PDF)</button>
+                          </form>
+                        )}
                         <a href={mailtoLink(klantMail, mail.onderwerp, mail.tekst)} className={knopLink}>Open in mailprogramma</a>
                         <form action={markeerCreditnotaVerzonden}>
                           <input type="hidden" name="factuur_id" value={f.id} /><input type="hidden" name="creditnota_id" value={c.id} />
@@ -254,6 +271,12 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           <ul className="mt-2 text-sm text-stone-700">
             {herinneringen.map((h) => <li key={h.niveau}>Herinnering {h.niveau}: verstuurd op {datum(h.verstuurd_op.slice(0, 10))}</li>)}
           </ul>
+          {!f.verzonden_op && kanMailen && (
+            <form action={verstuurFactuurMail} className="mt-3">
+              {verborgen}
+              <button className="rounded-md bg-[#B35B40] px-4 py-2 text-sm font-semibold text-white hover:brightness-110">Factuur versturen naar {klantMail} (met PDF)</button>
+            </form>
+          )}
           {!f.verzonden_op && mag && (
             <form action={markeerVerzonden} className="mt-3">
               {verborgen}
@@ -270,6 +293,12 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
               <label className="mt-2 block text-xs font-semibold">Tekst<textarea readOnly rows={8} value={herMail.tekst} className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm" /></label>
               <p className="mt-2 text-xs text-stone-600">Voeg de PDF van de factuur als bijlage toe. Leg daarna vast dat de herinnering is verstuurd.</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
+                {kanMailen && (
+                  <form action={verstuurHerinneringMail}>
+                    {verborgen}
+                    <button className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white">Versturen naar {klantMail} (met PDF)</button>
+                  </form>
+                )}
                 <a href={mailtoLink(klantMail, herMail.onderwerp, herMail.tekst)} className={knopLink}>Open in mailprogramma</a>
                 <form action={registreerHerinnering}>
                   {verborgen}
