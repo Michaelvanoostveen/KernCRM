@@ -53,14 +53,17 @@ export async function stuurTestmail() {
   ].join("\n");
   const log = (status: "verzonden" | "mislukt", externId: string | null, fout: string | null) =>
     supabase.rpc("mail_log_toevoegen", { p_tenant: tenantId, p_soort: "test", p_factuur: null, p_creditnota: null, p_aan: aan, p_onderwerp: onderwerp, p_status: status, p_extern_id: externId, p_fout: fout });
+  // Let op: redirect() werkt met een speciale fout en mag dus nooit binnen dit try-blok staan, anders wordt een geslaagde verzending als mislukt gelogd.
+  let uitkomst: "test_verzonden" | "test_mislukt";
   try {
     const uit = await provider.verstuur({ vanNaam: i.afzender_naam, vanAdres: i.afzender_adres, aan, antwoordAan: i.antwoord_adres, onderwerp, tekst, sleutel: `test-${tenantId}-${Date.now()}` });
     await log("verzonden", uit.externId, null);
-    return terug("test_verzonden");
+    uitkomst = "test_verzonden";
   } catch (e) {
     const fout = e instanceof MailFout ? e.message : "Onbekende fout bij het verzenden.";
     console.error("testmail mislukt:", fout);
     await log("mislukt", null, fout);
-    return terug("test_mislukt");
+    uitkomst = "test_mislukt";
   }
+  return terug(uitkomst);
 }
