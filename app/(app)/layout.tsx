@@ -11,21 +11,23 @@ async function uitloggen() {
   redirect("/login");
 }
 
+const UITLOGGEN = (
+  <form action={uitloggen}>
+    <button className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white lg:text-left">Uitloggen</button>
+  </form>
+);
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <header className="border-b border-stone-200 bg-[#24332B] text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <Link href="/" className="rounded-md text-lg font-bold tracking-tight hover:text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">KernCRM</Link>
-          <Suspense fallback={<nav aria-label="Hoofdmenu" className="flex gap-1"><Link href="/" className="px-3 py-1.5 text-sm text-white/75">Start</Link></nav>}>
-            <Menu />
-          </Suspense>
-          <form action={uitloggen} className="ml-auto">
-            <button className="rounded-md px-3 py-1.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">Uitloggen</button>
-          </form>
-        </div>
-      </header>
-      {children}
-    </>
+    <div className="min-h-screen lg:flex">
+      <Suspense fallback={
+        <aside className="bg-[#24332B] text-white print:hidden lg:h-screen lg:w-60 lg:shrink-0">
+          <div className="px-4 py-3 lg:px-5 lg:py-5"><Link href="/" className="text-lg font-bold tracking-tight">KernCRM</Link></div>
+        </aside>
+      }>
+        <Menu uitloggen={UITLOGGEN} />
+      </Suspense>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
   );
 }
