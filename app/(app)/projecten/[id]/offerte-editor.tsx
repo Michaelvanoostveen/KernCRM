@@ -1,5 +1,6 @@
 "use client";
 
+import { verstuurOfferteMail } from "../offerte-mail-actions";
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { berekenOfferte, euroTekst, kortingToegestaan } from "@/lib/offerte/bereken";
@@ -16,7 +17,22 @@ const knop = "rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm fo
 const soortLabel = (s: string) => ({ positie: "Positie", artikel: "Artikelregel", kop: "Kopregel", tekst: "Tekst", korting: "Korting" })[s] ?? s;
 const getalOfNull = (t: string) => { const n = Number(t.replace(",", ".")); return t.trim() !== "" && Number.isFinite(n) && n >= 0 ? n : null; };
 
-export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld, versie, statusLabel, opgeslagen, mag, artikelen, totaalOverride, isDirectie, redenen, totaalReden: bewaardeTotaalReden, statusRuw, link, geldigTot, gebeurtenissen, mail, melding: serverMelding, versies }: {
+const MAIL_FOUTEN: Record<string, string> = {
+  offerte_niet_verstuurd: "De offerte moet eerst zijn verstuurd (vergrendeld) voordat je hem kunt mailen.",
+  geen_adres: "Bij deze klant staat geen geldig e-mailadres. Vul het in bij de klantgegevens.",
+  niet_actief: "Mailen vanuit het CRM staat nog niet aan. De directie zet dat aan bij E-mail.",
+  geen_sleutel: "De koppeling met de mailserver is nog niet verbonden (de sleutel ontbreekt op de server).",
+  limiet: "Er zijn het afgelopen uur al veel mails verstuurd. Probeer het over een uur opnieuw.",
+  mislukt: "De mail is niet verstuurd. De reden staat in het logboek bij E-mail (directie en kantoor). Je kunt het opnieuw proberen.",
+  geen_toegang: "Je hebt geen toestemming om deze offerte te mailen.",
+};
+
+export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld, versie, statusLabel, opgeslagen, mag, artikelen, totaalOverride, isDirectie, redenen, totaalReden: bewaardeTotaalReden, statusRuw, link, geldigTot, gebeurtenissen, mail, melding: serverMelding, versies, mailKlaar, mailAan, klantMail }: {
+  /** Mailen vanuit het CRM staat aan en de klant heeft een geldig e-mailadres. */
+  mailKlaar: boolean;
+  /** Mailen vanuit het CRM staat aan (los van het adres van de klant). */
+  mailAan: boolean;
+  klantMail: string | null;
   projectId: string;
   begin: EditorRegel[];
   rol: string | null;
@@ -179,6 +195,8 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
           <button type="button" role="switch" aria-checked={tafel} onClick={() => setTafel((t) => !t)} className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${tafel ? "border-[#24332B] bg-[#24332B] text-white" : "border-stone-300 bg-white hover:bg-stone-50"}`}>{tafel ? "Uitzetten" : "Aanzetten"}</button>
         </div>
         {serverMelding === "verstuurd" && <p role="status" className="rounded-md bg-green-50 px-4 py-2.5 text-sm text-green-800"><b>De offerte is verstuurd en vergrendeld.</b> Kopieer de link of de mailtekst hieronder en stuur die naar de klant.</p>}
+        {serverMelding === "mail_verzonden" && <p role="status" className="rounded-md bg-green-50 px-4 py-2.5 text-sm text-green-800"><b>De offerte is gemaild naar de klant</b> ({klantMail}), met de link en de PDF. Wat is verstuurd, staat in het logboek bij E-mail.</p>}
+        {serverMelding?.startsWith("mail_") && serverMelding !== "mail_verzonden" && <p role="alert" className="rounded-md bg-red-50 px-4 py-2.5 text-sm text-red-800">{MAIL_FOUTEN[serverMelding.slice(5)] ?? "De mail is niet verstuurd. Probeer het opnieuw."}</p>}
         {serverMelding === "nieuweversie" && <p role="status" className="rounded-md bg-green-50 px-4 py-2.5 text-sm text-green-800"><b>Versie {versie} is aangemaakt als concept.</b> Alles is overgenomen van de vorige versie, die is vervallen en bewaard blijft. Pas aan wat nodig is en verstuur de offerte opnieuw.</p>}
         {serverMelding === "versie" && <p role="alert" className="rounded-md bg-red-50 px-4 py-2.5 text-sm text-red-800">Een nieuwe versie maken is niet gelukt. Dat kan alleen van een verstuurde offerte die nog niet is getekend. Ververs de pagina en probeer het opnieuw.</p>}
         {serverMelding === "ingetrokken" && <p role="status" className="rounded-md bg-amber-50 px-4 py-2.5 text-sm text-amber-900">De offerte is ingetrokken en staat weer als concept. De oude link werkt niet meer.</p>}
@@ -411,7 +429,16 @@ export default function OfferteEditor({ projectId, begin, rol, inst, vergrendeld
                 <button type="button" onClick={() => kopieer(`${mail.onderwerp}\n\n${mail.tekst}`, mailVeld, "mail")} className={`${knop} mt-2`}>Kopieer onderwerp en tekst</button>
                 {gekopieerd === "mail" && <span role="status" className="ml-2 text-xs text-green-700">Gekopieerd.</span>}
                 {gekopieerd === "mail-handmatig" && <span role="status" className="ml-2 text-xs text-amber-800">Selecteer de tekst en kopieer met Ctrl+C.</span>}
-                <p className="mt-2 text-xs text-stone-500">Mailen vanuit het CRM via Microsoft 365 volgt later. Plak dit tot dan in je eigen mail.</p>
+                {statusRuw === "verstuurd" && mailKlaar && (
+                  <form action={verstuurOfferteMail} className="mt-3">
+                    <input type="hidden" name="project_id" value={projectId} />
+                    <button className="rounded-md bg-[#B35B40] px-4 py-2 text-sm font-semibold text-white hover:brightness-110">Mailen naar {klantMail} (met PDF)</button>
+                    <p className="mt-1 text-xs text-stone-500">De mail gaat namens het bedrijf, met de link en de PDF. Antwoorden komen in je eigen mailbox.</p>
+                  </form>
+                )}
+                {statusRuw === "verstuurd" && !mailKlaar && (
+                  <p className="mt-2 text-xs text-stone-500">{!mailAan ? "Mailen vanuit het CRM staat nog niet aan (de directie zet dat aan bij E-mail). Plak de tekst tot dan in je eigen mail." : "Bij deze klant staat geen geldig e-mailadres. Vul het in bij de klantgegevens, of plak de tekst in je eigen mail."}</p>
+                )}
               </div>
             )}
 

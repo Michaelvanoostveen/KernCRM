@@ -5,7 +5,7 @@ import { haalRol } from "../../start-gegevens";
 import { bewaarMailInstellingen, stuurTestmail } from "./actions";
 
 type Instellingen = { provider: string; actief: boolean; afzender_naam: string | null; afzender_adres: string | null; antwoord_adres: string | null };
-type Logregel = { id: string; soort: string; aan: string; onderwerp: string; status: "verzonden" | "mislukt"; extern_id: string | null; fout: string | null; aangemaakt: string; facturen: { nummer: string } | null; creditnotas: { nummer: string } | null };
+type Logregel = { id: string; soort: string; aan: string; onderwerp: string; status: "verzonden" | "mislukt"; extern_id: string | null; fout: string | null; aangemaakt: string; facturen: { nummer: string } | null; creditnotas: { nummer: string } | null; offertes: { versie: number; projecten: { nummer: string } | null } | null };
 
 const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   bewaard: { tekst: "De instellingen zijn bewaard.", fout: false },
@@ -22,7 +22,7 @@ const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   geen_toegang: { tekst: "Daar heb je geen toestemming voor.", fout: true },
   mislukt: { tekst: "Het lukte niet. Probeer het opnieuw.", fout: true },
 };
-const SOORT: Record<string, string> = { test: "Testmail", factuur: "Factuur", herinnering: "Herinnering", betaalbevestiging: "Betaalbevestiging", creditnota: "Creditnota" };
+const SOORT: Record<string, string> = { test: "Testmail", factuur: "Factuur", herinnering: "Herinnering", betaalbevestiging: "Betaalbevestiging", creditnota: "Creditnota", offerte: "Offerte" };
 const veld = "mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm";
 const tijd = (iso: string) => new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }).format(new Date(iso));
 
@@ -35,7 +35,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ m?: string }> }) {
   const [{ data: iRij }, { data: dData }, { data: lData }] = await Promise.all([
     supabase.from("mail_instellingen").select("provider, actief, afzender_naam, afzender_adres, antwoord_adres").maybeSingle(),
     supabase.from("mail_domeinen").select("domein").order("domein"),
-    supabase.from("mail_log").select("id, soort, aan, onderwerp, status, extern_id, fout, aangemaakt, facturen(nummer), creditnotas(nummer)").order("aangemaakt", { ascending: false }).limit(50),
+    supabase.from("mail_log").select("id, soort, aan, onderwerp, status, extern_id, fout, aangemaakt, facturen(nummer), creditnotas(nummer), offertes(versie, projecten(nummer))").order("aangemaakt", { ascending: false }).limit(50),
   ]);
   const i: Instellingen = (iRij as Instellingen | null) ?? { provider: "geen", actief: false, afzender_naam: null, afzender_adres: null, antwoord_adres: null };
   const domeinen = ((dData ?? []) as { domein: string }[]).map((d) => d.domein);
@@ -96,7 +96,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ m?: string }> }) {
             {log.map((l) => (
               <li key={l.id} className="py-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span><b>{SOORT[l.soort] ?? l.soort}</b> {l.facturen?.nummer ?? l.creditnotas?.nummer ?? ""} <span className="text-stone-600">aan {l.aan}</span></span>
+                  <span><b>{SOORT[l.soort] ?? l.soort}</b> {l.facturen?.nummer ?? l.creditnotas?.nummer ?? (l.offertes ? `${l.offertes.projecten?.nummer ?? ""} v${l.offertes.versie}` : "")} <span className="text-stone-600">aan {l.aan}</span></span>
                   <span className="flex items-center gap-2 text-xs text-stone-500">{tijd(l.aangemaakt)} <span className={`rounded-full px-2 py-0.5 font-semibold ${l.status === "verzonden" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{l.status === "verzonden" ? "Verzonden" : "Mislukt"}</span></span>
                 </div>
                 {l.fout && <p className="mt-1 text-xs text-red-800">{l.fout}</p>}
