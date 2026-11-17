@@ -86,6 +86,12 @@ describe("maakCreditnotaMail", () => {
     expect(m.onderwerp).toBe("Creditnota CN-2026-0001 bij factuur 2026-0001");
     expect(m.tekst).toContain("volledig gecrediteerd");
   });
+  it("meldt dat de klant geld terugkrijgt als er al meer is betaald dan na de creditnota verschuldigd is", () => {
+    const m = maakCreditnotaMail({ ...g, nogTeBetalen: 0, terugTeBetalen: 330 });
+    expect(m.tekst).toContain("terug");
+    expect(m.tekst).toContain("330");
+    expect(m.tekst).not.toContain("hoeft niets meer te betalen");
+  });
   it("noemt bij een gedeeltelijke creditnota wat er nog te betalen is", () => {
     const m = maakCreditnotaMail({ ...g, nogTeBetalen: 2000 });
     expect(m.tekst).toContain("nog te betalen");

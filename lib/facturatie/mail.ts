@@ -106,6 +106,8 @@ export interface CreditnotaMailGegevens {
   bedrag: number;
   /** Wat er na deze creditnota nog te betalen is op de factuur (0 = niets meer). */
   nogTeBetalen: number;
+  /** Wat de klant terugkrijgt omdat hij al meer heeft betaald dan er na deze creditnota verschuldigd is (0 = niets). */
+  terugTeBetalen?: number;
   vervaldatum: string;
   bedrijf: string;
 }
@@ -113,7 +115,10 @@ export interface CreditnotaMailGegevens {
 /** Concepttekst voor de mail met een creditnota. De reden van de correctie staat bewust niet in de tekst: kantoor voegt die zo nodig zelf toe. */
 export function maakCreditnotaMail(g: CreditnotaMailGegevens): { onderwerp: string; tekst: string } {
   const bedrag = euroTekst(g.bedrag, 2);
-  const kern = g.nogTeBetalen <= 0
+  const terug = g.terugTeBetalen ?? 0;
+  const kern = terug > 0
+    ? `Hierbij ontvangt u creditnota ${g.nummer} van ${bedrag} bij factuur ${g.factuurNummer}. U heeft al meer betaald dan er na deze creditnota verschuldigd is. Het bedrag van ${euroTekst(terug, 2)} betalen wij aan u terug op het rekeningnummer waarvan u heeft betaald. Heeft u een ander rekeningnummer voor ons, laat het ons dan weten.`
+    : g.nogTeBetalen <= 0
     ? `Hierbij ontvangt u creditnota ${g.nummer} van ${bedrag} bij factuur ${g.factuurNummer}. Daarmee is de factuur volledig gecrediteerd; u hoeft niets meer te betalen voor deze factuur.`
     : `Hierbij ontvangt u creditnota ${g.nummer} van ${bedrag} bij factuur ${g.factuurNummer}. Het bedrag dat u nog te betalen heeft voor deze factuur is daarmee ${euroTekst(g.nogTeBetalen, 2)}. Wilt u dit bedrag voor ${g.vervaldatum} overmaken?`;
   return {

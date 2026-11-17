@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { INSTELLINGEN_KERNKOZIJNEN as inst } from "../offerte/instellingen";
 import { berekenOfferte } from "../offerte/bereken";
 import { bedrijfsgegevensCompleet } from "./bedrijf";
-import { begroeting, betaaldagen, factuurTeksten, isTeLaat, maakFactuurplan, openstaand, splitsBtw, vervaldatum } from "./bereken";
+import { begroeting, betaaldagen, factuurTeksten, isTeLaat, maakFactuurplan, openstaand, splitsBtw, terugTeBetalen, vervaldatum } from "./bereken";
 
 describe("splitsBtw", () => {
   it("telt exact op tot het totaal en volgt de regel 21% over 70% en 9% over 30%", () => {
@@ -93,5 +93,26 @@ describe("openstaand met creditnota's", () => {
     expect(openstaand(3000, [500], 1000)).toBe(1500);
     expect(openstaand(3000, [], 3000)).toBe(0);
     expect(openstaand(3000, [], 0)).toBe(3000);
+  });
+});
+
+describe("terugTeBetalen", () => {
+  it("is nul zolang er niet te veel is betaald", () => {
+    expect(terugTeBetalen(3000, [], 0, [])).toBe(0);
+    expect(terugTeBetalen(3000, [3000], 0, [])).toBe(0);
+    expect(terugTeBetalen(3000, [1000], 500, [])).toBe(0);
+  });
+  it("rekent wat de klant te veel heeft betaald na een creditnota", () => {
+    expect(terugTeBetalen(3000, [3000], 1000, [])).toBe(1000);
+    expect(terugTeBetalen(1170, [500], 1000, [])).toBe(330);
+    expect(terugTeBetalen(3000, [3000], 3000, [])).toBe(3000);
+  });
+  it("trekt wat al is teruggestort af en wordt nooit negatief", () => {
+    expect(terugTeBetalen(3000, [3000], 1000, [400])).toBe(600);
+    expect(terugTeBetalen(3000, [3000], 1000, [400, 600])).toBe(0);
+    expect(terugTeBetalen(3000, [3000], 1000, [1500])).toBe(0);
+  });
+  it("rekent op de cent", () => {
+    expect(terugTeBetalen(100.1, [100.1], 0.2, [0.1])).toBe(0.1);
   });
 });

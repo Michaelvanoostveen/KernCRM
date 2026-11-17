@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { maakServerClient } from "@/lib/supabase/server";
-import { begroeting, openstaand, type FactuurStatus } from "@/lib/facturatie/bereken";
+import { begroeting, openstaand, terugTeBetalen, type FactuurStatus } from "@/lib/facturatie/bereken";
 import { beoordeelHerinnering } from "@/lib/facturatie/herinnering";
 import { maakBetalingBevestigingMail, maakCreditnotaMail, maakFactuurMail, maakHerinneringMail } from "@/lib/facturatie/mail";
 import { laadCreditnotaPdf, laadFactuurPdf } from "@/lib/facturatie/pdf-laden";
@@ -152,13 +152,16 @@ export async function verstuurCreditnotaMail(formData: FormData) {
   if (!isMailAdres(aan)) return terug(formData, f, "mail_geen_adres");
 
   const open = await openBedrag(supabase, f);
+  const { data: bRij } = await supabase.from("factuur_betalingen").select("bedrag").eq("factuur_id", f.id);
+  const { data: tRij } = await supabase.from("factuur_terugbetalingen").select("bedrag").eq("factuur_id", f.id);
+  const teruggave = terugTeBetalen(Number(f.totaal_incl), ((bRij ?? []) as { bedrag: number | string }[]).map((b) => Number(b.bedrag)), Number(f.gecrediteerd), ((tRij ?? []) as { bedrag: number | string }[]).map((b) => Number(b.bedrag)));
   const pdf = await laadCreditnotaPdf(supabase, c.id);
   if (!pdf) return terug(formData, f, "mislukt");
   const uit = await verstuurMail(supabase, {
     tenantId: f.tenant_id, soort: "creditnota", factuurId: f.id, creditnotaId: c.id, aan: aan.trim(), sleutel: `creditnota-${c.id}`,
     bijlagen: [{ bestandsnaam: pdf.bestandsnaam, inhoud: new Uint8Array(pdf.pdf) }],
     maakTekst: (bedrijf) => maakCreditnotaMail({
-      begroeting: begroeting(f.debiteur?.aanhef, f.debiteur?.achternaam, f.debiteur?.naam ?? ""), nummer: c.nummer, factuurNummer: f.nummer, bedrag: Number(c.totaal_incl), nogTeBetalen: open, vervaldatum: datum(f.vervaldatum), bedrijf,
+      begroeting: begroeting(f.debiteur?.aanhef, f.debiteur?.achternaam, f.debiteur?.naam ?? ""), nummer: c.nummer, factuurNummer: f.nummer, bedrag: Number(c.totaal_incl), nogTeBetalen: open, terugTeBetalen: teruggave, vervaldatum: datum(f.vervaldatum), bedrijf,
     }),
   });
   if (!uit.ok) return terug(formData, f, uit.code);

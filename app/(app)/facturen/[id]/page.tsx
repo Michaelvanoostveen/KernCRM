@@ -4,13 +4,13 @@ import { Suspense } from "react";
 import { maakServerClient } from "@/lib/supabase/server";
 import { euroTekst } from "@/lib/offerte/bereken";
 import { BEDRIJF_FACTUUR } from "@/lib/facturatie/bedrijf";
-import { begroeting, isTeLaat, openstaand, type FactuurStatus } from "@/lib/facturatie/bereken";
+import { begroeting, isTeLaat, openstaand, terugTeBetalen, type FactuurStatus } from "@/lib/facturatie/bereken";
 import { isMailAdres } from "@/lib/mail/adres";
 import { dagenTeLaat, maakBetalingBevestigingMail, maakCreditnotaMail, maakHerinneringMail, mailtoLink } from "@/lib/facturatie/mail";
 import { FACTUUR_MELDINGEN } from "@/lib/facturatie/meldingen";
 import { haalRol } from "../../start-gegevens";
 import { verstuurBetaalbevestigingMail, verstuurCreditnotaMail, verstuurFactuurMail, verstuurHerinneringMail } from "../mail-actions";
-import { annuleerFactuur, maakCreditnota, markeerBetalingBevestigd, markeerCreditnotaVerzonden, markeerVerzonden, registreerBetaling, registreerHerinnering, trekBetaallinkIn, voegBetaallinkToe } from "../actions";
+import { annuleerFactuur, maakCreditnota, registreerTerugbetaling, markeerBetalingBevestigd, markeerCreditnotaVerzonden, markeerVerzonden, registreerBetaling, registreerHerinnering, trekBetaallinkIn, voegBetaallinkToe } from "../actions";
 
 type Factuur = {
   id: string; project_id: string; nummer: string; termijn: number; omschrijving: string; factuurdatum: string; vervaldatum: string; totaal_incl: number | string;
@@ -21,6 +21,7 @@ type Factuur = {
 type Betaling = { id: string; bedrag: number | string; betaald_op: string; notitie: string | null; bevestiging_verstuurd_op: string | null };
 type Creditnota = { id: string; nummer: string; datum: string; omschrijving: string; totaal_incl: number | string; verzonden_op: string | null };
 type Betaallink = { id: string; url: string; bedrag: number | string; geldig_tot: string | null };
+type Terugbetaling = { id: string; bedrag: number | string; betaald_op: string; notitie: string | null };
 type Herinnering = { niveau: number; verstuurd_op: string };
 
 const datum = (iso: string) => new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Amsterdam" }).format(new Date(`${iso}T12:00:00Z`));
@@ -47,14 +48,16 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const f = data as unknown as Factuur | null;
   if (!f) notFound();
 
-  const [{ data: bData }, { data: hData }, { data: cData }, magPrijzenData, { data: lData }, { data: mailRij }] = await Promise.all([
+  const [{ data: bData }, { data: hData }, { data: cData }, magPrijzenData, { data: lData }, { data: mailRij }, { data: tData }] = await Promise.all([
     supabase.from("factuur_betalingen").select("id, bedrag, betaald_op, notitie, bevestiging_verstuurd_op").eq("factuur_id", id).order("betaald_op").order("aangemaakt"),
     supabase.from("factuur_herinneringen").select("niveau, verstuurd_op").eq("factuur_id", id).order("niveau"),
     supabase.from("creditnotas").select("id, nummer, datum, omschrijving, totaal_incl, verzonden_op").eq("factuur_id", id).order("aangemaakt"),
     supabase.rpc("mag_prijzen_aanpassen", { p_tenant: (data as { tenant_id?: string } | null)?.tenant_id ?? "" }),
     supabase.from("factuur_betaallinks").select("id, url, bedrag, geldig_tot").eq("factuur_id", id).eq("status", "open").or(`geldig_tot.is.null,geldig_tot.gte.${new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date())}`).maybeSingle(),
     supabase.from("mail_instellingen").select("actief").maybeSingle(),
+    supabase.from("factuur_terugbetalingen").select("id, bedrag, betaald_op, notitie").eq("factuur_id", id).order("betaald_op").order("aangemaakt"),
   ]);
+  const terugbetalingen = (tData ?? []) as Terugbetaling[];
   const mailActief = (mailRij as { actief?: boolean } | null)?.actief === true;
   const betaallink = (lData as Betaallink | null) ?? null;
   const creditnotas = (cData ?? []) as Creditnota[];
@@ -66,6 +69,9 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const totaal = Number(f.totaal_incl);
   const gecrediteerd = Number(f.gecrediteerd);
   const open = openstaand(totaal, betalingen.map((b) => Number(b.bedrag)), gecrediteerd);
+  const terug = terugTeBetalen(totaal, betalingen.map((b) => Number(b.bedrag)), gecrediteerd, terugbetalingen.map((t) => Number(t.bedrag)));
+  const nogTeCrediteren = Math.round((totaal - gecrediteerd) * 100) / 100;
+  const kanCrediteren = (f.status === "open" || f.status === "betaald") && f.verzonden_op !== null && nogTeCrediteren > 0;
   const teLaat = isTeLaat(f.status, f.vervaldatum, vandaag);
   const groet = begroeting(f.debiteur?.aanhef, f.debiteur?.achternaam, f.debiteur?.naam ?? "");
   const klantMail = f.projecten?.klanten?.email ?? null;
@@ -104,6 +110,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           <div className="flex justify-between"><dt className="text-stone-600">Vervaldatum</dt><dd className={teLaat ? "font-semibold text-red-700" : ""}>{datum(f.vervaldatum)}{teLaat ? ` (${dagenTeLaat(f.vervaldatum, vandaag)} dagen te laat)` : ""}</dd></div>
           <div className="flex justify-between"><dt className="text-stone-600">Verzonden</dt><dd>{f.verzonden_op ? datum(f.verzonden_op.slice(0, 10)) : "nog niet"}</dd></div>
           {gecrediteerd > 0 && <div className="flex justify-between"><dt className="text-stone-600">Gecrediteerd</dt><dd>{euroTekst(gecrediteerd, 2)}</dd></div>}
+          {terug > 0 && <div className="flex justify-between"><dt className="font-semibold text-red-800">Terug te betalen aan de klant</dt><dd className="font-semibold text-red-800">{euroTekst(terug, 2)}</dd></div>}
           {f.status === "open" && <div className="flex justify-between"><dt className="text-stone-600">Openstaand</dt><dd className="font-semibold">{euroTekst(open, 2)}</dd></div>}
         </dl>
         {f.status === "geannuleerd" && f.annulering_reden && <p className="mt-3 text-sm text-stone-600">Geannuleerd: {f.annulering_reden}</p>}
@@ -116,9 +123,10 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           <p className="mt-2 text-sm text-stone-600">Een factuur kan niet worden verwijderd: het factuurnummer blijft bestaan (doorlopende nummering en bewaarplicht). Is hij fout, dan <b>annuleer</b> je hem zolang de klant hem nog niet heeft gekregen, en <b>crediteer</b> je hem als hij al is verstuurd.</p>
           {f.status === "geannuleerd" && <p className="mt-2 text-sm font-semibold text-stone-700">Deze factuur is geannuleerd{f.annulering_reden ? `: ${f.annulering_reden}` : ""}. De termijn kan opnieuw worden gefactureerd.</p>}
           {f.status === "gecrediteerd" && <p className="mt-2 text-sm font-semibold text-stone-700">Deze factuur is volledig gecrediteerd. De termijn kan opnieuw worden gefactureerd.</p>}
-          {f.status === "betaald" && <p className="mt-2 text-sm text-stone-600">Deze factuur is betaald en kan niet meer worden geannuleerd. Een creditnota op een betaalde factuur (met terugbetaling) is nog niet mogelijk.</p>}
-          {f.status === "open" && (
+          {f.status === "betaald" && <p className="mt-2 text-sm text-stone-600">Deze factuur is betaald en kan niet meer worden geannuleerd. Wil je hem corrigeren, maak dan een creditnota; wat de klant dan te veel heeft betaald, leg je daarna vast als terugbetaling.</p>}
+          {(f.status === "open" || f.status === "betaald") && (
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {f.status === "open" && (
               <div className="rounded-md border border-stone-200 p-3">
                 <div className="text-sm font-semibold">Factuur annuleren</div>
                 {!f.verzonden_op && betalingen.length === 0 && gecrediteerd === 0 ? (
@@ -132,10 +140,11 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
                   <p className="mt-1 text-xs text-stone-600">{f.verzonden_op ? "Deze factuur is al naar de klant gestuurd en kan daarom niet meer worden geannuleerd: crediteer hem." : betalingen.length > 0 ? "Er is al betaald, dus annuleren kan niet." : "Er is al een creditnota, dus annuleren kan niet."}</p>
                 )}
               </div>
+              )}
               <div className="rounded-md border border-stone-200 p-3">
                 <div className="text-sm font-semibold">Factuur crediteren</div>
-                {f.verzonden_op && open > 0 ? (
-                  <p className="mt-1 text-xs text-stone-600">Maak een creditnota voor het hele openstaande bedrag ({euroTekst(open, 2)}) of een deel ervan. <a href="#creditnota" className="font-semibold underline">Naar het formulier</a></p>
+                {kanCrediteren ? (
+                  <p className="mt-1 text-xs text-stone-600">Maak een creditnota voor het hele nog niet gecrediteerde bedrag ({euroTekst(nogTeCrediteren, 2)}) of een deel ervan.{betalingen.length > 0 ? " Is er al betaald, dan komt wat te veel is betaald als terug te betalen bedrag te staan." : ""} <a href="#creditnota" className="font-semibold underline">Naar het formulier</a></p>
                 ) : (
                   <p className="mt-1 text-xs text-stone-600">{!f.verzonden_op ? "Crediteren kan pas nadat de factuur naar de klant is gestuurd. Is hij nog niet verstuurd, dan kun je hem annuleren." : "Er staat niets meer open om te crediteren."}</p>
                 )}
@@ -209,6 +218,26 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
         {!mag && f.status === "open" && <p className="mt-3 text-sm text-stone-500">Betalingen registreren is voorbehouden aan directie en kantoor.</p>}
       </section>
 
+      {(terugbetalingen.length > 0 || terug > 0) && (
+        <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Terugbetalingen">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Terugbetalingen aan de klant</h2>
+          {terug > 0 && <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">De klant krijgt nog {euroTekst(terug, 2)} terug (betaald {euroTekst(betalingen.reduce((x, b) => x + Number(b.bedrag), 0), 2)}, gecrediteerd {euroTekst(gecrediteerd, 2)}). Stort het bedrag terug en leg het hieronder vast.</p>}
+          {terugbetalingen.length === 0 && <p className="mt-2 text-sm text-stone-600">Er is nog niets teruggestort.</p>}
+          <ul className="mt-2 divide-y divide-stone-100 text-sm">
+            {terugbetalingen.map((t) => <li key={t.id} className="py-1.5"><b>{euroTekst(Number(t.bedrag), 2)}</b> teruggestort op {datum(t.betaald_op)}{t.notitie ? ` · ${t.notitie}` : ""}</li>)}
+          </ul>
+          {mag && terug > 0 && (
+            <form action={registreerTerugbetaling} className="mt-3 grid gap-2 rounded-md border border-stone-200 p-3 sm:grid-cols-3">
+              {verborgen}
+              <label className="text-xs font-semibold">Bedrag teruggestort<input name="bedrag" required inputMode="decimal" defaultValue={String(terug).replace(".", ",")} className={veld} /></label>
+              <label className="text-xs font-semibold">Teruggestort op<input type="date" name="datum" defaultValue={vandaag} max={vandaag} className={veld} /></label>
+              <label className="text-xs font-semibold">Notitie (optioneel)<input name="notitie" maxLength={500} className={veld} /></label>
+              <div className="sm:col-span-3"><button className="rounded-md bg-[#24332B] px-4 py-2 text-sm font-semibold text-white">Terugbetaling vastleggen</button><span className="ml-3 text-xs text-stone-500">Een terugbetaling staat daarna vast.</span></div>
+            </form>
+          )}
+        </section>
+      )}
+
       {f.status === "open" && (
         <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Betaallink">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Betaallink</h2>
@@ -240,13 +269,13 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
         </section>
       )}
 
-      {(creditnotas.length > 0 || (mag && f.status === "open")) && (
+      {(creditnotas.length > 0 || (mag && (f.status === "open" || f.status === "betaald"))) && (
         <section id="creditnota" className="mt-4 scroll-mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Creditnota's">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Creditnota&apos;s</h2>
           {creditnotas.length === 0 && <p className="mt-2 text-sm text-stone-600">Er is geen creditnota gemaakt. Heeft de klant de factuur al ontvangen en klopt het bedrag niet, maak dan een creditnota in plaats van de factuur aan te passen.</p>}
           <ul className="mt-2 grid gap-3">
             {creditnotas.map((c) => {
-              const mail = maakCreditnotaMail({ begroeting: groet, nummer: c.nummer, factuurNummer: f.nummer, bedrag: Number(c.totaal_incl), nogTeBetalen: open, vervaldatum: datum(f.vervaldatum), bedrijf: BEDRIJF_FACTUUR.naam });
+              const mail = maakCreditnotaMail({ begroeting: groet, nummer: c.nummer, factuurNummer: f.nummer, bedrag: Number(c.totaal_incl), nogTeBetalen: open, terugTeBetalen: terug, vervaldatum: datum(f.vervaldatum), bedrijf: BEDRIJF_FACTUUR.naam });
               return (
                 <li key={c.id} className="rounded-md border border-stone-200 p-3 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -281,12 +310,12 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
               );
             })}
           </ul>
-          {mag && f.status === "open" && f.verzonden_op && open > 0 && magPrijzen && (
+          {mag && kanCrediteren && magPrijzen && (
             <details open className="mt-3 rounded-md border border-stone-200 px-3 py-2">
               <summary className="cursor-pointer font-semibold">Creditnota maken</summary>
               <form action={maakCreditnota} className="mt-2 grid gap-2">
                 <input type="hidden" name="factuur_id" value={f.id} />
-                <label className="text-xs font-semibold">Bedrag dat van de factuur af gaat (incl. btw, hooguit {euroTekst(open, 2)})<input name="bedrag" required inputMode="decimal" defaultValue={String(open).replace(".", ",")} className={veld} /></label>
+                <label className="text-xs font-semibold">Bedrag dat van de factuur af gaat (incl. btw, hooguit {euroTekst(nogTeCrediteren, 2)})<input name="bedrag" required inputMode="decimal" defaultValue={String(open > 0 ? open : nogTeCrediteren).replace(".", ",")} className={veld} /></label>
                 <label className="text-xs font-semibold">Omschrijving op de creditnota<input name="omschrijving" required maxLength={300} defaultValue={`Correctie op factuur ${f.nummer}`} className={veld} /></label>
                 <label className="text-xs font-semibold">Reden (alleen zichtbaar voor de directie)<input name="reden" required maxLength={1000} className={veld} /></label>
                 <p className="text-xs text-stone-500">De creditnota staat daarna vast en krijgt een eigen nummer. Het btw-bedrag wordt berekend volgens dezelfde verdeling als de factuur. Wil je het volledige bedrag crediteren, dan kan de termijn daarna opnieuw worden gefactureerd.</p>
@@ -294,8 +323,8 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
               </form>
             </details>
           )}
-          {mag && f.status === "open" && f.verzonden_op && !magPrijzen && <p className="mt-3 text-sm text-stone-500">Een creditnota maken kan met de toestemming &quot;prijzen aanpassen&quot;. Vraag de directie.</p>}
-          {mag && f.status === "open" && !f.verzonden_op && <p className="mt-3 text-sm text-stone-500">Een creditnota kan pas nadat de factuur is verstuurd. Vóór het versturen pas je de factuur aan of annuleer je hem.</p>}
+          {mag && kanCrediteren && !magPrijzen && <p className="mt-3 text-sm text-stone-500">Een creditnota maken kan met de toestemming &quot;prijzen aanpassen&quot;. Vraag de directie.</p>}
+          {mag && (f.status === "open" || f.status === "betaald") && !f.verzonden_op && <p className="mt-3 text-sm text-stone-500">Een creditnota kan pas nadat de factuur is verstuurd. Vóór het versturen pas je de factuur aan of annuleer je hem.</p>}
         </section>
       )}
 

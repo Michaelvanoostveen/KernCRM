@@ -27,7 +27,15 @@ async function maakExport(v: Verzoek): Promise<Response> {
     q = v.ids ? q.in("factuur_id", v.ids) : q.gte("betaald_op", v.van).lte("betaald_op", v.tot);
     const { data } = await q;
     const rijen = (data ?? []) as unknown as { bedrag: number | string; betaald_op: string; notitie: string | null; facturen: { nummer: string; debiteur: Deb } | null }[];
-    csv = maakCsv(BETALINGEN_KOP, rijen.map((r) => [r.facturen?.nummer, r.facturen?.debiteur?.naam, r.betaald_op, Number(r.bedrag), r.notitie]));
+    // Terugbetalingen aan de klant staan er als negatieve bedragen bij, zodat de bankboekingen kloppen.
+    let tq = supabase.from("factuur_terugbetalingen").select("bedrag, betaald_op, notitie, facturen(nummer, debiteur)").order("betaald_op").limit(5000);
+    tq = v.ids ? tq.in("factuur_id", v.ids) : tq.gte("betaald_op", v.van).lte("betaald_op", v.tot);
+    const { data: tData } = await tq;
+    const terug = (tData ?? []) as unknown as typeof rijen;
+    csv = maakCsv(BETALINGEN_KOP, [
+      ...rijen.map((r) => [r.facturen?.nummer, r.facturen?.debiteur?.naam, r.betaald_op, Number(r.bedrag), r.notitie]),
+      ...terug.map((r) => [r.facturen?.nummer, r.facturen?.debiteur?.naam, r.betaald_op, -Number(r.bedrag), r.notitie ? `Terugbetaling: ${r.notitie}` : "Terugbetaling"]),
+    ].sort((x, y) => String(x[2]).localeCompare(String(y[2]))));
     naam = v.ids ? "selectie-betalingen" : `betalingen-${v.van}-${v.tot}`;
   } else {
     let fq = supabase.from("facturen").select("nummer, status, factuurdatum, vervaldatum, omschrijving, bedrag_excl, btw_hoog, btw_laag, totaal_incl, debiteur, projecten(nummer)").order("factuurdatum").limit(5000);
