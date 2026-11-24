@@ -5,10 +5,56 @@
 
 create extension if not exists pgcrypto with schema extensions;
 
+-- Het Resend-id van een mail is wereldwijd uniek: een melding kan zo nooit bij een mail van een ander bedrijf terechtkomen. Dezelfde mail twee keer loggen (bijvoorbeeld
+-- na een dubbele klik, waarbij Resend hetzelfde id teruggeeft) wordt stil genegeerd. De index versnelt ook het opzoeken bij een melding.
+create unique index mail_log_extern_id_uniek on public.mail_log (extern_id) where extern_id is not null;
+
+create or replace function public.mail_log_toevoegen(p_tenant uuid, p_soort text, p_factuur uuid, p_creditnota uuid, p_aan text, p_onderwerp text, p_status text, p_extern_id text, p_fout text) returns jsonb
+  language plpgsql security definer set search_path = ''
+  as $$
+begin
+  if p_tenant is null or not public.heeft_rol(p_tenant, array['directie','kantoor']::public.gebruikersrol[]) then
+    return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
+  end if;
+  if p_soort is null or p_soort not in ('test', 'factuur', 'herinnering', 'betaalbevestiging', 'creditnota') or p_status is null or p_status not in ('verzonden', 'mislukt')
+     or length(btrim(coalesce(p_aan, ''))) = 0 then
+    return jsonb_build_object('ok', false, 'fout', 'ongeldig');
+  end if;
+  if p_factuur is not null and not exists (select 1 from public.facturen f where f.id = p_factuur and f.tenant_id = p_tenant) then
+    return jsonb_build_object('ok', false, 'fout', 'ongeldig');
+  end if;
+  if p_creditnota is not null and not exists (select 1 from public.creditnotas c where c.id = p_creditnota and c.tenant_id = p_tenant) then
+    return jsonb_build_object('ok', false, 'fout', 'ongeldig');
+  end if;
+  insert into public.mail_log (tenant_id, soort, factuur_id, creditnota_id, aan, onderwerp, status, extern_id, fout)
+    values (p_tenant, p_soort, p_factuur, p_creditnota, left(btrim(p_aan), 200), left(coalesce(p_onderwerp, ''), 300), p_status,
+            left(nullif(btrim(coalesce(p_extern_id, '')), ''), 100), left(nullif(btrim(coalesce(p_fout, '')), ''), 1000))
+    on conflict do nothing;
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.mail_log_offerte_toevoegen(p_tenant uuid, p_offerte uuid, p_aan text, p_onderwerp text, p_status text, p_extern_id text, p_fout text) returns jsonb
+  language plpgsql security definer set search_path = ''
+  as $$
+begin
+  if p_tenant is null or not public.heeft_rol(p_tenant, array['directie','kantoor','verkoop']::public.gebruikersrol[]) then
+    return jsonb_build_object('ok', false, 'fout', 'geen_toegang');
+  end if;
+  if p_status is null or p_status not in ('verzonden', 'mislukt') or length(btrim(coalesce(p_aan, ''))) = 0
+     or not exists (select 1 from public.offertes o where o.id = p_offerte and o.tenant_id = p_tenant) then
+    return jsonb_build_object('ok', false, 'fout', 'ongeldig');
+  end if;
+  insert into public.mail_log (tenant_id, soort, offerte_id, aan, onderwerp, status, extern_id, fout)
+    values (p_tenant, 'offerte', p_offerte, left(btrim(p_aan), 200), left(coalesce(p_onderwerp, ''), 300), p_status,
+            left(nullif(btrim(coalesce(p_extern_id, '')), ''), 100), left(nullif(btrim(coalesce(p_fout, '')), ''), 1000))
+    on conflict do nothing;
+  return jsonb_build_object('ok', true);
+end $$;
+
 -- Het ondertekeningsgeheim van de webhook (begint met whsec_). Eén rij; niemand kan het lezen of schrijven behalve de beheerder via SQL.
 create table public.mail_webhook_geheim (
   id     integer primary key default 1 check (id = 1),
-  geheim text not null check (length(geheim) between 16 and 200)
+  geheim text not null check (length(geheim) between 16 and 200 and geheim ~ '^whsec_[A-Za-z0-9+/=]+$')
 );
 alter table public.mail_webhook_geheim enable row level security;
 revoke all on public.mail_webhook_geheim from authenticated, anon;
@@ -72,7 +118,11 @@ begin
   -- Een melding die te oud of te nieuw is, hoort niet (tegen het opnieuw afspelen van een afgeluisterde melding).
   if abs(extract(epoch from now())::bigint - v_ts) > 300 then return jsonb_build_object('ok', false, 'fout', 'verlopen'); end if;
 
-  v_sleutel := decode(regexp_replace(v_geheim, '^whsec_', ''), 'base64');
+  begin
+    v_sleutel := decode(regexp_replace(v_geheim, '^whsec_', ''), 'base64');
+  exception when others then
+    return jsonb_build_object('ok', false, 'fout', 'niet_ingesteld');
+  end;
   v_verwacht := encode(extensions.hmac(convert_to(p_svix_id || '.' || p_svix_timestamp || '.' || p_body, 'UTF8'), v_sleutel, 'sha256'), 'base64');
   -- De kop kan meerdere handtekeningen bevatten, gescheiden door een spatie: "v1,<base64> v1,<base64>". Vergelijken via een tweede HMAC, zodat de duur niet verklapt waar het verschil zit.
   foreach v_deel in array regexp_split_to_array(btrim(p_svix_signature), '\s+') loop
@@ -95,7 +145,7 @@ begin
   if v_soort is null then return jsonb_build_object('ok', true, 'genegeerd', 'type'); end if;
   v_extern := j #>> '{data,email_id}';
   if v_extern is null then return jsonb_build_object('ok', true, 'genegeerd', 'geen_mail'); end if;
-  select * into l from public.mail_log where extern_id = v_extern order by aangemaakt desc limit 1;
+  select * into l from public.mail_log where extern_id = v_extern;
   if not found then return jsonb_build_object('ok', true, 'genegeerd', 'onbekende_mail'); end if;
 
   begin
