@@ -4,6 +4,7 @@ import { euroTekst } from "@/lib/offerte/bereken";
 import { isTeLaat, type FactuurStatus } from "@/lib/facturatie/bereken";
 import { dagenTeLaat } from "@/lib/facturatie/mail";
 import { factuurActies } from "@/lib/montage/factuurhint";
+import { BEZORG_LABEL, besteGebeurtenis, IS_PROBLEEM, type BezorgEvent } from "@/lib/mail/bezorging";
 
 type Rij = { id: string; nummer: string; totaal_incl: number | string; gecrediteerd: number | string; vervaldatum: string; status: FactuurStatus; verzonden_op: string | null; debiteur: { naam?: string } | null; projecten: { id: string; naam: string } | null };
 
@@ -34,9 +35,15 @@ export default async function FacturenActies({ rol }: { rol: string | null }) {
   const meldingen = ((wData ?? []) as unknown as { id: string; bijzonderheden: string | null; montages: Herkomst }[]).map((w) => ({ sleutel: `w-${w.id}`, soort: "Monteur meldt", kleur: "bg-amber-100 text-amber-900", herkomst: w.montages, tekst: w.bijzonderheden ?? "Kantoor moet reageren." }));
   const punten = ((pData ?? []) as unknown as { id: string; omschrijving: string; werkbonnen: { montages: Herkomst } | null }[]).map((p) => ({ sleutel: `p-${p.id}`, soort: "Opleverpunt", kleur: "bg-red-100 text-red-800", herkomst: p.werkbonnen?.montages ?? null, tekst: p.omschrijving }));
   const montageMeldingen = [...meldingen, ...punten].filter((x) => x.herkomst);
+  // Mails die de klant niet hebben bereikt (teruggekaatst, als spam gemeld, geblokkeerd) in de afgelopen twee weken.
+  const sinds = new Date(new Date().getTime() - 14 * 86_400_000).toISOString();
+  const { data: mData2 } = await supabase.from("mail_log").select("id, soort, aan, factuur_id, aangemaakt, mail_events(soort, detail, opgetreden)").eq("status", "verzonden").gte("aangemaakt", sinds).order("aangemaakt", { ascending: false }).limit(100);
+  const mailProblemen = ((mData2 ?? []) as unknown as { id: string; soort: string; aan: string; factuur_id: string | null; mail_events: BezorgEvent[] }[])
+    .map((m) => ({ ...m, beste: besteGebeurtenis(m.mail_events ?? []) }))
+    .filter((m) => IS_PROBLEEM(m.beste?.soort));
   const teLaat = rijen.filter((r) => isTeLaat(r.status, r.vervaldatum, vandaag));
   const onverzonden = rijen.filter((r) => !r.verzonden_op);
-  if (teLaat.length === 0 && onverzonden.length === 0 && hints.length === 0 && montageMeldingen.length === 0) return null;
+  if (teLaat.length === 0 && onverzonden.length === 0 && hints.length === 0 && montageMeldingen.length === 0 && mailProblemen.length === 0) return null;
 
   const rij = (r: Rij, tekst: string, kleur: string) => (
     <li key={`${tekst}-${r.id}`}>
@@ -54,6 +61,14 @@ export default async function FacturenActies({ rol }: { rol: string | null }) {
         <Link href="/facturen" className="text-sm underline">Alle facturen</Link>
       </div>
       <ul className="mt-2 grid gap-2">
+        {mailProblemen.slice(0, 5).map((m) => (
+          <li key={`mail-${m.id}`}>
+            <Link href={m.factuur_id ? `/facturen/${m.factuur_id}` : "/instellingen/email"} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm hover:bg-red-100">
+              <span><span className="mr-2 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">Mail niet aangekomen</span><b>{m.aan}</b> · {{ factuur: "factuur", herinnering: "herinnering", betaalbevestiging: "betaalbevestiging", creditnota: "creditnota", offerte: "offerte", test: "testmail" }[m.soort] ?? m.soort}</span>
+              <span className="text-red-900">{BEZORG_LABEL[m.beste!.soort].label}</span>
+            </Link>
+          </li>
+        ))}
         {montageMeldingen.slice(0, 6).map((x) => (
           <li key={x.sleutel}>
             <Link href={`/projecten/${x.herkomst!.project_id}#montage`} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-stone-200 bg-white px-4 py-2.5 text-sm hover:bg-stone-50">

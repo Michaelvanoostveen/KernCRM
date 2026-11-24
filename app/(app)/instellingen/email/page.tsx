@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { maakServerClient } from "@/lib/supabase/server";
+import { BEZORG_LABEL, besteGebeurtenis, IS_PROBLEEM, probleemUitleg, type BezorgEvent } from "@/lib/mail/bezorging";
 import { haalRol } from "../../start-gegevens";
 import { bewaarMailInstellingen, stuurTestmail } from "./actions";
 
 type Instellingen = { provider: string; actief: boolean; afzender_naam: string | null; afzender_adres: string | null; antwoord_adres: string | null };
-type Logregel = { id: string; soort: string; aan: string; onderwerp: string; status: "verzonden" | "mislukt"; extern_id: string | null; fout: string | null; aangemaakt: string; facturen: { nummer: string } | null; creditnotas: { nummer: string } | null; offertes: { versie: number; projecten: { nummer: string } | null } | null };
+type Logregel = { id: string; soort: string; aan: string; onderwerp: string; status: "verzonden" | "mislukt"; extern_id: string | null; fout: string | null; aangemaakt: string; facturen: { nummer: string } | null; creditnotas: { nummer: string } | null; offertes: { versie: number; projecten: { nummer: string } | null } | null; mail_events: BezorgEvent[] };
 
 const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   bewaard: { tekst: "De instellingen zijn bewaard.", fout: false },
@@ -35,7 +36,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ m?: string }> }) {
   const [{ data: iRij }, { data: dData }, { data: lData }] = await Promise.all([
     supabase.from("mail_instellingen").select("provider, actief, afzender_naam, afzender_adres, antwoord_adres").maybeSingle(),
     supabase.from("mail_domeinen").select("domein").order("domein"),
-    supabase.from("mail_log").select("id, soort, aan, onderwerp, status, extern_id, fout, aangemaakt, facturen(nummer), creditnotas(nummer), offertes(versie, projecten(nummer))").order("aangemaakt", { ascending: false }).limit(50),
+    supabase.from("mail_log").select("id, soort, aan, onderwerp, status, extern_id, fout, aangemaakt, facturen(nummer), creditnotas(nummer), offertes(versie, projecten(nummer)), mail_events(soort, detail, opgetreden)").order("aangemaakt", { ascending: false }).limit(50),
   ]);
   const i: Instellingen = (iRij as Instellingen | null) ?? { provider: "geen", actief: false, afzender_naam: null, afzender_adres: null, antwoord_adres: null };
   const domeinen = ((dData ?? []) as { domein: string }[]).map((d) => d.domein);
@@ -92,17 +93,28 @@ async function Inhoud({ zoek }: { zoek: Promise<{ m?: string }> }) {
       <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Logboek">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Logboek (laatste 50)</h2>
         {log.length === 0 ? <p className="mt-2 text-sm text-stone-600">Er is nog niets verstuurd.</p> : (
+          <>
+          <p className="mt-1 text-xs text-stone-500">De bezorgstatus (bezorgd, teruggekaatst) komt van Resend. Staat een mail op &quot;Onderweg&quot;, dan is er nog geen bericht binnen.</p>
           <ul className="mt-2 divide-y divide-stone-100 text-sm">
             {log.map((l) => (
               <li key={l.id} className="py-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span><b>{SOORT[l.soort] ?? l.soort}</b> {l.facturen?.nummer ?? l.creditnotas?.nummer ?? (l.offertes ? `${l.offertes.projecten?.nummer ?? ""} v${l.offertes.versie}` : "")} <span className="text-stone-600">aan {l.aan}</span></span>
-                  <span className="flex items-center gap-2 text-xs text-stone-500">{tijd(l.aangemaakt)} <span className={`rounded-full px-2 py-0.5 font-semibold ${l.status === "verzonden" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{l.status === "verzonden" ? "Verzonden" : "Mislukt"}</span></span>
+                  <span className="flex items-center gap-2 text-xs text-stone-500">{tijd(l.aangemaakt)} {(() => {
+                    const b = l.status === "verzonden" ? besteGebeurtenis(l.mail_events ?? []) : null;
+                    const sleutel = l.status === "mislukt" ? "mislukt" : b?.soort ?? "onderweg";
+                    return <span className={`rounded-full px-2 py-0.5 font-semibold ${BEZORG_LABEL[sleutel].kleur}`}>{BEZORG_LABEL[sleutel].label}</span>;
+                  })()}</span>
                 </div>
                 {l.fout && <p className="mt-1 text-xs text-red-800">{l.fout}</p>}
+                {(() => {
+                  const b = l.status === "verzonden" ? besteGebeurtenis(l.mail_events ?? []) : null;
+                  return b && IS_PROBLEEM(b.soort) ? <p className="mt-1 text-xs text-red-800">{probleemUitleg(b.soort)}{b.detail ? ` (${b.detail})` : ""}</p> : null;
+                })()}
               </li>
             ))}
           </ul>
+          </>
         )}
       </section>
     </>
