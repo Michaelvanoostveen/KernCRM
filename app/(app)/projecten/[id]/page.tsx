@@ -116,6 +116,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
           </form>
         </details>
       </div>
+      {fout === "verwijderen_vast" && <p role="alert" className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">Dit project kan niet meer worden verwijderd, omdat er facturen, creditnota&apos;s of verzonden mail aan hangen. Die moeten bewaard blijven. Een factuur die niet klopt, kun je annuleren of crediteren.</p>}
       {fout === "verwijderen" && <p role="alert" className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">Het project kon niet worden verwijderd. Een verstuurde of getekende offerte kan alleen de directie verwijderen.</p>}
 
       <ol className="mt-5 flex overflow-x-auto rounded-lg border border-stone-200 bg-white p-3 text-xs" aria-label={`Fase van het project: ${faseLabel(p.fase)}`}>
