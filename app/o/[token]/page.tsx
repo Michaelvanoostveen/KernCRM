@@ -1,4 +1,6 @@
 import { headers } from "next/headers";
+import { after } from "next/server";
+import { mailMeldingen } from "@/lib/meldingen/mail";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { maakAnoniemeClient } from "@/lib/supabase/anoniem";
@@ -22,6 +24,7 @@ async function Inhoud({ params }: { params: Promise<{ token: string }> }) {
   if (!user) {
     const h = await headers();
     await supabase.rpc("offerte_geopend", { p_token: token, p_ip: eersteIp(h.get("x-forwarded-for")), p_user_agent: h.get("user-agent") });
+    after(() => mailMeldingen(token, "offerte_geopend"));
   }
 
   // Het tijdstip bepalen we hier, nadat de gegevens zijn opgehaald, zodat het per bezoek wordt berekend.

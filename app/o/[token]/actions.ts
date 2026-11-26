@@ -1,6 +1,8 @@
 "use server";
 
 import { headers } from "next/headers";
+import { after } from "next/server";
+import { mailMeldingen } from "@/lib/meldingen/mail";
 import { redirect } from "next/navigation";
 import { maakAnoniemeClient } from "@/lib/supabase/anoniem";
 import { INSTELLINGEN_KERNKOZIJNEN } from "@/lib/offerte/instellingen";
@@ -46,5 +48,6 @@ export async function geefAkkoord(_vorige: AkkoordStatus, formData: FormData): P
   }
   const uitkomst = data as { ok?: boolean; fout?: string } | null;
   if (!uitkomst?.ok) return { fout: FOUTEN[uitkomst?.fout ?? ""] ?? FOUTEN.onbekend };
+  after(() => mailMeldingen(token as string, "offerte_akkoord"));
   redirect(`/o/${token}`);
 }
