@@ -28,7 +28,7 @@ export default function Navigatie({ groepen, uitloggen }: { groepen: MenuGroep[]
           {g.titel && <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-white/45">{g.titel}</div>}
           <ul className="grid gap-0.5">
             {g.items.map((i) => (
-              <li key={i.href}><Link href={i.href} onClick={() => setOpen(false)} aria-current={actief(i) ? "page" : undefined} className={stijl(i)}>{i.label}</Link></li>
+              <li key={i.href}><Link href={i.href} onClick={() => setOpen(false)} aria-current={actief(i) ? "page" : undefined} className={stijl(i)}>{i.label}{i.badge ? <span className="ml-2 rounded-full bg-[#B35B40] px-2 py-0.5 text-xs font-bold text-white" aria-label={`${i.badge} ongelezen`}>{i.badge > 99 ? "99+" : i.badge}</span> : null}</Link></li>
             ))}
           </ul>
         </div>

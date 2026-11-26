@@ -1,6 +1,7 @@
-export type MenuItem = { href: string; label: string };
+export type MenuItem = { href: string; label: string; /** Aantal ongelezen meldingen of dergelijke, als teken bij het onderdeel. */ badge?: number };
 
 const START = { href: "/", label: "Start" };
+const MELDINGEN = { href: "/meldingen", label: "Meldingen" };
 const KLANTEN = { href: "/klanten", label: "Klanten" };
 const PROJECTEN = { href: "/projecten", label: "Projecten" };
 const MIJN_MONTAGES = { href: "/monteur", label: "Mijn montages" };
@@ -16,13 +17,13 @@ const GEBRUIKERS = { href: "/instellingen/gebruikers", label: "Gebruikers" };
 /**
  * Het hoofdmenu per rol. Een inmeter ziet alleen zijn inmetingen. Werkbonnen en facturen zijn voor directie, kantoor en verkoop (de PDF van een werkbon alleen voor directie en kantoor).
  * De boekhouding (export en wachtrij) is voor directie en kantoor. De catalogus mogen directie, verkoop en kantoor inzien (alleen de directie beheert hem); de gebruikers beheert alleen de directie.
- * De monteur ziet alleen zijn eigen montages. Een onbekende rol ziet alleen Start.
+ * Meldingen (bijvoorbeeld "de klant heeft de offerte geopend") zijn voor directie, kantoor en verkoop. De monteur ziet alleen zijn eigen montages. Een onbekende rol ziet alleen Start.
  */
 export function menuVoorRol(rol: string | null | undefined): MenuItem[] {
   switch (rol) {
-    case "directie": return [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, BOEKHOUDING, EMAIL, CATALOGUS, GEBRUIKERS];
+    case "directie": return [START, MELDINGEN, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, BOEKHOUDING, EMAIL, CATALOGUS, GEBRUIKERS];
     case "verkoop":
-    case "kantoor": return rol === "kantoor" ? [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, BOEKHOUDING, EMAIL, CATALOGUS] : [START, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, CATALOGUS];
+    case "kantoor": return rol === "kantoor" ? [START, MELDINGEN, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, BOEKHOUDING, EMAIL, CATALOGUS] : [START, MELDINGEN, KLANTEN, PROJECTEN, INMETING, MONTAGE, WERKBONNEN, FACTUREN, CATALOGUS];
     case "inmeter": return [INMETING];
     case "monteur": return [MIJN_MONTAGES];
     default: return [START];

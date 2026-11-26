@@ -204,6 +204,8 @@ Na de inmeting maakt KernCRM met één klik de bestelling aan op basis van de in
 
 **Navigatie (besluit 2026-11-17):** het hoofdmenu staat als zijbalk links (zoals bij Teamleader), in groepen: Start, Verkoop (klanten, projecten), Uitvoering (inmeting, montage, werkbonnen), Financieel (facturen, boekhouding) en Beheer (e-mail, catalogus, gebruikers), met Uitloggen onderaan. Op een telefoon of smal scherm is het een balk bovenaan met een menuknop; een monteur of inmeter (een of twee onderdelen) ziet zijn onderdelen direct in de balk. De rechten per rol zijn ongewijzigd (`lib/menu.ts`). Er komen later meer onderdelen bij; de groepen bieden daar ruimte voor.
 
+**Meldingen (besluit 2026-11-26):** directie, kantoor en verkoop krijgen in het programma een melding (menu-onderdeel *Meldingen* met teller, blok *Nieuw* op het startscherm, lijst op `/meldingen`) wanneer een klant een verstuurde offerte voor het eerst opent en wanneer hij hem ondertekent. Een database-trigger op `offerte_gebeurtenissen` maakt de meldingen (tabel `meldingen`, per ontvanger, alleen eigen rijen leesbaar); de verkoper van het project krijgt ze, bij akkoord ook directie en kantoor, en zonder verkoper directie en kantoor. Voorbehoud: mailprogramma's die links vooraf scannen kunnen een valse 'geopend' veroorzaken. Een melding per e-mail of push naar de telefoon is nog niet gebouwd.
+
 ## Module 5: Service, opleverpunten en werkbonnen
 
 Opleverpunten en servicemeldingen hangen aan het project en de positie, zodat elke monteur ziet om welk kozijn het gaat en wat er eerder is gedaan.

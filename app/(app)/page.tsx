@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { begroeting, bepaalActies, groepeerPijplijn } from "@/lib/dashboard/start";
 import FacturenActies from "./facturen-acties";
+import NieuweMeldingen from "./nieuwe-meldingen";
 import StartScherm from "./start-scherm";
 import { haalRol, laadStart } from "./start-gegevens";
 
@@ -18,6 +19,7 @@ async function Inhoud({ zoek }: { zoek: Promise<{ weergave?: string }> }) {
 
   return (
     <>
+    <NieuweMeldingen rol={rol} />
     <FacturenActies rol={rol} />
     <StartScherm
       begroeting={begroeting(nu)}
