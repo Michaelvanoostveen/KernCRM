@@ -276,7 +276,11 @@ export async function verwijderProject(formData: FormData) {
     if (lid?.rol !== "directie") redirect(`/projecten/${projectId}?fout=verwijderen`);
   }
   const { error } = await supabase.from("projecten").delete().eq("id", projectId);
-  if (error) redirect(`/projecten/${projectId}?fout=verwijderen`);
+  if (error) {
+    console.error("project verwijderen mislukt:", error.code, error.message);
+    // 23503: er hangt iets aan dat bewaard moet blijven (facturen, creditnota's, verstuurde mail).
+    redirect(`/projecten/${projectId}?fout=${error.code === "23503" ? "verwijderen_vast" : "verwijderen"}`);
+  }
   redirect(`/klanten/${project.klant_id}`);
 }
 
