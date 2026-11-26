@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { maakServerClient } from "@/lib/supabase/server";
 import { haalRol } from "../start-gegevens";
-import { allesGelezen } from "./actions";
+import { allesGelezen, zetMeldingMail } from "./actions";
 
 type Melding = { id: string; soort: string; tekst: string; project_id: string | null; aangemaakt: string; gelezen_op: string | null };
 
@@ -20,6 +20,8 @@ async function Inhoud() {
   const { data } = await supabase.from("meldingen").select("id, soort, tekst, project_id, aangemaakt, gelezen_op").order("aangemaakt", { ascending: false }).limit(100);
   const meldingen = (data ?? []) as Melding[];
   const ongelezen = meldingen.filter((m) => !m.gelezen_op).length;
+  const { data: voorkeur } = await supabase.from("gebruiker_voorkeuren").select("waarde").eq("sleutel", "melding_mail").maybeSingle();
+  const mailAan = voorkeur?.waarde !== false;
 
   return (
     <>
@@ -32,6 +34,11 @@ async function Inhoud() {
           <form action={allesGelezen}><button className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-stone-50">Alles als gelezen markeren</button></form>
         )}
       </div>
+      <form action={zetMeldingMail} className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-stone-200 bg-white px-4 py-3 text-sm">
+        <span>Ik ontvang nieuwe meldingen ook per e-mail: <b>{mailAan ? "aan" : "uit"}</b>.</span>
+        <input type="hidden" name="aan" value={mailAan ? "nee" : "ja"} />
+        <button className="rounded-md border border-stone-300 px-3 py-1.5 font-semibold hover:bg-stone-50">{mailAan ? "Uitzetten" : "Aanzetten"}</button>
+      </form>
       {meldingen.length === 0 ? (
         <p className="mt-6 rounded-lg border border-dashed border-stone-300 bg-white p-8 text-center text-stone-600">Er zijn nog geen meldingen.</p>
       ) : (

@@ -23,7 +23,7 @@ const MELDINGEN: Record<string, { tekst: string; fout: boolean }> = {
   geen_toegang: { tekst: "Daar heb je geen toestemming voor.", fout: true },
   mislukt: { tekst: "Het lukte niet. Probeer het opnieuw.", fout: true },
 };
-const SOORT: Record<string, string> = { test: "Testmail", factuur: "Factuur", herinnering: "Herinnering", betaalbevestiging: "Betaalbevestiging", creditnota: "Creditnota", offerte: "Offerte" };
+const SOORT: Record<string, string> = { test: "Testmail", factuur: "Factuur", herinnering: "Herinnering", betaalbevestiging: "Betaalbevestiging", creditnota: "Creditnota", offerte: "Offerte", melding: "Melding" };
 const veld = "mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm";
 const tijd = (iso: string) => new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }).format(new Date(iso));
 
