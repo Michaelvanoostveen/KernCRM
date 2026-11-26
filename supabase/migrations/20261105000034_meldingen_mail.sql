@@ -6,6 +6,7 @@ alter table public.mail_log drop constraint mail_log_soort_check;
 alter table public.mail_log add constraint mail_log_soort_check check (soort in ('test', 'factuur', 'herinnering', 'betaalbevestiging', 'creditnota', 'offerte', 'melding'));
 
 -- Zet de te mailen meldingen van één offerte (via de publieke link) klaar en markeert ze meteen als verwerkt, zodat een tweede aanroep niets meer oplevert.
+-- Bewust één poging: mislukt het verzenden, dan staat dat in het mail-logboek en blijft de melding in het CRM staan, maar er komt geen tweede mail.
 create function public.melding_mail_klaarzetten(p_token text, p_soort text) returns jsonb
   language plpgsql security definer set search_path = ''
   as $$
@@ -17,7 +18,7 @@ declare
   v_ontvangers jsonb;
 begin
   if p_soort is null or p_soort not in ('offerte_geopend', 'offerte_akkoord') or p_token is null then return jsonb_build_object('ontvangers', '[]'::jsonb); end if;
-  select * into v_offerte from public.offertes where publiek_token = p_token;
+  select * into v_offerte from public.offertes where publiek_token = p_token and status in ('verstuurd', 'akkoord') and (p_soort = 'offerte_geopend' or status = 'akkoord');
   if not found then return jsonb_build_object('ontvangers', '[]'::jsonb); end if;
   select * into i from public.mail_instellingen where tenant_id = v_offerte.tenant_id;
   if not found or not i.actief or i.provider = 'geen' or i.afzender_adres is null or i.afzender_naam is null
@@ -30,7 +31,7 @@ begin
       where m.offerte_id = v_offerte.id and m.tenant_id = v_offerte.tenant_id and m.soort = p_soort and m.mail_verstuurd_op is null
       returning m.user_id, m.tekst, m.project_id
   )
-  select max(v.tekst), max(v.project_id::text)::uuid, coalesce(jsonb_agg(v.user_id), '[]'::jsonb)
+  select max(v.tekst), max(v.project_id::text)::uuid, coalesce(jsonb_agg(distinct v.user_id), '[]'::jsonb)
     into v_tekst, v_project, v_ontvangers
     from verwerkt v
     where exists (select 1 from public.tenant_leden tl where tl.tenant_id = v_offerte.tenant_id and tl.user_id = v.user_id and tl.rol in ('directie', 'kantoor', 'verkoop'))
