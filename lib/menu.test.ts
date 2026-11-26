@@ -5,7 +5,7 @@ const labels = (rol: string | null) => menuVoorRol(rol).map((i) => i.label);
 
 describe("menu per rol", () => {
   it("geeft de directie alles", () => {
-    expect(labels("directie")).toEqual(["Start", "Klanten", "Projecten", "Inmeting", "Montage", "Werkbonnen", "Facturen", "Boekhouding", "E-mail", "Catalogus", "Gebruikers"]);
+    expect(labels("directie")).toEqual(["Start", "Meldingen", "Klanten", "Projecten", "Inmeting", "Montage", "Werkbonnen", "Facturen", "Boekhouding", "E-mail", "Catalogus", "Gebruikers"]);
   });
   it("laat verkoop en kantoor facturen en catalogus zien maar niet de gebruikers", () => {
     for (const rol of ["verkoop", "kantoor"]) {
@@ -17,6 +17,10 @@ describe("menu per rol", () => {
       expect(labels(rol)).toContain("Catalogus");
       expect(labels(rol)).not.toContain("Gebruikers");
     }
+  });
+  it("geeft meldingen aan directie, kantoor en verkoop, maar niet aan inmeter en monteur", () => {
+    for (const rol of ["directie", "kantoor", "verkoop"]) expect(labels(rol)).toContain("Meldingen");
+    for (const rol of ["inmeter", "monteur", "onbekend", null]) expect(labels(rol)).not.toContain("Meldingen");
   });
   it("laat de inmeter alleen de inmetingen zien", () => {
     expect(labels("inmeter")).toEqual(["Inmeting"]);
@@ -44,7 +48,7 @@ describe("menu in groepen", () => {
   const alle = (rol: string | null) => menuGroepen(rol).flatMap((g) => g.items.map((i) => i.label));
   it("deelt de directie in vier groepen onder Start", () => {
     expect(titels("directie")).toEqual([null, "Verkoop", "Uitvoering", "Financieel", "Beheer"]);
-    expect(menuGroepen("directie")[0].items.map((i) => i.label)).toEqual(["Start"]);
+    expect(menuGroepen("directie")[0].items.map((i) => i.label)).toEqual(["Start", "Meldingen"]);
     expect(menuGroepen("directie")[2].items.map((i) => i.label)).toEqual(["Inmeting", "Montage", "Werkbonnen"]);
   });
   it("laat precies dezelfde onderdelen zien als het platte menu, voor elke rol", () => {
