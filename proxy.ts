@@ -23,7 +23,8 @@ export async function proxy(request: NextRequest) {
   const opLogin = request.nextUrl.pathname.startsWith("/login");
   // De online offerte voor de klant is bereikbaar met de geheime link, zonder inloggen.
   // De link uit een herstelmail komt langs /auth/herstel, nog zonder sessie.
-  const openbaar = request.nextUrl.pathname.startsWith("/o/") || request.nextUrl.pathname.startsWith("/auth/");
+  // De meldingen van Resend over bezorgde mail komen zonder inloggen binnen; de databasefunctie controleert de handtekening.
+  const openbaar = request.nextUrl.pathname.startsWith("/o/") || request.nextUrl.pathname.startsWith("/auth/") || request.nextUrl.pathname === "/api/mail/webhook";
 
   if (!data.user && !opLogin && !openbaar) {
     return NextResponse.redirect(new URL("/login", request.url));

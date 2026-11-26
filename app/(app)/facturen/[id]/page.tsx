@@ -6,6 +6,7 @@ import { euroTekst } from "@/lib/offerte/bereken";
 import { BEDRIJF_FACTUUR } from "@/lib/facturatie/bedrijf";
 import { begroeting, isTeLaat, openstaand, terugTeBetalen, type FactuurStatus } from "@/lib/facturatie/bereken";
 import { isMailAdres } from "@/lib/mail/adres";
+import { BEZORG_LABEL, besteGebeurtenis, IS_PROBLEEM, probleemUitleg, type BezorgEvent } from "@/lib/mail/bezorging";
 import { dagenTeLaat, maakBetalingBevestigingMail, maakCreditnotaMail, maakHerinneringMail, mailtoLink } from "@/lib/facturatie/mail";
 import { FACTUUR_MELDINGEN } from "@/lib/facturatie/meldingen";
 import { haalRol } from "../../start-gegevens";
@@ -22,6 +23,7 @@ type Betaling = { id: string; bedrag: number | string; betaald_op: string; notit
 type Creditnota = { id: string; nummer: string; datum: string; omschrijving: string; totaal_incl: number | string; verzonden_op: string | null };
 type Betaallink = { id: string; url: string; bedrag: number | string; geldig_tot: string | null };
 type Terugbetaling = { id: string; bedrag: number | string; betaald_op: string; notitie: string | null };
+type VerstuurdeMail = { id: string; soort: string; aan: string; status: "verzonden" | "mislukt"; fout: string | null; aangemaakt: string; mail_events: BezorgEvent[] };
 type Herinnering = { niveau: number; verstuurd_op: string };
 
 const datum = (iso: string) => new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Amsterdam" }).format(new Date(`${iso}T12:00:00Z`));
@@ -48,7 +50,7 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
   const f = data as unknown as Factuur | null;
   if (!f) notFound();
 
-  const [{ data: bData }, { data: hData }, { data: cData }, magPrijzenData, { data: lData }, { data: mailRij }, { data: tData }] = await Promise.all([
+  const [{ data: bData }, { data: hData }, { data: cData }, magPrijzenData, { data: lData }, { data: mailRij }, { data: tData }, { data: mlData }] = await Promise.all([
     supabase.from("factuur_betalingen").select("id, bedrag, betaald_op, notitie, bevestiging_verstuurd_op").eq("factuur_id", id).order("betaald_op").order("aangemaakt"),
     supabase.from("factuur_herinneringen").select("niveau, verstuurd_op").eq("factuur_id", id).order("niveau"),
     supabase.from("creditnotas").select("id, nummer, datum, omschrijving, totaal_incl, verzonden_op").eq("factuur_id", id).order("aangemaakt"),
@@ -56,7 +58,11 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
     supabase.from("factuur_betaallinks").select("id, url, bedrag, geldig_tot").eq("factuur_id", id).eq("status", "open").or(`geldig_tot.is.null,geldig_tot.gte.${new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(new Date())}`).maybeSingle(),
     supabase.from("mail_instellingen").select("actief").maybeSingle(),
     supabase.from("factuur_terugbetalingen").select("id, bedrag, betaald_op, notitie").eq("factuur_id", id).order("betaald_op").order("aangemaakt"),
+    mag ? supabase.from("mail_log").select("id, soort, aan, status, fout, aangemaakt, mail_events(soort, detail, opgetreden)").eq("factuur_id", id).order("aangemaakt", { ascending: false }).limit(20) : Promise.resolve({ data: [] }),
   ]);
+  const mails = ((mlData ?? []) as unknown as VerstuurdeMail[]).map((m) => ({ ...m, beste: m.status === "verzonden" ? besteGebeurtenis(m.mail_events ?? []) : null }));
+  // Het nieuwste verstuurde document (factuur, herinnering of creditnota) dat niet is aangekomen, wordt bovenaan gemeld.
+  const probleemMail = mails.find((m) => m.status === "mislukt" || IS_PROBLEEM(m.beste?.soort));
   const terugbetalingen = (tData ?? []) as Terugbetaling[];
   const mailActief = (mailRij as { actief?: boolean } | null)?.actief === true;
   const betaallink = (lData as Betaallink | null) ?? null;
@@ -100,6 +106,12 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
         <span className={`rounded-full px-3 py-1 text-sm font-semibold ${STATUS[f.status].kleur}`}>{STATUS[f.status].label}</span>
       </div>
       {melding && <p role={melding.fout ? "alert" : "status"} className={`mt-4 rounded-md px-4 py-2.5 text-sm ${melding.fout ? "bg-red-50 text-red-800" : "bg-green-50 text-green-800"}`}>{melding.tekst}</p>}
+
+      {probleemMail && (
+        <p role="alert" className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+          <b>Een mail aan {probleemMail.aan} is niet aangekomen.</b> {probleemMail.beste ? probleemUitleg(probleemMail.beste.soort) : "De mail is niet verstuurd."}{probleemMail.beste?.detail ? ` (${probleemMail.beste.detail})` : ""}
+        </p>
+      )}
 
       <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Gegevens">
         <p className="font-semibold">Termijn {f.termijn}: {f.omschrijving}</p>
@@ -372,6 +384,23 @@ async function Inhoud({ params, zoek }: { params: Promise<{ id: string }>; zoek:
               {!klantMail && <p className="mt-2 text-xs text-amber-800">Bij deze klant staat geen e-mailadres.</p>}
             </details>
           )}
+        </section>
+      )}
+      {mails.length > 0 && (
+        <section className="mt-4 rounded-lg border border-stone-200 bg-white p-5" aria-label="Verstuurde mails">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Verstuurde mails</h2>
+          <ul className="mt-2 divide-y divide-stone-100 text-sm">
+            {mails.map((m) => {
+              const sleutel = m.status === "mislukt" ? "mislukt" : m.beste?.soort ?? "onderweg";
+              return (
+                <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <span><b>{{ factuur: "Factuur", herinnering: "Herinnering", betaalbevestiging: "Betaalbevestiging", creditnota: "Creditnota" }[m.soort] ?? m.soort}</b> aan {m.aan} <span className="text-stone-500">· {datum(m.aangemaakt.slice(0, 10))}</span></span>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${BEZORG_LABEL[sleutel].kleur}`}>{BEZORG_LABEL[sleutel].label}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-2 text-xs text-stone-500">De bezorgstatus komt van Resend. &quot;Onderweg&quot; betekent dat er nog geen bericht binnen is.</p>
         </section>
       )}
     </>
